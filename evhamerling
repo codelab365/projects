@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elternverein BRG Hamerling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://placehold.co/1920x1080/2dd4bf/ffffff');
+            background-size: cover;
+            background-position: center;
+        }
+        details > summary {
+            cursor: pointer;
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .arrow-down {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-xl md:text-2xl font-bold text-teal-600">
+                Elternverein BRG Hamerling
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#home" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Start</a>
+                <a href="#about" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Über Uns</a>
+                <a href="#termine" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Termine</a>
+                <a href="#contact" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Kontakt</a>
+                <a href="#rechtliches" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Impressum</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden flex items-center">
+                 <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <a href="#home" class="block py-3 px-6 text-sm hover:bg-gray-50">Start</a>
+            <a href="#about" class="block py-3 px-6 text-sm hover:bg-gray-50">Über Uns</a>
+            <a href="#termine" class="block py-3 px-6 text-sm hover:bg-gray-50">Termine</a>
+            <a href="#contact" class="block py-3 px-6 text-sm hover:bg-gray-50">Kontakt</a>
+            <a href="#rechtliches" class="block py-3 px-6 text-sm hover:bg-gray-50">Impressum</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Welcome Text Section -->
+        <section id="home" class="py-16 bg-teal-50 text-center">
+            <div class="container mx-auto px-6">
+                <h1 class="text-3xl md:text-4xl font-bold text-teal-700 mb-4">Herzlich Willkommen beim Elternverein des BRG Hamerling!</h1>
+                <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto">"Gemeinsam für unsere Kinder - der Elternverein als starke Brücke!"</p>
+            </div>
+        </section>
+
+        <!-- About Us Section -->
+        <section id="about" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Über den Elternverein</h2>
+                    <p class="text-gray-600 mt-2">Wer wir sind und was wir tun.</p>
+                </div>
+                <div class="flex flex-wrap -mx-6 items-center">
+                    <div class="w-full md:w-1/2 px-6 mb-8 md:mb-0">
+                        <img src="https://placehold.co/600x400/d1d5db/334155?text=Unser+Team" alt="Team des Elternvereins" class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="w-full md:w-1/2 px-6">
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-800">Unsere Mission</h3>
+                        <p class="text-gray-700 mb-4 leading-relaxed">
+                            Der Elternverein des BRG Hamerling sieht sich als Partner der Schule und als Vertretung der Interessen der Eltern und Erziehungsberechtigten. Wir fördern die Zusammenarbeit und Kommunikation, unterstützen schulische Projekte finanziell und ideell und tragen zu einem positiven Schulklima bei.
+                        </p>
+                        <p class="text-gray-700 leading-relaxed">
+                            Unser Ziel ist es, die bestmöglichen Rahmenbedingungen für die Ausbildung und persönliche Entwicklung unserer Kinder zu schaffen. Wir organisieren Veranstaltungen, bieten Unterstützung bei schulischen Herausforderungen und sind Ansprechpartner für Ihre Anliegen.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Termine Section -->
+        <section id="termine" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Terminkalender</h2>
+                    <p class="text-gray-600 mt-2">Wichtige Daten und Veranstaltungen im Überblick.</p>
+                </div>
+                <div id="calendar-events" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Termine werden hier dynamisch eingefügt -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                 <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Kontaktieren Sie uns</h2>
+                    <p class="text-gray-600 mt-2">Wir freuen uns auf Ihre Nachricht.</p>
+                </div>
+                <div class="max-w-lg mx-auto bg-gray-50 p-8 rounded-lg shadow-sm border border-gray-200">
+                     <p class="text-xl font-semibold text-gray-800 mb-2">
+                        Elternverein des BRG Hamerling
+                    </p>
+                    <p class="text-gray-600 mb-6">
+                        Hamerlingstraße 18, 4020 Linz
+                    </p>
+                    <a href="mailto:elternverein@brghamerling.at" class="inline-block bg-teal-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-teal-700 transition duration-300 shadow-md">
+                        E-Mail Senden
+                    </a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Impressum & Datenschutz Section -->
+        <section id="rechtliches" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6 max-w-4xl">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Impressum & Datenschutz</h2>
+                    <p class="text-gray-600 mt-2">Rechtliche Informationen.</p>
+                </div>
+                <div class="space-y-4">
+                    <!-- Impressum Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Impressum
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-2 border-t pt-4">
+                            <p><strong>Elternverein des Bundesrealgymnasiums Linz, Hamerlingstraße</strong><br>
+                            Hamerlingstraße 18, 4020 Linz</p>
+                            <p><strong>Entstehungsdatum des Vereins:</strong> 29.03.1951</p>
+                            <p><strong>ZVR-Zahl:</strong> 463107582</p>
+                            <p><strong>Gerichtsstand:</strong> Linz</p>
+                            <h4 class="font-semibold pt-2 text-gray-800">Vertretungsberechtigte Personen:</h4>
+                            <p><strong>Obfrau:</strong> Gudrun Ronacher</p>
+                            <p><strong>Obfrau Stv.:</strong> Petra Schwarzenberger</p>
+                            <p><strong>Kassier:</strong> Thomas Wiener</p>
+                            <p><strong>Schriftführerin:</strong> (wird noch bekannt gegeben)</p>
+                            <p><strong>E-Mail:</strong> <a href="mailto:elternverein@brghamerling.at" class="text-teal-600 hover:underline">elternverein@brghamerling.at</a></p>
+                        </div>
+                    </details>
+                    <!-- Datenschutz Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Datenschutzerklärung
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-4 prose max-w-none border-t pt-4">
+                            <p>Wir nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.</p>
+                            <p>Die Nutzung unserer Webseite ist in der Regel ohne Angabe personenbezogener Daten möglich. Soweit auf unseren Seiten personenbezogene Daten (beispielsweise Name, Anschrift oder E-Mail-Adressen) erhoben werden, erfolgt dies, soweit möglich, stets auf freiwilliger Basis.</p>
+                            <h4 class="font-semibold pt-2 text-gray-800">Datenerfassung auf dieser Website</h4>
+                            <p>Der Provider der Seiten erhebt und speichert automatisch Informationen in so genannten Server-Log-Dateien, die Ihr Browser automatisch an uns übermittelt. Dies sind: Browsertyp und Browserversion, verwendetes Betriebssystem, Referrer URL, Hostname des zugreifenden Rechners, Uhrzeit der Serveranfrage und IP-Adresse. Eine Zusammenführung dieser Daten mit anderen Datenquellen wird nicht vorgenommen.</p>
+                            <h4 class="font-semibold pt-2 text-gray-800">Kontakt per E-Mail</h4>
+                            <p>Wenn Sie uns per E-Mail kontaktieren, werden Ihre Angaben aus der E-Mail inklusive der von Ihnen dort angegebenen Kontaktdaten zwecks Bearbeitung der Anfrage und für den Fall von Anschlussfragen bei uns gespeichert. Diese Daten geben wir nicht ohne Ihre Einwilligung weiter.</p>
+                            <h4 class="font-semibold pt-2 text-gray-800">Ihre Rechte</h4>
+                            <p>Sie haben jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung sowie ein Recht auf Berichtigung, Sperrung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema personenbezogene Daten können Sie sich jederzeit unter der im Impressum angegebenen Adresse an uns wenden.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-teal-800 text-white py-10">
+        <div class="container mx-auto px-6 text-center">
+             <div class="mb-4">
+                <a href="#rechtliches" class="text-gray-200 hover:text-white transition duration-300">Impressum & Datenschutz</a>
+            </div>
+            <p>&copy; <span id="current-year"></span> Elternverein BRG Hamerling. Alle Rechte vorbehalten.</p>
+            <p class="text-sm text-gray-300 mt-2">Ein ehrenamtlicher Verein zur Förderung der Schulgemeinschaft.</p>
+            <p class="text-sm text-gray-300 mt-1">ZVR Österreich: 463107582</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        document.querySelectorAll('header a[href^="#"], #mobile-menu a, footer a[href^="#"]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                // For smooth scroll, we don't need to prevent default if html scroll-behavior is set
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // --- Statischer Terminkalender ---
+        const events = [
+            { date: '2025-10-15', title: 'Erste Sitzung des Elternvereins', description: 'Planung des Schuljahres. Alle Eltern sind herzlich eingeladen.' },
+            { date: '2025-11-22', title: 'Schulfest Organisationstreffen', description: 'Wir benötigen Helfer für das jährliche Schulfest.' },
+            { date: '2025-12-10', title: 'Weihnachtsbasar', description: 'Verkauf von selbstgemachten Keksen und Basteleien zugunsten der Schule.' },
+            { date: '2026-01-20', title: 'Vortrag: Sicher im Netz', description: 'Ein Experte gibt Tipps zur sicheren Internetnutzung für Schüler.' },
+            { date: '2026-03-05', title: 'Generalversammlung', description: 'Wahl des neuen Vorstands und Rückblick auf das vergangene Jahr.' }
+        ];
+
+        const calendarContainer = document.getElementById('calendar-events');
+
+        function formatDate(dateString) {
+            const date = new Date(dateString + 'T00:00:00');
+            const day = date.toLocaleDateString('de-DE', { day: '2-digit' });
+            const month = date.toLocaleDateString('de-DE', { month: 'short' });
+            const year = date.toLocaleDateString('de-DE', { year: 'numeric' });
+            return { day, month, year };
+        }
+        
+        function renderCalendar() {
+            if (!events || events.length === 0) {
+                 calendarContainer.innerHTML = '<p class="text-center text-gray-500 col-span-full">Derzeit sind keine Termine geplant.</p>';
+                 return;
+            }
+
+            let html = '';
+            events.forEach(event => {
+                const formattedDate = formatDate(event.date);
+                html += `
+                    <div class="bg-white rounded-lg shadow-md p-6 flex space-x-4 border-l-4 border-teal-600">
+                        <div class="flex-shrink-0 text-center">
+                            <p class="text-3xl font-bold text-teal-600">${formattedDate.day}</p>
+                            <p class="text-md font-semibold text-gray-600">${formattedDate.month}</p>
+                        </div>
+                        <div class="flex-grow">
+                            <h4 class="text-lg font-bold text-gray-800">${event.title}</h4>
+                            <p class="text-gray-600 mt-1 text-sm">${event.description}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            calendarContainer.innerHTML = html;
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
