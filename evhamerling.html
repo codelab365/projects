@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -15,11 +14,6 @@
         }
         html {
             scroll-behavior: smooth;
-        }
-        .hero-section {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://placehold.co/1920x1080/2dd4bf/ffffff');
-            background-size: cover;
-            background-position: center;
         }
         details > summary {
             cursor: pointer;
@@ -38,25 +32,27 @@
     <!-- Header & Navigation -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-xl md:text-2xl font-bold text-teal-600">
+            <div class="text-xl md:text-2xl font-bold text-blue-800">
                 Elternverein BRG Hamerling
             </div>
             <div class="hidden md:flex space-x-6">
-                <a href="#home" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Start</a>
-                <a href="#about" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Über Uns</a>
-                <a href="#team" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Team</a>
-                <a href="#termine" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Termine</a>
-                <a href="#contact" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Kontakt</a>
-                <a href="#rechtliches" class="text-gray-700 hover:text-teal-600 font-medium transition duration-300">Impressum</a>
+                <a href="#home" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Start</a>
+                <a href="#about" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Über Uns</a>
+                <a href="#infos" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Infos</a>
+                <a href="#team" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Team</a>
+                <a href="#termine" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Termine</a>
+                <a href="#contact" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Kontakt</a>
+                <a href="#rechtliches" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Impressum</a>
             </div>
             <button id="mobile-menu-button" class="md:hidden flex items-center">
-                 <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                 <svg class="w-6 h-6 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
             </button>
         </nav>
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
             <a href="#home" class="block py-3 px-6 text-sm hover:bg-gray-50">Start</a>
             <a href="#about" class="block py-3 px-6 text-sm hover:bg-gray-50">Über Uns</a>
+            <a href="#infos" class="block py-3 px-6 text-sm hover:bg-gray-50">Infos</a>
             <a href="#team" class="block py-3 px-6 text-sm hover:bg-gray-50">Team</a>
             <a href="#termine" class="block py-3 px-6 text-sm hover:bg-gray-50">Termine</a>
             <a href="#contact" class="block py-3 px-6 text-sm hover:bg-gray-50">Kontakt</a>
@@ -66,9 +62,9 @@
 
     <main>
         <!-- Welcome Text Section -->
-        <section id="home" class="py-16 bg-teal-50 text-center">
+        <section id="home" class="py-16 bg-blue-50 text-center">
             <div class="container mx-auto px-6">
-                <h1 class="text-3xl md:text-4xl font-bold text-teal-700 mb-4">Herzlich Willkommen beim Elternverein des BRG Hamerling!</h1>
+                <h1 class="text-3xl md:text-4xl font-bold text-blue-800 mb-4">Herzlich Willkommen beim Elternverein des BRG Hamerling!</h1>
                 <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto">"Gemeinsam für unsere Kinder - der Elternverein als starke Brücke!"</p>
             </div>
         </section>
@@ -77,7 +73,7 @@
         <section id="about" class="py-20 bg-white">
             <div class="container mx-auto px-6">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Über den Elternverein</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-800">Über den Elternverein</h2>
                     <p class="text-gray-600 mt-2">Wer wir sind und was wir tun.</p>
                 </div>
                 <div class="flex flex-wrap -mx-6 items-center">
@@ -97,31 +93,138 @@
             </div>
         </section>
 
+        <!-- Important Infos Section -->
+        <section id="infos" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6 max-w-4xl">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-800">Wichtige Informationen</h2>
+                    <p class="text-gray-600 mt-2">Alles rund um Mitgliedsbeitrag, Spind und Unterstützung.</p>
+                </div>
+                <div class="space-y-4">
+                    <!-- Mitgliedsbeitrag Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Mitgliedsbeitrag
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-3 border-t pt-4">
+                            <p>Der jährliche Mitgliedsbeitrag beträgt <strong>€ 17,-</strong> für 1 Kind; für jedes weitere Kind zusätzlich + <strong>€ 5,-</strong> (Versicherungsbeitrag). Bitte bis zum <strong>15. Oktober</strong> des jeweiligen Schuljahres einzahlen.</p>
+                            <div>
+                                <p class="font-semibold text-gray-800">Bankverbindung:</p>
+                                <p>Elternverein des BRG Hamerlingstraße</p>
+                                <p><strong>IBAN:</strong> AT63 3400 0000 0136 8968</p>
+                            </div>
+                            <p>Zusätzliche Spenden sind jederzeit willkommen und helfen uns bei der Erfüllung unserer vielfältigen Aufgaben.</p>
+                        </div>
+                    </details>
+                    <!-- Spind Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Garderobenschrank (Spind)
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-3 border-t pt-4">
+                            <p>Es besteht für die Schüler*innen die Verpflichtung, einen verschließbaren Garderobenschrank zum Preis von <strong>€ 10,- pro Schuljahr</strong> zu mieten.</p>
+                            <div>
+                                <p class="font-semibold text-gray-800">Bankverbindung:</p>
+                                <p>Elternverein des BRG Hamerlingstraße</p>
+                                <p><strong>IBAN:</strong> AT63 3400 0000 0136 8968</p>
+                            </div>
+                            <p class="font-semibold text-red-600">Bitte den <strong>Namen und die Klasse des Kindes</strong> in der Zahlungsreferenz angeben!</p>
+                            <p>Bei <strong>Verlust des Spindschlüssels</strong> sind € 20,- für den Tausch des Schlosses zu bezahlen. Dieser Betrag wird nicht mehr refundiert, wenn das Schloss bereits getauscht wurde.</p>
+                        </div>
+                    </details>
+                    <!-- Unterstützung Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Finanzielle Unterstützung
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-3 border-t pt-4">
+                            <p>Der Elternverein kann grundsätzlich nur Mitglieder finanziell unterstützen. Um Mitglied zu werden, zahlen Sie bitte den Mitgliedsbeitrag bis zum <strong>15. Oktober</strong> des jeweiligen Schuljahres ein.</p>
+                            <p>Der EV gewährt einen Zuschuss zu Schulveranstaltungen von <strong>max. 50%</strong>, um die Teilnahme bedürftiger Schüler*innen zu ermöglichen. Um diesen in Anspruch zu nehmen, suchen Sie bitte das Gespräch mit dem*der Klassenlehrer*in oder dem*der Lehrer*in, welche*r die Veranstaltung leitet oder wenden Sie sich mittels Formular direkt an den Elternverein.</p>
+                            <p>Der Elternverein bevorzugt, den zu fördernden Betrag direkt an den*die Veranstalter*in zu bezahlen. Aus diesem Grund ersuchen wir Sie, den Förderantrag so bald wie möglich (<strong>vor der Veranstaltung!</strong>) zu stellen und den Zugangscode von edu.PAY anzugeben.</p>
+                        </div>
+                    </details>
+                     <!-- Schüler Unfallversicherung Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Schüler Unfallversicherung
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-3 border-t pt-4">
+                            <p>Leistungen aus der Kollektiv Unfallversicherung werden nur ausgezahlt, wenn Sie den Versicherungsbeitrag (der mit dem Elternvereinsbeitrag eingezahlt wird) bis zum <strong>1. Oktober</strong> des laufenden Schuljahres eingezahlt haben.</p>
+                            <p>Detailinformationen entnehmen sie bitte der <a href="#" class="text-blue-700 hover:underline">Polizze</a>.</p>
+                        </div>
+                    </details>
+                    <!-- Rechte und Pflichten Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Rechte und Pflichten des Elternvereins
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-3 border-t pt-4 prose max-w-none">
+                           <ul class="list-disc pl-5 space-y-2">
+                                <li><strong>Recht auf Information:</strong> Mitglieder des Elternvereins können Einblick in Erlässe nehmen und haben das Recht auf Information über das Schulgeschehen.</li>
+                                <li><strong>Recht auf Anhörung:</strong> Der EV kann der Schulleitung und dem Klassenvorstand Vorschläge, Wünsche und Beschwerden mitteilen.</li>
+                                <li><strong>Recht auf Mitbestimmung und Mitsprache:</strong> Bei päd. Konferenzen dürfen die gewählten Klassenelternvertreter teilnehmen. Mitglieder des Elternvereines, auch nicht der/die Vorsitzende haben nicht automatisch das Recht daran teilnehmen zu können, außer sie sind Klassenelternvertreter (Siehe auch SchUG § 57 Abs. 5 und SchUG § 61 Abs. 2.)</li>
+                                <li><strong>Entsendungs- u. Vorschlagsrecht:</strong> Der Elternverein hat das Recht auf Entsendung von Vertretern der Erziehungsberechtigten in den Schulgemeinschaftsausschuss.</li>
+                                <li><strong>Wahrnehmung</strong> der Aufgaben des Elternvereines gemäß § 63 SchUG (u. a. Abgabe von Vorschlägen, Wünschen, Beschwerden und Stellungnahmen an der Schule).</li>
+                                <li><strong>Entsendung der Vertreter</strong> der Erziehungsberechtigten in den SGA.</li>
+                                <li><strong>Aktive Mitwirkung</strong> an der Partnerschaft zwischen Eltern, Schülern und Schule.</li>
+                                <li><strong>Unterstützung</strong> der Eltern bei der Geltendmachung der ihnen nach dem SchUG zustehenden Rechte.</li>
+                                <li><strong>Unterstützung</strong> der Klassenelternvertreter und Elternvertreter im Schulgemeinschaftsausschuss</li>
+                                <li><strong>Förderung</strong> des Unterrichts durch enge Zusammenarbeit mit den Lehrern</li>
+                                <li><strong>Wahrnehmung</strong> der Elterninteressen in Bezug auf Schulwegsicherung sowie die Förderung zur Errichtung und Einrichtung von Sport- und Spielplätzen sowie Turnhallen usw.</li>
+                                <li><strong>Wahrnehmung</strong> der Elterninteressen hinsichtlich der Schulbahn- und Berufsberatung.</li>
+                                <li><strong>Hilfe und Unterstützung</strong> für bedürftige Schüler (unter Ausschluss jeder regelmäßigen Fürsorgetätigkeit).</li>
+                                <li><strong>Wahrung des Erziehungsrechtes</strong> der Eltern</li>
+                                <li><strong>Unterstützung</strong> der im § 2 SchOG normierten Miterziehungsaufgaben der Schule unter Wahrung des primären Erziehungsrechtes der Eltern.</li>
+                                <li><strong>Förderung</strong> positiver Erziehungseinflüsse (z.B. Errichtung von Schulbibliotheken, Unterstützung von Maßnahmen auf dem Gebiet des Jugendschutzes) und</li>
+                                <li><strong>Abwehr</strong> negativer Einflüsse (Brutalität, Rauschgift, Alkoholmißbrauch, Pornographie, aber auch antidemokratischer Tendenzen usw.).</li>
+                                <li><strong>Wahrnehmung</strong> von Möglichkeiten zur Beratung und Weiterbildung der Eltern auf dem Gebiet der Bildung und Erziehung.</li>
+                           </ul>
+                        </div>
+                    </details>
+                    <!-- Vereinsstatuten Accordion -->
+                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
+                            Vereinsstatuten
+                            <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <div class="mt-4 text-gray-700 space-y-4 border-t pt-4 prose max-w-none">
+                           <p>Die Vereinsstatuten werden in Kürze an dieser Stelle veröffentlicht.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
         <!-- Team Section -->
-        <section id="team" class="py-20 bg-gray-50">
+        <section id="team" class="py-20 bg-white">
             <div class="container mx-auto px-6">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Unser Team</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-800">Unser Team</h2>
                     <p class="text-gray-600 mt-2">Die Gesichter hinter dem Elternverein.</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl mx-auto">
                     <!-- Team Member Card 1 -->
-                    <div class="bg-white text-center p-6 rounded-lg shadow-md border-t-4 border-teal-600 transform hover:scale-105 transition-transform duration-300">
+                    <div class="bg-gray-50 text-center p-6 rounded-lg shadow-md border-t-4 border-blue-700 transform hover:scale-105 transition-transform duration-300">
                         <h4 class="text-xl font-bold text-gray-800">Gudrun Ronacher</h4>
                         <p class="text-gray-600 mt-1 font-semibold">Obfrau</p>
                     </div>
                     <!-- Team Member Card 2 -->
-                    <div class="bg-white text-center p-6 rounded-lg shadow-md border-t-4 border-teal-600 transform hover:scale-105 transition-transform duration-300">
+                    <div class="bg-gray-50 text-center p-6 rounded-lg shadow-md border-t-4 border-blue-700 transform hover:scale-105 transition-transform duration-300">
                         <h4 class="text-xl font-bold text-gray-800">Petra Schwarzenberger</h4>
                         <p class="text-gray-600 mt-1 font-semibold">Obfrau Stv.</p>
                     </div>
                     <!-- Team Member Card 3 -->
-                    <div class="bg-white text-center p-6 rounded-lg shadow-md border-t-4 border-teal-600 transform hover:scale-105 transition-transform duration-300">
+                    <div class="bg-gray-50 text-center p-6 rounded-lg shadow-md border-t-4 border-blue-700 transform hover:scale-105 transition-transform duration-300">
                         <h4 class="text-xl font-bold text-gray-800">Thomas Wiener</h4>
                         <p class="text-gray-600 mt-1 font-semibold">Kassier</p>
                     </div>
                     <!-- Team Member Card 4 -->
-                    <div class="bg-white text-center p-6 rounded-lg shadow-md border-t-4 border-teal-600 transform hover:scale-105 transition-transform duration-300">
+                    <div class="bg-gray-50 text-center p-6 rounded-lg shadow-md border-t-4 border-blue-700 transform hover:scale-105 transition-transform duration-300">
                         <h4 class="text-xl font-bold text-gray-800">(wird noch bekannt gegeben)</h4>
                         <p class="text-gray-600 mt-1 font-semibold">Schriftführerin</p>
                     </div>
@@ -130,10 +233,10 @@
         </section>
 
         <!-- Termine Section -->
-        <section id="termine" class="py-20 bg-white">
+        <section id="termine" class="py-20 bg-gray-50">
             <div class="container mx-auto px-6">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Terminkalender</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-800">Terminkalender</h2>
                     <p class="text-gray-600 mt-2">Wichtige Daten und Veranstaltungen im Überblick.</p>
                 </div>
                 <div id="calendar-events" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -143,20 +246,20 @@
         </section>
 
         <!-- Contact Section -->
-        <section id="contact" class="py-20 bg-gray-50">
+        <section id="contact" class="py-20 bg-white">
             <div class="container mx-auto px-6 text-center">
                  <div class="text-center mb-12">
-                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Kontaktieren Sie uns</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-800">Kontaktieren Sie uns</h2>
                     <p class="text-gray-600 mt-2">Wir freuen uns auf Ihre Nachricht.</p>
                 </div>
-                <div class="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                <div class="max-w-lg mx-auto bg-gray-50 p-8 rounded-lg shadow-sm border border-gray-200">
                      <p class="text-xl font-semibold text-gray-800 mb-2">
                         Elternverein des BRG Hamerling
                     </p>
                     <p class="text-gray-600 mb-6">
                         Hamerlingstraße 18, 4020 Linz
                     </p>
-                    <a href="mailto:elternverein@brghamerling.at" class="inline-block bg-teal-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-teal-700 transition duration-300 shadow-md">
+                    <a href="mailto:elternverein@brghamerling.at" class="inline-block bg-blue-700 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-800 transition duration-300 shadow-md">
                         E-Mail Senden
                     </a>
                 </div>
@@ -164,10 +267,10 @@
         </section>
         
         <!-- Impressum & Datenschutz Section -->
-        <section id="rechtliches" class="py-20 bg-white">
+        <section id="rechtliches" class="py-20 bg-gray-50">
             <div class="container mx-auto px-6 max-w-4xl">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl md:text-4xl font-bold text-teal-600">Impressum & Datenschutz</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-800">Impressum & Datenschutz</h2>
                     <p class="text-gray-600 mt-2">Rechtliche Informationen.</p>
                 </div>
                 <div class="space-y-4">
@@ -188,7 +291,7 @@
                             <p><strong>Obfrau Stv.:</strong> Petra Schwarzenberger</p>
                             <p><strong>Kassier:</strong> Thomas Wiener</p>
                             <p><strong>Schriftführerin:</strong> (wird noch bekannt gegeben)</p>
-                            <p><strong>E-Mail:</strong> <a href="mailto:elternverein@brghamerling.at" class="text-teal-600 hover:underline">elternverein@brghamerling.at</a></p>
+                            <p><strong>E-Mail:</strong> <a href="mailto:elternverein@brghamerling.at" class="text-blue-700 hover:underline">elternverein@brghamerling.at</a></p>
                         </div>
                     </details>
                     <!-- Datenschutz Accordion -->
@@ -215,7 +318,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-teal-800 text-white py-10">
+    <footer class="bg-blue-900 text-white py-10">
         <div class="container mx-auto px-6 text-center">
              <div class="mb-4">
                 <a href="#rechtliches" class="text-gray-200 hover:text-white transition duration-300">Impressum & Datenschutz</a>
@@ -248,11 +351,11 @@
         
         // --- Statischer Terminkalender ---
         const events = [
-            { date: '2025-09-22', time: '18:30 Uhr', title: 'Sitzung des Elternvereins', description: 'Planung des Schuljahres. Alle Eltern sind herzlich eingeladen.' },
-            { date: '2025-10-20', time: '18:30 Uhr', title: 'Jahreshauptversammlung & Vortrag Snusen und Vapen Ort: Festsaal', description: 'Wir treffen wichtige Entscheidungen für das Schuljahr 2025. Vortragsinhalt: Hr. Dieter Geigle spricht über das Thema "Kinder und Jugendliche gut begleiten im Umgang mit neuen Nikotinprodukten' },
-            { date: '2025-11-03', time: '18:30 Uhr', title: 'Der KI-Tutor im Kinderzimmer – Wie KI die Nachhilfe revolutioniert online via Zoom', description: 'Teure Nachhilfestunden könnten bald der Vergangenheit angehören. In diesem Vortrag entdecken wir, wie moderne KI-Anwendungen die Rolle eines persönlichen Tutors einnehmen können. Wir zeigen Ihnen Programme, die nicht nur die richtige Lösung verraten, sondern den Weg dorthin Schritt für Schritt erklären, bei Denkblockaden helfen und sogar Fremdsprachen interaktiv trainieren. Ein Muss für alle, die Lernprozesse individuell und kosteneffizient unterstützen wollen.' },
-            { date: '2025-11-10', time: '18:30 Uhr', title: 'Die KI-Werkzeugkiste für die Schule – Kreativität und Effizienz entfesseln online via Zoom', description: 'Vom leeren Dokument zur fertigen Präsentation in wenigen Minuten? In dieser Live-Demonstration stellen wir Ihnen eine Palette an faszinierenden und meist kostenlosen KI-Tools vor (u.a. Gama, Canva, Suno). Erleben Sie, wie Ihr Kind mit wenigen Klicks beeindruckende Ergebnisse für Referate und Projekte erzielen und dabei wichtige digitale Kompetenzen aufbauen kann.' },
-            { date: '2025-11-17', time: '18:30 Uhr', title: 'KI-Kompetenz – Sicher und fair in der digitalen Welt online via Zoom', description: 'Mit den großen Chancen der KI gehen auch neue Herausforderungen einher. Dieser wichtige Abend widmet sich der "dunklen Seite": Wie erkennen wir Deepfakes? Wo ist die Grenze zwischen Recherche und Plagiat bei Hausübungen? Und wie schützen wir unsere Kinder vor neuen Formen des Cybermobbings? Wir geben Ihnen klare Informationen und praxistaugliche Strategien an die Hand, um als Familie kompetent und sicher in der digitalen Welt zu agieren.' }
+            { date: '2025-09-22', time: '19:00 Uhr', title: 'Sitzung des Elternvereins', description: 'Planung des Schuljahres. Alle Eltern sind herzlich eingeladen.' },
+            { date: '2025-10-20', time: '19:00 Uhr', title: 'Jahreshauptversammlung & Vortrag Snusen und Vapen Ort: Festsaal', description: 'Wir treffen wichtige Entscheidungen für das Schuljahr 2025. Vortragsinhalt: Hr. Dieter Geigle spricht über das Thema "Kinder und Jugendliche gut begleiten im Umgang mit neuen Nikotinprodukten' },
+            { date: '2025-11-03', time: '19:30 Uhr', title: 'Der KI-Tutor im Kinderzimmer – Wie KI die Nachhilfe revolutioniert online via Zoom', description: 'Teure Nachhilfestunden könnten bald der Vergangenheit angehören. In diesem Vortrag entdecken wir, wie moderne KI-Anwendungen die Rolle eines persönlichen Tutors einnehmen können. Wir zeigen Ihnen Programme, die nicht nur die richtige Lösung verraten, sondern den Weg dorthin Schritt für Schritt erklären, bei Denkblockaden helfen und sogar Fremdsprachen interaktiv trainieren. Ein Muss für alle, die Lernprozesse individuell und kosteneffizient unterstützen wollen.' },
+            { date: '2025-11-10', time: '19:30 Uhr', title: 'Die KI-Werkzeugkiste für die Schule – Kreativität und Effizienz entfesseln', description: 'Vom leeren Dokument zur fertigen Präsentation in wenigen Minuten? In dieser Live-Demonstration stellen wir Ihnen eine Palette an faszinierenden und meist kostenlosen KI-Tools vor (u.a. Gama, Canva, Suno). Erleben Sie, wie Ihr Kind mit wenigen Klicks beeindruckende Ergebnisse für Referate und Projekte erzielen und dabei wichtige digitale Kompetenzen aufbauen kann.' },
+            { date: '2025-11-17', time: '19:30 Uhr', title: 'KI-Kompetenz – Sicher und fair in der digitalen Welt', description: 'Mit den großen Chancen der KI gehen auch neue Herausforderungen einher. Dieser wichtige Abend widmet sich der "dunklen Seite": Wie erkennen wir Deepfakes? Wo ist die Grenze zwischen Recherche und Plagiat bei Hausübungen? Und wie schützen wir unsere Kinder vor neuen Formen des Cybermobbings? Wir geben Ihnen klare Informationen und praxistaugliche Strategien an die Hand, um als Familie kompetent und sicher in der digitalen Welt zu agieren.' }
         ];
 
         const calendarContainer = document.getElementById('calendar-events');
@@ -275,16 +378,16 @@
             events.forEach(event => {
                 const formattedDate = formatDate(event.date);
                 html += `
-                    <div class="bg-white rounded-lg shadow-md p-6 flex items-start space-x-4 border-l-4 border-teal-600 h-full">
+                    <div class="bg-white rounded-lg shadow-md p-6 flex items-start space-x-4 border-l-4 border-blue-700 h-full">
                         <div class="flex-shrink-0 text-center w-16">
-                            <p class="text-3xl font-bold text-teal-600">${formattedDate.day}</p>
+                            <p class="text-3xl font-bold text-blue-700">${formattedDate.day}</p>
                             <p class="text-md font-semibold text-gray-600">${formattedDate.month}</p>
                             <p class="text-sm text-gray-500">${formattedDate.year}</p>
                         </div>
                         <div class="flex-grow">
                             <h4 class="text-lg font-bold text-gray-800">${event.title}</h4>
                             <div class="flex items-center text-sm text-gray-600 mt-2">
-                                <svg class="w-4 h-4 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <svg class="w-4 h-4 mr-2 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span>${event.time}</span>
                             </div>
                             <p class="text-gray-600 mt-2 text-sm">${event.description}</p>
@@ -299,4 +402,5 @@
     </script>
 </body>
 </html>
+
 
