@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klassenelternvertreter - Elternverein BRG Hamerling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-xl md:text-2xl font-bold text-blue-800">
+                Elternverein BRG Hamerling
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="https://gegensystem.github.io/projects/evhamerling.html" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Startseite</a>
+                <a href="https://gegensystem.github.io/projects/evhamerling.html#contact" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Kontakt</a>
+                <a href="https://gegensystem.github.io/projects/evhamerling.html#rechtliches" class="text-gray-700 hover:text-blue-700 font-medium transition duration-300">Impressum</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden flex items-center">
+                 <svg class="w-6 h-6 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <a href="https://gegensystem.github.io/projects/evhamerling.html" class="block py-3 px-6 text-sm hover:bg-gray-50">Startseite</a>
+            <a href="https://gegensystem.github.io/projects/evhamerling.html#contact" class="block py-3 px-6 text-sm hover:bg-gray-50">Kontakt</a>
+            <a href="https://gegensystem.github.io/projects/evhamerling.html#rechtliches" class="block py-3 px-6 text-sm hover:bg-gray-50">Impressum</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Class Representatives Section -->
+        <section id="klassenvertreter" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h1 class="text-3xl md:text-4xl font-bold text-blue-800">Klassenelternvertreter*in / Stellvertreter*in</h1>
+                    <p class="text-gray-600 mt-2">Schuljahr 2024/2025</p>
+                </div>
+
+                <div class="max-w-4xl mx-auto bg-white p-4 sm:p-8 rounded-lg shadow-md border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Klasse</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Elternvertreter*in / Stellvertreter*in</th>
+                                </tr>
+                            </thead>
+                            <tbody id="representatives-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-blue-900 text-white py-10">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; <span id="current-year"></span> Elternverein BRG Hamerling. Alle Rechte vorbehalten.</p>
+            <p class="text-sm text-gray-300 mt-2">Ein ehrenamtlicher Verein zur Förderung der Schulgemeinschaft.</p>
+            <p class="text-sm text-gray-300 mt-1">ZVR Österreich: 463107582</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Representatives Data
+        const representatives = [
+            { class: '1A', names: 'JEDINGER Elisabeth / OBERNDORFER Margit' },
+            { class: '1B', names: 'WEINMAYER-RICHTER Eva / HESCH Anton' },
+            { class: '1C', names: 'KAUFMANN Philipp / STRUKAR Selmir' },
+            { class: '1D', names: 'METZ Christine / LEITNER Sybille' },
+            { class: '1E', names: 'MASCHER Erwin / ZACHBAUER Lydia' },
+            { class: '1M', names: 'HARRER-NEMECEK Marion-Julia / SCHWEIGER Elke' },
+            { class: '2A', names: 'KRÖS Andreas / NUTZ Monika' },
+            { class: '2B', names: 'Ing. ZEHETHOFER Jürgen / FREUDENTHALER Sabrina' },
+            { class: '2D', names: 'SCHWARZENBERGER Petra / KARGL Michaela' },
+            { class: '2M', names: 'JAKOB Gerhard / GEINITZ Anja' },
+            { class: '3A', names: 'VUCIC Andelka / GLASER Maria' },
+            { class: '3B', names: 'GRALL David / RABER Julia' },
+            { class: '3C', names: 'ABLINGER Martina / LANG Andrea' },
+            { class: '3D', names: 'LIPP Manuel / GIERLINGER-ZÖCHMANN Teresa' },
+            { class: '3E', names: 'ALIRIFA Donika / Mag.a FALKNER-GARTENAUER Jane' },
+            { class: '3M', names: 'WIENER Thomas / PAULOWITSCH-LASKOWSKI Lisa' },
+            { class: '4A', names: 'ZEHETHOFER Jürgen / BINDER Markus' },
+            { class: '4B', names: 'Ing. GÖHRING Christian / SEEBACHER Daniela' },
+            { class: '4C', names: '- / -' },
+            { class: '4D', names: 'DURGUTI Sabahate / RUMPLMAIER Sabine' },
+            { class: '4E', names: 'NEUNLINGER Daniel / LASA Claudia' },
+            { class: '4M', names: 'SCHWARZENBERGER Petra / STUHLBERGER-PFEIFER Doris' },
+            { class: '5LIA', names: 'SATOROVIC Elmana / GRALL Daniel' },
+            { class: '5LIB', names: 'JAHIC Elvedin / KLIMMER Marion' },
+            { class: '5MED', names: 'FRIEDL Werner / SCHNEIDER Stefanie' },
+            { class: '5MKK', names: 'Mag.SAHAT Seki / WALLINGER Cornelia' },
+            { class: '6LIA', names: '- / -' },
+            { class: '6LIB', names: '- / -' },
+            { class: '6LIC', names: 'KIRSCHNER Günter / KAPELLER Andreas' },
+            { class: '6MED', names: 'KRAßNIG BERND / GRUBICH Petra' },
+            { class: '6MKK', names: 'HUBER Michaela / HAUNSCHMIDT Tanja' },
+            { class: '7LIA', names: 'MAURER Christian / JURDA Brigitte' },
+            { class: '7LIB', names: 'KLIMMER Ronald / REINDL Astrid' },
+            { class: '7MED', names: 'FRIEDL WERNER / RACHBAUER Vera' },
+            { class: '7MKK', names: 'DALKILIC Dagmar / RONACHER Gudrun' },
+            { class: '8A', names: '- / -' },
+            { class: '8B', names: '- / -' },
+            { class: '8C', names: 'WIESAUER Cornmelia / RACHBAUER Vera' },
+            { class: '8M', names: 'BADER-HALBWIRTH Jasmin / BERER Daniela' }
+        ];
+
+        const tableBody = document.getElementById('representatives-table-body');
+        representatives.forEach(rep => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rep.class}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${rep.names}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
