@@ -187,15 +187,16 @@
                         </div>
                     </details>
                     <!-- Vereinsstatuten Accordion -->
-                    <details class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <details id="statuten-accordion" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                         <summary class="font-semibold text-xl flex justify-between items-center text-gray-800">
                             Vereinsstatuten
                             <svg class="w-5 h-5 arrow-down transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </summary>
-                        <div class="mt-4 text-gray-700 space-y-4 border-t pt-4 prose max-w-none">
-                           <p>Die Vereinsstatuten werden in Kürze an dieser Stelle veröffentlicht.</p>
+                        <div id="statuten-content" class="mt-4 text-gray-700 space-y-4 border-t pt-4 prose max-w-none">
+                           <p>Lade Statuten...</p>
                         </div>
                     </details>
+
                 </div>
             </div>
         </section>
@@ -338,69 +339,99 @@
             mobileMenu.classList.toggle('hidden');
         });
         
-        document.querySelectorAll('a[href^="#"]').forEach(link => {
-            link.addEventListener('click', (e) => {
-                if(link.closest('#mobile-menu')) {
-                    mobileMenu.classList.add('hidden');
+        // Close mobile menu when a link inside it is clicked
+        document.querySelectorAll('#mobile-menu a[href^="#"]').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Accordion arrow animation
+        const detailsElements = document.querySelectorAll('details');
+        detailsElements.forEach(details => {
+            details.addEventListener('toggle', event => {
+                const arrow = details.querySelector('.arrow-down');
+                if (details.open) {
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    arrow.style.transform = 'rotate(0deg)';
                 }
             });
         });
 
-        // Set current year in footer
-        document.getElementById('current-year').textContent = new Date().getFullYear();
+        // Dynamic content loading for statutes
+        const statutenAccordion = document.getElementById('statuten-accordion');
+        let statutenLoaded = false;
+
+        statutenAccordion.addEventListener('toggle', event => {
+            if (statutenAccordion.open && !statutenLoaded) {
+                const contentTarget = document.getElementById('statuten-content');
+                fetch('https://gegensystem.github.io/projects/evhamerling/statuten-inhalt.html')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Netzwerk-Antwort war nicht ok.');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        contentTarget.innerHTML = html;
+                        statutenLoaded = true;
+                    })
+                    .catch(error => {
+                        contentTarget.innerHTML = '<p class="text-red-500">Fehler beim Laden der Statuten. Bitte versuchen Sie es später erneut.</p>';
+                        console.error('Fehler beim Abrufen der Statuten:', error);
+                    });
+            }
+        });
         
-        // --- Statischer Terminkalender ---
-        const events = [
-            { date: '2025-09-22', time: '19:00 Uhr', title: 'Sitzung des Elternvereins', description: 'Planung des Schuljahres. Alle Eltern sind herzlich eingeladen.' },
-            { date: '2025-10-20', time: '19:00 Uhr', title: 'Jahreshauptversammlung & Vortrag Snusen und Vapen Ort: Festsaal', description: 'Wir treffen wichtige Entscheidungen für das Schuljahr 2025. Vortragsinhalt: Hr. Dieter Geigle spricht über das Thema "Kinder und Jugendliche gut begleiten im Umgang mit neuen Nikotinprodukten' },
-            { date: '2025-11-03', time: '19:30 Uhr', title: 'Der KI-Tutor im Kinderzimmer – Wie KI die Nachhilfe revolutioniert online via Zoom', description: 'Teure Nachhilfestunden könnten bald der Vergangenheit angehören. In diesem Vortrag entdecken wir, wie moderne KI-Anwendungen die Rolle eines persönlichen Tutors einnehmen können. Wir zeigen Ihnen Programme, die nicht nur die richtige Lösung verraten, sondern den Weg dorthin Schritt für Schritt erklären, bei Denkblockaden helfen und sogar Fremdsprachen interaktiv trainieren. Ein Muss für alle, die Lernprozesse individuell und kosteneffizient unterstützen wollen.' },
-            { date: '2025-11-10', time: '19:30 Uhr', title: 'Die KI-Werkzeugkiste für die Schule – Kreativität und Effizienz entfesseln', description: 'Vom leeren Dokument zur fertigen Präsentation in wenigen Minuten? In dieser Live-Demonstration stellen wir Ihnen eine Palette an faszinierenden und meist kostenlosen KI-Tools vor (u.a. Gama, Canva, Suno). Erleben Sie, wie Ihr Kind mit wenigen Klicks beeindruckende Ergebnisse für Referate und Projekte erzielen und dabei wichtige digitale Kompetenzen aufbauen kann.' },
-            { date: '2025-11-17', time: '19:30 Uhr', title: 'KI-Kompetenz – Sicher und fair in der digitalen Welt', description: 'Mit den großen Chancen der KI gehen auch neue Herausforderungen einher. Dieser wichtige Abend widmet sich der "dunklen Seite": Wie erkennen wir Deepfakes? Wo ist die Grenze zwischen Recherche und Plagiat bei Hausübungen? Und wie schützen wir unsere Kinder vor neuen Formen des Cybermobbings? Wir geben Ihnen klare Informationen und praxistaugliche Strategien an die Hand, um als Familie kompetent und sicher in der digitalen Welt zu agieren.' }
+        // Termine Section Data
+        const termine = [
+            {
+                date: { day: '15', month: 'OKT' },
+                title: 'Einzahlung Mitgliedsbeitrag',
+                description: 'Frist für die Einzahlung des Mitgliedsbeitrags für das aktuelle Schuljahr.',
+                time: 'ganztägig'
+            },
+            {
+                date: { day: '24', month: 'NOV' },
+                title: 'Elternsprechtag',
+                description: 'Gelegenheit zum Austausch mit den Lehrkräften über den Leistungsstand Ihres Kindes.',
+                time: '15:00 - 19:00 Uhr'
+            },
+            {
+                date: { day: '15', month: 'DEZ' },
+                title: 'Weihnachtsfeier',
+                description: 'Gemütliches Beisammensein bei Punsch und Keksen in der Aula der Schule.',
+                time: '17:00 Uhr'
+            }
         ];
 
         const calendarContainer = document.getElementById('calendar-events');
 
-        function formatDate(dateString) {
-            const date = new Date(dateString + 'T00:00:00');
-            const day = date.toLocaleDateString('de-DE', { day: '2-digit' });
-            const month = date.toLocaleDateString('de-DE', { month: 'short' });
-            const year = date.toLocaleDateString('de-DE', { year: 'numeric' });
-            return { day, month, year };
-        }
-        
-        function renderCalendar() {
-            if (!events || events.length === 0) {
-                 calendarContainer.innerHTML = '<p class="text-center text-gray-500 col-span-full">Derzeit sind keine Termine geplant.</p>';
-                 return;
-            }
-
-            let html = '';
-            events.forEach(event => {
-                const formattedDate = formatDate(event.date);
-                html += `
-                    <div class="bg-white rounded-lg shadow-md p-6 flex items-start space-x-4 border-l-4 border-blue-700 h-full">
-                        <div class="flex-shrink-0 text-center w-16">
-                            <p class="text-3xl font-bold text-blue-700">${formattedDate.day}</p>
-                            <p class="text-md font-semibold text-gray-600">${formattedDate.month}</p>
-                            <p class="text-sm text-gray-500">${formattedDate.year}</p>
-                        </div>
-                        <div class="flex-grow">
-                            <h4 class="text-lg font-bold text-gray-800">${event.title}</h4>
-                            <div class="flex items-center text-sm text-gray-600 mt-2">
-                                <svg class="w-4 h-4 mr-2 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span>${event.time}</span>
-                            </div>
-                            <p class="text-gray-600 mt-2 text-sm">${event.description}</p>
-                        </div>
+        termine.forEach(event => {
+            const eventHtml = `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden flex transform hover:scale-105 transition-transform duration-300">
+                    <div class="bg-blue-700 text-white text-center p-4 flex-shrink-0 w-24 flex flex-col justify-center items-center">
+                        <p class="text-3xl font-bold">${event.date.day}</p>
+                        <p class="text-sm font-semibold">${event.date.month}</p>
                     </div>
-                `;
-            });
-            calendarContainer.innerHTML = html;
-        }
+                    <div class="p-5">
+                        <h4 class="font-bold text-lg text-gray-800">${event.title}</h4>
+                         <div class="flex items-center text-gray-600 mt-2">
+                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>${event.time}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mt-2">${event.description}</p>
+                    </div>
+                </div>
+            `;
+            calendarContainer.innerHTML += eventHtml;
+        });
+        
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
 
-        renderCalendar();
     </script>
 </body>
 </html>
-
 
