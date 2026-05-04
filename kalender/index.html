@@ -58,6 +58,21 @@
         .event-link:hover {
             text-decoration: underline;
         }
+        .ics-button {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .ics-button:hover {
+            background-color: #218838;
+        }
         .no-events {
             text-align: center;
             padding: 20px;
@@ -81,17 +96,18 @@
                 <th>Event</th>
                 <th>Ort</th>
                 <th>Beschreibung</th>
+                <th>Optionen</th>
             </tr>
         </thead>
         <tbody id="events-body">
             <tr>
-                <td colspan="5" class="no-events">Daten werden geladen...</td>
+                <td colspan="6" class="no-events">Daten werden geladen...</td>
             </tr>
         </tbody>
     </table>
 
     <script>
-        let alleAktuellenEvents = []; // Globaler Speicher für die gefilterten Events
+        let alleAktuellenEvents = [];
 
         fetch('events.json')
             .then(response => {
@@ -103,10 +119,8 @@
             .then(events => {
                 const heute = new Date().toISOString().split('T')[0];
 
-                // 1. Nur Events filtern, deren Ende in der Gegenwart/Zukunft liegt
                 alleAktuellenEvents = events.filter(event => event.ende_datum >= heute);
 
-                // 2. Chronologisch sortieren
                 alleAktuellenEvents.sort((a, b) => {
                     if (a.start_datum === b.start_datum) {
                         return a.start_zeit.localeCompare(b.start_zeit);
@@ -114,22 +128,20 @@
                     return a.start_datum.localeCompare(b.start_datum);
                 });
 
-                // 3. Initiale Anzeige der Tabelle
                 renderTable(alleAktuellenEvents);
             })
             .catch(error => {
                 console.error('Fehler:', error);
                 document.getElementById('events-body').innerHTML = 
-                    "<tr><td colspan='5' class='no-events'>Fehler beim Laden der Events.</td></tr>";
+                    "<tr><td colspan='6' class='no-events'>Fehler beim Laden der Events.</td></tr>";
             });
 
-        // Funktion zum Rendern der Tabelle
         function renderTable(eventsToDisplay) {
             const tbody = document.getElementById('events-body');
             tbody.innerHTML = '';
 
             if (eventsToDisplay.length > 0) {
-                eventsToDisplay.forEach(event => {
+                eventsToDisplay.forEach((event, index) => {
                     const startParts = event.start_datum.split('-');
                     const formatiertesStartDatum = `${startParts[2]}.${startParts[1]}.${startParts[0]}`;
 
@@ -148,15 +160,15 @@
                         <td>${titelSpalte}</td>
                         <td>${escapeHtml(event.ort)}</td>
                         <td>${escapeHtml(event.beschreibung)}</td>
+                        <td><button class="ics-button" onclick="downloadIcs(${index})">📅 .ics laden</button></td>
                     `;
                     tbody.appendChild(tr);
                 });
             } else {
-                tbody.innerHTML = "<tr><td colspan='5' class='no-events'>Keine passenden Events gefunden.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='6' class='no-events'>Keine passenden Events gefunden.</td></tr>";
             }
         }
 
-        // Funktion zur Filterung bei Tastatureingabe
         function filterEvents() {
             const query = document.getElementById('search-input').value.toLowerCase();
             
@@ -169,6 +181,47 @@
             });
 
             renderTable(gefilterteEvents);
+        }
+
+        // Funktion zur Generierung und zum Download der ICS-Datei
+        function downloadIcs(eventIndex) {
+            const event = alleAktuellenEvents[eventIndex];
+            if (!event) return;
+
+            // Zeit-Strings für das iCalendar-Format bereinigen (YYYYMMDDTHHMMSS)
+            const startStr = event.start_datum.replace(/-/g, '') + 'T' + event.start_zeit.replace(/:/g, '') + '00';
+            const endeStr = event.ende_datum.replace(/-/g, '') + 'T' + event.ende_zeit.replace(/:/g, '') + '00';
+
+            // Beschreibung und URL zusammenführen
+            let desc = event.beschreibung;
+            if (event.url) {
+                desc += ` \\nLink: ${event.url}`;
+            }
+
+            // ICS Datei-Inhalt generieren
+            const icsContent = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//Brettspiel-Kalender//DE",
+                "CALSCALE:GREGORIAN",
+                "BEGIN:VEVENT",
+                `SUMMARY:${event.titel.replace(/,/g, '\\,')}`,
+                `DTSTART;TZID=Europe/Vienna:${startStr}`,
+                `DTEND;TZID=Europe/Vienna:${endeStr}`,
+                `LOCATION:${event.ort.replace(/,/g, '\\,')}`,
+                `DESCRIPTION:${desc.replace(/,/g, '\\,')}`,
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n");
+
+            // Datei-Download im Browser triggern
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `${event.titel.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function escapeHtml(string) {
