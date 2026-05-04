@@ -1,5 +1,137 @@
-<h2>Veranstaltungskalender</h2>
-<iframe src="kalender.php" width="100%" height="600px" frameborder="0">
-    Ihr Browser unterstützt keine Iframes. 
-    <a href="kalender.php">Klicken Sie hier, um den Kalender anzusehen.</a>
-</iframe>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brettspiel-Kalender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .no-events {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Kommende Brettspiel-Events</h1>
+
+    <table id="events-table">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Uhrzeit</th>
+                <th>Event</th>
+                <th>Ort</th>
+                <th>Beschreibung</th>
+            </tr>
+        </thead>
+        <tbody id="events-body">
+            <tr>
+                <td colspan="5" class="no-events">Daten werden geladen...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // 1. JSON-Datei laden
+        fetch('events.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Netzwerkfehler beim Laden der JSON-Datei');
+                }
+                return response.json();
+            })
+            .then(events => {
+                const tbody = document.getElementById('events-body');
+                tbody.innerHTML = ''; // Platzhalter entfernen
+
+                // 2. Aktuelles Datum ermitteln (YYYY-MM-DD)
+                const heute = new Date().toISOString().split('T')[0];
+
+                // 3. Filtern: Nur zukünftige oder heutige Events
+                const aktuelleEvents = events.filter(event => event.datum >= heute);
+
+                // 4. Sortieren: Chronologisch aufsteigend
+                aktuelleEvents.sort((a, b) => {
+                    if (a.datum === b.datum) {
+                        return a.uhrzeit.localeCompare(b.uhrzeit);
+                    }
+                    return a.datum.localeCompare(b.datum);
+                });
+
+                // 5. Tabelle befüllen
+                if (aktuelleEvents.length > 0) {
+                    aktuelleEvents.forEach(event => {
+                        // Datum formatieren (von YYYY-MM-DD zu DD.MM.YYYY)
+                        const parts = event.datum.split('-');
+                        const formatiertesDatum = `${parts[2]}.${parts[1]}.${parts[0]}`;
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${escapeHtml(formatiertesDatum)}</td>
+                            <td>${escapeHtml(event.uhrzeit)} Uhr</td>
+                            <td>${escapeHtml(event.titel)}</td>
+                            <td>${escapeHtml(event.ort)}</td>
+                            <td>${escapeHtml(event.beschreibung)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = "<tr><td colspan='5' class='no-events'>Keine kommenden Events geplant.</td></tr>";
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                document.getElementById('events-body').innerHTML = 
+                    "<tr><td colspan='5' class='no-events'>Fehler beim Laden der Events.</td></tr>";
+            });
+
+        // Hilfsfunktion zur Absicherung gegen XSS
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, function (s) {
+                const entityMap = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return entityMap[s];
+            });
+        }
+    </script>
+</body>
+</html>
