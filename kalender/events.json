@@ -149,5 +149,15 @@
         "ort": "Hotel Alpenblick, Rohrach 8, 4202 Kirchschlag bei Linz",
         "url": "mailto:andreas.neuhold@gmail.com",
         "beschreibung": "Wir spielen hier alle großen Spiele. Privat organisiert von Andreas Neuhold. Vollpension mit Übernachtung. Muss vorab gebucht werden!"
-    }
+    },
+    {
+    "titel": "Spielefest Wien 2026",
+    "start_datum": "2026-07-11",
+    "start_zeit": "09:00",
+    "ende_datum": "2026-07-12",
+    "ende_zeit": "18:00",
+    "ort": "Austria Center Vienna, Bruno-Kreisky-Platz 1, 1220 Wien",
+    "url": "https://spielefest.wien/",
+    "beschreibung": "Österreichs größte Spielemesse für Brett-, Karten- und Gesellschaftsspiele. Das Ticket inkludiert den Zugang zum parallel stattfindenden A1 Austrian eSports Festival."
+}
 ]
