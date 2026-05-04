@@ -1,5 +1,25 @@
 [
     {
+        "titel": "TraunCON 2026",
+        "start_datum": "2026-05-13",
+        "start_zeit": "18:00",
+        "ende_datum": "2026-05-17",
+        "ende_zeit": "17:00",
+        "ort": "Hotel Traunerhof, Schlossstraße 28, 4050 Traun",
+        "url": "",
+        "beschreibung": "Mehrtägiges Brettspiel-Event im Hotel Traunerhof."
+    },
+    {
+        "titel": "LinzSpielt! 2026",
+        "start_datum": "2026-10-17",
+        "start_zeit": "11:00",
+        "ende_datum": "2026-10-18",
+        "ende_zeit": "18:00",
+        "ort": "Neues Rathaus Linz, Hauptstraße 1-5, 4040 Linz",
+        "url": "https://spieleversum.at/linzspielt",
+        "beschreibung": "Das große Brett- und Kartenspielevent für die ganze Familie im Neuen Rathaus Linz. Samstag 11:00 bis 23:00 Uhr, Sonntag 10:00 bis 18:00 Uhr."
+    },
+    {
         "titel": "JKUGames2026W",
         "start_datum": "2026-12-11",
         "start_zeit": "16:00",
