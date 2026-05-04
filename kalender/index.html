@@ -37,6 +37,14 @@
         tr:hover {
             background-color: #f1f1f1;
         }
+        .event-link {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .event-link:hover {
+            text-decoration: underline;
+        }
         .no-events {
             text-align: center;
             padding: 20px;
@@ -51,8 +59,8 @@
     <table id="events-table">
         <thead>
             <tr>
-                <th>Datum</th>
-                <th>Uhrzeit</th>
+                <th>Beginn</th>
+                <th>Ende</th>
                 <th>Event</th>
                 <th>Ort</th>
                 <th>Beschreibung</th>
@@ -66,7 +74,6 @@
     </table>
 
     <script>
-        // 1. JSON-Datei laden
         fetch('events.json')
             .then(response => {
                 if (!response.ok) {
@@ -76,34 +83,42 @@
             })
             .then(events => {
                 const tbody = document.getElementById('events-body');
-                tbody.innerHTML = ''; // Platzhalter entfernen
+                tbody.innerHTML = '';
 
-                // 2. Aktuelles Datum ermitteln (YYYY-MM-DD)
+                // Aktuelles Datum im Format YYYY-MM-DD
                 const heute = new Date().toISOString().split('T')[0];
 
-                // 3. Filtern: Nur zukünftige oder heutige Events
-                const aktuelleEvents = events.filter(event => event.datum >= heute);
+                // Filtern: Nur Events, deren Enddatum heute oder in der Zukunft liegt
+                const aktuelleEvents = events.filter(event => event.ende_datum >= heute);
 
-                // 4. Sortieren: Chronologisch aufsteigend
+                // Sortieren: Chronologisch aufsteigend nach Startdatum
                 aktuelleEvents.sort((a, b) => {
-                    if (a.datum === b.datum) {
-                        return a.uhrzeit.localeCompare(b.uhrzeit);
+                    if (a.start_datum === b.start_datum) {
+                        return a.start_zeit.localeCompare(b.start_zeit);
                     }
-                    return a.datum.localeCompare(b.datum);
+                    return a.start_datum.localeCompare(b.start_datum);
                 });
 
-                // 5. Tabelle befüllen
                 if (aktuelleEvents.length > 0) {
                     aktuelleEvents.forEach(event => {
-                        // Datum formatieren (von YYYY-MM-DD zu DD.MM.YYYY)
-                        const parts = event.datum.split('-');
-                        const formatiertesDatum = `${parts[2]}.${parts[1]}.${parts[0]}`;
+                        // Datumsformate konvertieren (YYYY-MM-DD zu DD.MM.YYYY)
+                        const startParts = event.start_datum.split('-');
+                        const formatiertesStartDatum = `${startParts[2]}.${startParts[1]}.${startParts[0]}`;
+
+                        const endeParts = event.ende_datum.split('-');
+                        const formatiertesEndeDatum = `${endeParts[2]}.${endeParts[1]}.${endeParts[0]}`;
+
+                        // Titel-Link generieren falls URL vorhanden
+                        let titelSpalte = escapeHtml(event.titel);
+                        if (event.url && event.url.trim() !== "") {
+                            titelSpalte = `<a href="${encodeURI(event.url)}" class="event-link" target="_blank" rel="noopener noreferrer">${escapeHtml(event.titel)}</a>`;
+                        }
 
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${escapeHtml(formatiertesDatum)}</td>
-                            <td>${escapeHtml(event.uhrzeit)} Uhr</td>
-                            <td>${escapeHtml(event.titel)}</td>
+                            <td>${escapeHtml(formatiertesStartDatum)}<br><small>${escapeHtml(event.start_zeit)} Uhr</small></td>
+                            <td>${escapeHtml(formatiertesEndeDatum)}<br><small>${escapeHtml(event.ende_zeit)} Uhr</small></td>
+                            <td>${titelSpalte}</td>
                             <td>${escapeHtml(event.ort)}</td>
                             <td>${escapeHtml(event.beschreibung)}</td>
                         `;
@@ -119,7 +134,6 @@
                     "<tr><td colspan='5' class='no-events'>Fehler beim Laden der Events.</td></tr>";
             });
 
-        // Hilfsfunktion zur Absicherung gegen XSS
         function escapeHtml(string) {
             return String(string).replace(/[&<>"']/g, function (s) {
                 const entityMap = {
