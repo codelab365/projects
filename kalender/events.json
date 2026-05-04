@@ -1,9 +1,12 @@
 [
     {
         "titel": "JKUGames2026W",
-        "datum": "2026-12-11",
-        "uhrzeit": "16:00",
+        "start_datum": "2026-12-11",
+        "start_zeit": "16:00",
+        "ende_datum": "2026-12-13",
+        "ende_zeit": "06:00",
         "ort": "JKU Mensa Linz, Altenberger Straße 69, 4040 Linz",
-        "beschreibung": "JKU Games Winter-Edition 2026. Weitere Informationen unter https://games.oeh.jku.at/"
+        "url": "https://games.oeh.jku.at/",
+        "beschreibung": "JKU Games Winter-Edition 2026."
     }
 ]
