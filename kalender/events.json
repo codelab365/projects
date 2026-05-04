@@ -59,5 +59,85 @@
         "ort": "BridgeClub Linz, Vierthalerstraße 16, 4020 Linz",
         "url": "https://www.spieleversum.at",
         "beschreibung": "Gemeinsamer Spieletreff."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-06-07",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-06-07",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-07-05",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-07-05",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-08-02",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-08-02",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-09-06",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-09-06",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-10-04",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-10-04",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-11-01",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-11-01",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2026-12-06",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-12-06",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
+    },
+    {
+        "titel": "Spielewand",
+        "start_datum": "2027-01-03",
+        "start_zeit": "14:00",
+        "ende_datum": "2027-01-03",
+        "ende_zeit": "22:00",
+        "ort": "Pfadfinderheim, Poststraße 38, 4061 Pasching",
+        "url": "https://spielewand.at/",
+        "beschreibung": "Offener Vereinsnachmittag des Vereins Spielewand."
     }
 ]
