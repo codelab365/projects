@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brettspiel-Kalender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .event-link {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .event-link:hover {
+            text-decoration: underline;
+        }
+        .ics-button {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .ics-button:hover {
+            background-color: #218838;
+        }
+        .no-events {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Kommende Brettspiel-Events</h1>
+
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Nach Event, Ort oder Beschreibung suchen..." onkeyup="filterEvents()">
+    </div>
+
+    <table id="events-table">
+        <thead>
+            <tr>
+                <th>Beginn</th>
+                <th>Ende</th>
+                <th>Event</th>
+                <th>Ort</th>
+                <th>Beschreibung</th>
+                <th>Optionen</th>
+            </tr>
+        </thead>
+        <tbody id="events-body">
+            <tr>
+                <td colspan="6" class="no-events">Daten werden geladen...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        let alleAktuellenEvents = [];
+
+        fetch('events.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Netzwerkfehler beim Laden der JSON-Datei');
+                }
+                return response.json();
+            })
+            .then(events => {
+                const heute = new Date().toISOString().split('T')[0];
+
+                alleAktuellenEvents = events.filter(event => event.ende_datum >= heute);
+
+                alleAktuellenEvents.sort((a, b) => {
+                    if (a.start_datum === b.start_datum) {
+                        return a.start_zeit.localeCompare(b.start_zeit);
+                    }
+                    return a.start_datum.localeCompare(b.start_datum);
+                });
+
+                renderTable(alleAktuellenEvents);
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                document.getElementById('events-body').innerHTML = 
+                    "<tr><td colspan='6' class='no-events'>Fehler beim Laden der Events.</td></tr>";
+            });
+
+        function renderTable(eventsToDisplay) {
+            const tbody = document.getElementById('events-body');
+            tbody.innerHTML = '';
+
+            if (eventsToDisplay.length > 0) {
+                eventsToDisplay.forEach((event, index) => {
+                    const startParts = event.start_datum.split('-');
+                    const formatiertesStartDatum = `${startParts[2]}.${startParts[1]}.${startParts[0]}`;
+
+                    const endeParts = event.ende_datum.split('-');
+                    const formatiertesEndeDatum = `${endeParts[2]}.${endeParts[1]}.${endeParts[0]}`;
+
+                    let titelSpalte = escapeHtml(event.titel);
+                    if (event.url && event.url.trim() !== "") {
+                        titelSpalte = `<a href="${encodeURI(event.url)}" class="event-link" target="_blank" rel="noopener noreferrer">${escapeHtml(event.titel)}</a>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(formatiertesStartDatum)}<br><small>${escapeHtml(event.start_zeit)} Uhr</small></td>
+                        <td>${escapeHtml(formatiertesEndeDatum)}<br><small>${escapeHtml(event.ende_zeit)} Uhr</small></td>
+                        <td>${titelSpalte}</td>
+                        <td>${escapeHtml(event.ort)}</td>
+                        <td>${escapeHtml(event.beschreibung)}</td>
+                        <td><button class="ics-button" onclick="downloadIcs(${index})">📅 .ics laden</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = "<tr><td colspan='6' class='no-events'>Keine passenden Events gefunden.</td></tr>";
+            }
+        }
+
+        function filterEvents() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            
+            const gefilterteEvents = alleAktuellenEvents.filter(event => {
+                const inTitel = event.titel.toLowerCase().includes(query);
+                const inOrt = event.ort.toLowerCase().includes(query);
+                const inBeschreibung = event.beschreibung.toLowerCase().includes(query);
+                
+                return inTitel || inOrt || inBeschreibung;
+            });
+
+            renderTable(gefilterteEvents);
+        }
+
+        // Funktion zur Generierung und zum Download der ICS-Datei
+        function downloadIcs(eventIndex) {
+            const event = alleAktuellenEvents[eventIndex];
+            if (!event) return;
+
+            // Zeit-Strings für das iCalendar-Format bereinigen (YYYYMMDDTHHMMSS)
+            const startStr = event.start_datum.replace(/-/g, '') + 'T' + event.start_zeit.replace(/:/g, '') + '00';
+            const endeStr = event.ende_datum.replace(/-/g, '') + 'T' + event.ende_zeit.replace(/:/g, '') + '00';
+
+            // Beschreibung und URL zusammenführen
+            let desc = event.beschreibung;
+            if (event.url) {
+                desc += ` \\nLink: ${event.url}`;
+            }
+
+            // ICS Datei-Inhalt generieren
+            const icsContent = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//Brettspiel-Kalender//DE",
+                "CALSCALE:GREGORIAN",
+                "BEGIN:VEVENT",
+                `SUMMARY:${event.titel.replace(/,/g, '\\,')}`,
+                `DTSTART;TZID=Europe/Vienna:${startStr}`,
+                `DTEND;TZID=Europe/Vienna:${endeStr}`,
+                `LOCATION:${event.ort.replace(/,/g, '\\,')}`,
+                `DESCRIPTION:${desc.replace(/,/g, '\\,')}`,
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n");
+
+            // Datei-Download im Browser triggern
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `${event.titel.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, function (s) {
+                const entityMap = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return entityMap[s];
+            });
+        }
+    </script>
+</body>
+</html>
