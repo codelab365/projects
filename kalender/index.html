@@ -38,6 +38,7 @@
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
+            vertical-align: top;
         }
         th {
             background-color: #f2f2f2;
@@ -60,15 +61,18 @@
         }
         .ics-button {
             display: inline-block;
-            padding: 6px 12px;
+            padding: 8px 12px;
             background-color: #28a745;
             color: white;
             text-decoration: none;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
             border: none;
             cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
         }
         .ics-button:hover {
             background-color: #218838;
@@ -77,6 +81,50 @@
             text-align: center;
             padding: 20px;
             color: #666;
+        }
+
+        /* Mobile Optimierung: Card-Layout für schmale Bildschirme */
+        @media screen and (max-width: 600px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            tr {
+                margin-bottom: 15px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                background-color: #fff;
+                padding-bottom: 10px;
+            }
+            td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 35%;
+                text-align: left;
+            }
+            td:before {
+                position: absolute;
+                top: 12px;
+                left: 10px;
+                width: 30%;
+                padding-right: 10px;
+                white-space: nowrap;
+                font-weight: bold;
+                content: attr(data-label);
+            }
+            td:last-child {
+                border-bottom: 0;
+                padding-left: 12px;
+                padding-top: 15px;
+            }
+            td:last-child:before {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -153,13 +201,14 @@
                         titelSpalte = `<a href="${encodeURI(event.url)}" class="event-link" target="_blank" rel="noopener noreferrer">${escapeHtml(event.titel)}</a>`;
                     }
 
+                    // Hinzufügen von data-label Attributen für die mobile Ansicht
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${escapeHtml(formatiertesStartDatum)}<br><small>${escapeHtml(event.start_zeit)} Uhr</small></td>
-                        <td>${escapeHtml(formatiertesEndeDatum)}<br><small>${escapeHtml(event.ende_zeit)} Uhr</small></td>
-                        <td>${titelSpalte}</td>
-                        <td>${escapeHtml(event.ort)}</td>
-                        <td>${escapeHtml(event.beschreibung)}</td>
+                        <td data-label="Beginn">${escapeHtml(formatiertesStartDatum)}<br><small>${escapeHtml(event.start_zeit)} Uhr</small></td>
+                        <td data-label="Ende">${escapeHtml(formatiertesEndeDatum)}<br><small>${escapeHtml(event.ende_zeit)} Uhr</small></td>
+                        <td data-label="Event">${titelSpalte}</td>
+                        <td data-label="Ort">${escapeHtml(event.ort)}</td>
+                        <td data-label="Details">${escapeHtml(event.beschreibung)}</td>
                         <td><button class="ics-button" onclick="downloadIcs(${index})">📅 .ics laden</button></td>
                     `;
                     tbody.appendChild(tr);
@@ -183,22 +232,18 @@
             renderTable(gefilterteEvents);
         }
 
-        // Funktion zur Generierung und zum Download der ICS-Datei
         function downloadIcs(eventIndex) {
             const event = alleAktuellenEvents[eventIndex];
             if (!event) return;
 
-            // Zeit-Strings für das iCalendar-Format bereinigen (YYYYMMDDTHHMMSS)
             const startStr = event.start_datum.replace(/-/g, '') + 'T' + event.start_zeit.replace(/:/g, '') + '00';
             const endeStr = event.ende_datum.replace(/-/g, '') + 'T' + event.ende_zeit.replace(/:/g, '') + '00';
 
-            // Beschreibung und URL zusammenführen
             let desc = event.beschreibung;
             if (event.url) {
                 desc += ` \\nLink: ${event.url}`;
             }
 
-            // ICS Datei-Inhalt generieren
             const icsContent = [
                 "BEGIN:VCALENDAR",
                 "VERSION:2.0",
@@ -214,7 +259,6 @@
                 "END:VCALENDAR"
             ].join("\r\n");
 
-            // Datei-Download im Browser triggern
             const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
             const link = document.createElement('a');
             link.href = window.URL.createObjectURL(blob);
