@@ -140,5 +140,115 @@
     "ort": "Austria Center Vienna, Bruno-Kreisky-Platz 1, 1220 Wien",
     "url": "https://spielefest.wien/",
     "beschreibung": "Österreichs größte Spielemesse für Brett-, Karten- und Gesellschaftsspiele. Das Ticket inkludiert den Zugang zum parallel stattfindenden A1 Austrian eSports Festival."
-}
+},
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-07-05",
+        "start_zeit": "12:00",
+        "ende_datum": "2026-07-05",
+        "ende_zeit": "20:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Sommerfest Spieleversum",
+        "start_datum": "2026-07-18",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-07-18",
+        "ende_zeit": "24:00",
+        "ort": "Fußballplatz, Landwiedstraße 3b, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Sommerfest mit Grillerei und gemeinsamen Spielen."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-08-02",
+        "start_zeit": "12:00",
+        "ende_datum": "2026-08-02",
+        "ende_zeit": "20:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-08-15",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-08-15",
+        "ende_zeit": "24:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-09-06",
+        "start_zeit": "12:00",
+        "ende_datum": "2026-09-06",
+        "ende_zeit": "20:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-09-12",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-09-12",
+        "ende_zeit": "24:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-10-03",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-10-03",
+        "ende_zeit": "24:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-11-01",
+        "start_zeit": "12:00",
+        "ende_datum": "2026-11-01",
+        "ende_zeit": "20:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Generalversammlung & Spielstammtisch",
+        "start_datum": "2026-11-21",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-11-21",
+        "ende_zeit": "24:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Generalversammlung mit anschließendem Mitgliedertreffen. Kein Schnuppern möglich. Basis-Mitglieder zahlen 4 € Unkostenbeitrag, sofern sie nach der Versammlung verbleiben."
+    },
+    {
+        "titel": "Spielstammtisch Spieleversum",
+        "start_datum": "2026-12-06",
+        "start_zeit": "12:00",
+        "ende_datum": "2026-12-06",
+        "ende_zeit": "20:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Reguläres Mitgliedertreffen."
+    },
+    {
+        "titel": "Weihnachtsfeier Spieleversum",
+        "start_datum": "2026-12-19",
+        "start_zeit": "14:00",
+        "ende_datum": "2026-12-19",
+        "ende_zeit": "24:00",
+        "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
+        "url": "https://www.spieleversum.at",
+        "beschreibung": "Weihnachtsfeier des Vereins."
+    }
 ]
