@@ -260,5 +260,15 @@
     "ort": "Inselhalle Lindau, Zwanzigerstraße 10, 88131 Lindau (Bodensee), Deutschland",
     "url": "https://bodensee-con.de/",
     "beschreibung": "Brettspiel Convention in der Inselhalle Lindau."
+},
+    {
+    "titel": "Berlin Brettspiel Con 2026",
+    "start_datum": "2026-07-10",
+    "start_zeit": "09:00",
+    "ende_datum": "2026-07-12",
+    "ende_zeit": "18:00",
+    "ort": "Estrel Congress Center Berlin, Sonnenallee 225, 12057 Berlin, Deutschland",
+    "url": "https://berlin-con.de/",
+    "beschreibung": "Berlin Brettspiel Con 2026."
 }
 ]
