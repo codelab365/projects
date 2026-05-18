@@ -250,5 +250,15 @@
         "ort": "Bridgeclub Linz, Wiener Str. 93, 4020 Linz",
         "url": "https://www.spieleversum.at",
         "beschreibung": "Weihnachtsfeier des Vereins."
-    }
+    },
+    {
+    "titel": "Brettspiel Con Lindau 2027",
+    "start_datum": "2027-11-27",
+    "start_zeit": "09:00",
+    "ende_datum": "2027-11-29",
+    "ende_zeit": "18:00",
+    "ort": "Inselhalle Lindau, Zwanzigerstraße 10, 88131 Lindau (Bodensee), Deutschland",
+    "url": "https://bodensee-con.de/",
+    "beschreibung": "Brettspiel Convention in der Inselhalle Lindau."
+}
 ]
