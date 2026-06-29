@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>LiTEC Stundenplan-Planer</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f4f4f4; }
+        .abend { background-color: #e0f7fa; }
+        .block-active { background-color: #ffcc80 !important; cursor: pointer; }
+        .cell { cursor: pointer; }
+        .cell:hover { background-color: #f0f0f0; }
+        .summary { margin-top: 20px; font-weight: bold; font-size: 1.2em; }
+        .day-sum { font-weight: bold; background-color: #eee; }
+    </style>
+</head>
+<body>
+
+    <h2>LiTEC Stundenplan-Planer (22 Einheiten Ziel)</h2>
+    <div id="grid-container"></div>
+    <div class="summary" id="total-count">Gesamteinheiten: 0 / 22</div>
+
+    <script>
+        const times = [
+            {ue: '1', zeit: '08:15-09:05', abend: false},
+            {ue: '2', zeit: '09:05-09:55', abend: false},
+            {ue: '3', zeit: '10:10-11:00', abend: false},
+            {ue: '4', zeit: '11:05-11:55', abend: false},
+            {ue: '5', zeit: '12:00-12:50', abend: false},
+            {ue: '6', zeit: '12:55-13:45', abend: false},
+            {ue: '7', zeit: '13:45-14:35', abend: false},
+            {ue: '8', zeit: '14:40-15:30', abend: false},
+            {ue: '9', zeit: '15:35-16:25', abend: false},
+            {ue: '10/0', zeit: '16:40-17:25', abend: true},
+            {ue: '11/1', zeit: '17:25-18:10', abend: true},
+            {ue: '12/2', zeit: '18:15-19:00', abend: true},
+            {ue: '13', zeit: '19:15-20:00', abend: true},
+            {ue: '14', zeit: '20:05-20:50', abend: true},
+            {ue: '15', zeit: '20:55-21:40', abend: true}
+        ];
+        const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+
+        function createGrid() {
+            let html = '<table><tr><th>UE</th><th>Zeit</th>';
+            days.forEach(d => html += `<th>${d}</th>`);
+            html += '</tr>';
+
+            times.forEach(t => {
+                html += `<tr class="${t.abend ? 'abend' : ''}">
+                    <td>${t.ue}</td><td>${t.zeit}</td>`;
+                days.forEach((d, index) => {
+                    html += `<td class="cell day-${index}" onclick="toggleCell(this, ${index})">-</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            // Summen-Zeile
+            html += '<tr class="day-sum"><td>Summe</td><td>-</td>';
+            days.forEach((d, index) => {
+                html += `<td id="sum-${index}">0</td>`;
+            });
+            html += '</tr></table>';
+            document.getElementById('grid-container').innerHTML = html;
+        }
+
+        function toggleCell(el, dayIndex) {
+            el.classList.toggle('block-active');
+            el.innerText = el.classList.contains('block-active') ? 'X' : '-';
+            updateSums();
+        }
+
+        function updateSums() {
+            let total = 0;
+            days.forEach((d, index) => {
+                const count = document.querySelectorAll(`.day-${index}.block-active`).length;
+                document.getElementById(`sum-${index}`).innerText = count;
+                total += count;
+            });
+            document.getElementById('total-count').innerText = `Gesamteinheiten: ${total} / 22`;
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
