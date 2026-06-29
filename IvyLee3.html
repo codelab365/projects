@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Productivity Board: Eisenhower x Ivy Lee</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-color: #0f172a;
+            --border-color: #e2e8f0;
+            --card-bg: #ffffff;
+            
+            /* Quadranten-Farben */
+            --q1-bg: #fff5f5; --q1-border: #f87171;
+            --q2-bg: #f0fdf4; --q2-border: #4ade80;
+            --q3-bg: #eff6ff; --q3-border: #60a5fa;
+            --q4-bg: #f8fafc; --q4-border: #94a3b8;
+            --done-bg: #f1f5f9; --done-border: #64748b;
+            
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --warning-bg: #fffbeb;
+            --warning-border: #fef08a;
+            --warning-text: #a16207;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 24px;
+            box-sizing: border-box;
+            line-height: 1.5;
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);
+        }
+
+        h1 { margin: 0; font-size: 1.75rem; color: var(--primary); }
+        h2 { margin: 0; }
+
+        .controls button, .controls input[type="file"]::file-selector-button {
+            padding: 8px 16px; margin-left: 8px; cursor: pointer;
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px;
+            font-weight: 500; font-size: 0.9rem; transition: all 0.2s; color: var(--text-color);
+        }
+        .controls button:hover, .controls input[type="file"]::file-selector-button:hover { 
+            background: #f1f5f9; border-color: #cbd5e1; 
+        }
+
+        .main-container {
+            display: grid; grid-template-columns: 1fr 480px; gap: 24px; align-items: start;
+        }
+
+        /* Linke Seite: Backlog-Pools */
+        .backlog-column { display: flex; flex-direction: column; gap: 20px; }
+
+        .add-task-bar {
+            display: flex; gap: 12px; background: var(--card-bg); padding: 16px;
+            border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        .add-task-bar input[type="text"] {
+            flex: 1; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem;
+        }
+        .add-task-bar select, .add-task-bar button {
+            padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+        }
+        .add-task-bar button { background: var(--primary); color: #fff; border: none; font-weight: 600; }
+        .add-task-bar button:hover { background: #0f172a; }
+
+        .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        .quadrant {
+            background: var(--card-bg); border-radius: 8px; padding: 16px; min-height: 260px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
+            border-top: 4px solid #ccc; display: flex; flex-direction: column; gap: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .q1 { border-top-color: var(--q1-border); background-color: var(--q1-bg); }
+        .q2 { border-top-color: var(--q2-border); background-color: var(--q2-bg); }
+        .q3 { border-top-color: var(--q3-border); background-color: var(--q3-bg); }
+        .q4 { border-top-color: var(--q4-border); background-color: var(--q4-bg); }
+        
+        .done-pool {
+            border-top-color: var(--done-border); background-color: var(--done-bg);
+            min-height: 140px;
+        }
+
+        .quadrant h3 {
+            font-size: 1rem; color: var(--primary); padding-bottom: 8px; margin: 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* Rechte Seite: Kalender / Ivy Lee */
+        .calendar-column {
+            background: var(--card-bg); padding: 20px; border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
+            border-top: 4px solid var(--primary); position: sticky; top: 24px;
+        }
+
+        .calendar-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+        }
+
+        .add-day-zone {
+            display: flex; gap: 8px; align-items: center; margin-bottom: 20px;
+            padding-bottom: 16px; border-bottom: 1px dashed var(--border-color);
+        }
+        .add-day-zone input[type="date"] {
+            padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem;
+        }
+        .add-day-zone button {
+            padding: 6px 12px; background: #f1f5f9; border: 1px solid var(--border-color);
+            border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+        }
+        .add-day-zone button:hover { background: #e2e8f0; }
+
+        /* Drag over Effekte */
+        .drag-over { background-color: rgba(59, 130, 246, 0.08) !important; border-style: dashed !important; border-color: var(--accent) !important; }
+
+        /* Accordion Days */
+        details.day-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px;
+            margin-bottom: 12px; overflow: hidden; transition: all 0.2s;
+        }
+        details.day-card summary {
+            padding: 14px 16px; font-weight: 600; cursor: pointer; user-select: none;
+            background: #fff; display: flex; justify-content: space-between; align-items: center;
+        }
+        details.day-card[open] summary { border-bottom: 1px solid var(--border-color); background: #fafafa; }
+        
+        .day-drop-zone { padding: 12px; min-height: 60px; display: flex; flex-direction: column; gap: 8px; }
+
+        .day-warning {
+            background-color: var(--warning-bg); border: 1px solid var(--warning-border);
+            color: var(--warning-text); padding: 6px 12px; border-radius: 4px;
+            font-size: 0.85rem; font-weight: 500; margin-bottom: 8px;
+        }
+
+        .count-badge {
+            padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 700;
+            background: #e2e8f0; color: #475569;
+        }
+        .count-badge.limit-exceeded { background: #fee2e2; color: #ef4444; }
+
+        /* Task Elemente */
+        .task-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); padding: 10px 12px;
+            border-radius: 6px; display: flex; flex-direction: column; gap: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02); cursor: grab; user-select: none;
+        }
+        .task-card:active { cursor: grabbing; }
+        .task-card.is-dragging { opacity: 0.4; }
+        
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .task-text { flex: 1; word-break: break-word; font-size: 0.92rem; color: #334155; line-height: 1.4;}
+        
+        .task-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+        .task-actions button {
+            border: none; background: #f1f5f9; padding: 4px 8px; border-radius: 4px;
+            cursor: pointer; font-size: 0.85rem; display: flex; align-items: center;
+        }
+        .task-actions button:hover:not(:disabled) { background: #e2e8f0; }
+        .task-actions button:disabled { opacity: 0.25; cursor: not-allowed; }
+
+        /* Das neue Datums-Feld innerhalb der Aufgaben */
+        .move-date-picker {
+            border: 1px solid var(--border-color); border-radius: 4px;
+            padding: 3px 6px; font-size: 0.8rem; color: #475569;
+            background: #f1f5f9; cursor: pointer; outline: none;
+        }
+        .move-date-picker:hover, .move-date-picker:focus { background: #e2e8f0; border-color: #cbd5e1; }
+
+        .btn-success { background: #10b981 !important; color: white !important; }
+        .btn-success:hover { background: #059669 !important; }
+        
+        .done-task { opacity: 0.65; }
+        .done-task .task-text { text-decoration: line-through; }
+
+        @media (max-width: 1200px) {
+            .main-container { grid-template-columns: 1fr; }
+            .calendar-column { position: relative; top: 0; }
+        }
+        @media (max-width: 750px) { .matrix-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Eisenhower x Ivy Lee Workspace</h1>
+    <div class="controls">
+        <button onclick="exportJSON()">💾 Exportieren</button>
+        <button onclick="document.getElementById('importFile').click()">📂 Importieren</button>
+        <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" style="display:none;">
+    </div>
+</header>
+
+<div class="main-container">
+    
+    <!-- Linke Struktur: Backlogs & Archiv -->
+    <div class="backlog-column">
+        <div class="add-task-bar">
+            <input type="text" id="taskInput" placeholder="Neue Aufgabe beschreiben..." onkeypress="if(event.key==='Enter') addTask()">
+            <select id="quadrantSelect">
+                <option value="q1">Q1: Tun (Wichtig & Dringend)</option>
+                <option value="q2">Q2: Planen (Wichtig / Nicht Dringend)</option>
+                <option value="q3">Q3: Delegieren (Dringend / Nicht Wichtig)</option>
+                <option value="q4">Q4: Eliminieren (Weder noch)</option>
+            </select>
+            <button onclick="addTask()">+ Erfassen</button>
+        </div>
+
+        <div class="matrix-grid">
+            <div class="quadrant q1" ondragover="allowDrop(event)" ondragleave="clearDragClass(event)" ondrop="handleDrop(event, 'pool', 'q1')">
+                <h3>Q1: Tun</h3><div class="pool-list" id="list-q1"></div>
+            </div>
+            <div class="quadrant q2" ondragover="allowDrop(event)" ondragleave="clearDragClass(event)" ondrop="handleDrop(event, 'pool', 'q2')">
+                <h3>Q2: Planen</h3><div class="pool-list" id="list-q2"></div>
+            </div>
+            <div class="quadrant q3" ondragover="allowDrop(event)" ondragleave="clearDragClass(event)" ondrop="handleDrop(event, 'pool', 'q3')">
+                <h3>Q3: Delegieren</h3><div class="pool-list" id="list-q3"></div>
+            </div>
+            <div class="quadrant q4" ondragover="allowDrop(event)" ondragleave="clearDragClass(event)" ondrop="handleDrop(event, 'pool', 'q4')">
+                <h3>Q4: Eliminieren</h3><div class="pool-list" id="list-q4"></div>
+            </div>
+        </div>
+
+        <div class="quadrant done-pool" ondragover="allowDrop(event)" ondragleave="clearDragClass(event)" ondrop="handleDrop(event, 'done')">
+            <h3>Erledigt (Papierkorb)
+                <button onclick="clearArchived()" style="font-size: 0.75rem; padding: 2px 8px;">🗑️ Leeren</button>
+            </h3>
+            <div class="pool-list" id="list-done"></div>
+        </div>
+    </div>
+
+    <!-- Rechte Struktur: Flexibler Kalenderfokus -->
+    <div class="calendar-column">
+        <div class="calendar-header">
+            <h2>Ivy Lee Tagesfokus</h2>
+        </div>
+        
+        <div class="add-day-zone">
+            <input type="date" id="dayPicker">
+            <button onclick="addCustomDay()">+ Tag hinzufügen</button>
+        </div>
+
+        <div id="calendar-container"></div>
+    </div>
+</div>
+
+<script>
+    let state = { tasks: [], customDates: [] };
+    const DB_KEY = 'ivy_lee_eisenhower_db';
+
+    function getTodayStr() { return new Date().toLocaleDateString('en-CA'); }
+    function getTomorrowStr() {
+        const d = new Date(); d.setDate(d.getDate() + 1);
+        return d.toLocaleDateString('en-CA');
+    }
+    function formatGermanDate(str) {
+        if (str === getTodayStr()) return "Heute";
+        if (str === getTomorrowStr()) return "Morgen";
+        const [y, m, d] = str.split('-');
+        return `${d}.${m}.${y}`;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadData();
+        render();
+    });
+
+    function loadData() {
+        const stored = localStorage.getItem(DB_KEY);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) {
+                    state.tasks = parsed; 
+                } else if (parsed && parsed.tasks) {
+                    state.tasks = parsed.tasks;
+                    state.customDates = parsed.customDates || [];
+                }
+            } catch (e) { console.error("Load error", e); }
+        }
+    }
+
+    function saveAndRender() {
+        localStorage.setItem(DB_KEY, JSON.stringify(state));
+        render();
+    }
+
+    function addTask() {
+        const input = document.getElementById('taskInput');
+        const select = document.getElementById('quadrantSelect');
+        if (!input.value.trim()) return;
+
+        state.tasks.push({
+            id: 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            text: input.value.trim(),
+            quadrant: select.value,
+            status: 'pool',
+            date: null,
+            ivyOrder: 0
+        });
+
+        input.value = '';
+        saveAndRender();
+    }
+
+    function addCustomDay() {
+        const val = document.getElementById('dayPicker').value;
+        if (val && !state.customDates.includes(val)) {
+            state.customDates.push(val);
+            state.customDates.sort();
+            saveAndRender();
+        }
+        document.getElementById('dayPicker').value = '';
+    }
+
+    // Zentale Logik für Status- und Datumsänderungen
+    function changeTaskStatus(id, newStatus, targetDate = null, targetQuadrant = null) {
+        const task = state.tasks.find(t => t.id === id);
+        if (!task) return;
+
+        task.status = newStatus;
+        
+        if (newStatus === 'ivy') {
+            task.date = targetDate;
+            
+            // Wenn der Tag durch die Zuweisung neu ist, speichern wir ihn direkt ab
+            if (targetDate !== getTodayStr() && targetDate !== getTomorrowStr() && !state.customDates.includes(targetDate)) {
+                state.customDates.push(targetDate);
+                state.customDates.sort();
+            }
+
+            const sameDay = state.tasks.filter(t => t.status === 'ivy' && t.date === targetDate);
+            task.ivyOrder = sameDay.length > 0 ? Math.max(...sameDay.map(t => t.ivyOrder)) + 1 : 0;
+        } else {
+            task.date = null;
+            if (targetQuadrant) task.quadrant = targetQuadrant;
+        }
+        saveAndRender();
+    }
+
+    function shiftOrder(id, direction, dateStr) {
+        const dayTasks = state.tasks.filter(t => t.status === 'ivy' && t.date === dateStr).sort((a,b) => a.ivyOrder - b.ivyOrder);
+        const idx = dayTasks.findIndex(t => t.id === id);
+        if (idx < 0) return;
+
+        if (direction === 'up' && idx > 0) {
+            [dayTasks[idx].ivyOrder, dayTasks[idx-1].ivyOrder] = [dayTasks[idx-1].ivyOrder, dayTasks[idx].ivyOrder];
+        } else if (direction === 'down' && idx < dayTasks.length - 1) {
+            [dayTasks[idx].ivyOrder, dayTasks[idx+1].ivyOrder] = [dayTasks[idx+1].ivyOrder, dayTasks[idx].ivyOrder];
+        }
+        saveAndRender();
+    }
+
+    function removeTask(id) {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        saveAndRender();
+    }
+
+    function clearArchived() {
+        if (confirm("Alle erledigten Aufgaben löschen?")) {
+            state.tasks = state.tasks.filter(t => t.status !== 'done');
+            saveAndRender();
+        }
+    }
+
+    // Drag & Drop
+    function handleDragStart(e, id) {
+        e.dataTransfer.setData('text/plain', id);
+        document.getElementById(id).classList.add('is-dragging');
+    }
+    function handleDragEnd(id) {
+        const el = document.getElementById(id);
+        if(el) el.classList.remove('is-dragging');
+    }
+    function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+    function clearDragClass(e) { e.currentTarget.classList.remove('drag-over'); }
+    function handleDrop(e, status, detail = null) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text/plain');
+        if (status === 'ivy') changeTaskStatus(id, 'ivy', detail);
+        else if (status === 'pool') changeTaskStatus(id, 'pool', null, detail);
+        else changeTaskStatus(id, 'done');
+    }
+
+    function render() {
+        ['q1', 'q2', 'q3', 'q4', 'done'].forEach(q => document.getElementById(`list-${q}`).innerHTML = '');
+        const calContainer = document.getElementById('calendar-container');
+        calContainer.innerHTML = '';
+
+        state.tasks.forEach(task => {
+            if (task.status === 'pool') document.getElementById(`list-${task.quadrant}`).appendChild(createTaskCard(task));
+            else if (task.status === 'done') document.getElementById('list-done').appendChild(createTaskCard(task));
+        });
+
+        const uniqueDates = new Set([getTodayStr(), getTomorrowStr(), ...state.customDates]);
+        state.tasks.filter(t => t.status === 'ivy').forEach(t => uniqueDates.add(t.date));
+
+        Array.from(uniqueDates).sort().forEach(dateStr => {
+            const dayTasks = state.tasks.filter(t => t.status === 'ivy' && t.date === dateStr).sort((a,b) => a.ivyOrder - b.ivyOrder);
+            if (dateStr !== getTodayStr() && dateStr !== getTomorrowStr() && dayTasks.length === 0) return;
+
+            const isOverLimit = dayTasks.length > 6;
+            const details = document.createElement('details');
+            details.className = 'day-card';
+            if (dateStr === getTodayStr()) details.open = true;
+
+            details.innerHTML = `
+                <summary>
+                    <span>${formatGermanDate(dateStr)} <span class="count-badge ${isOverLimit ? 'limit-exceeded' : ''}">${dayTasks.length} / 6</span></span>
+                    <span style="font-size:0.8rem; color:#64748b;">▼</span>
+                </summary>
+                <div class="day-drop-zone" ondragover="allowDrop(event)" ondragleave="clearDragClass(event)" ondrop="handleDrop(event, 'ivy', '${dateStr}')">
+                    ${isOverLimit ? `<div class="day-warning">⚠️ Ivy Lee Limit überschritten!</div>` : ''}
+                    <div id="tasks-${dateStr}"></div>
+                </div>
+            `;
+            calContainer.appendChild(details);
+
+            const listTarget = details.querySelector(`#tasks-${dateStr}`);
+            if (dayTasks.length === 0) {
+                listTarget.innerHTML = `<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:8px 0;">Keine Aufgaben.</div>`;
+            } else {
+                dayTasks.forEach((task, index) => {
+                    listTarget.appendChild(createIvyTaskCard(task, index, dayTasks.length, dateStr));
+                });
+            }
+        });
+    }
+
+    function createTaskCard(task) {
+        const div = document.createElement('div');
+        div.className = `task-card ${task.status === 'done' ? 'done-task' : ''}`;
+        div.id = task.id;
+        div.draggable = true;
+        div.addEventListener('dragstart', (e) => handleDragStart(e, task.id));
+        div.addEventListener('dragend', () => handleDragEnd(task.id));
+
+        const isDone = task.status === 'done';
+        div.innerHTML = `
+            <div class="task-header">
+                <div class="task-text">${escapeHTML(task.text)}</div>
+            </div>
+            <div class="task-actions" style="margin-top: 8px;">
+                ${isDone 
+                    ? `<button onclick="changeTaskStatus('${task.id}', 'pool', null, 'q1')">↩️ Reaktivieren</button>` 
+                    : `<button class="btn-success" onclick="changeTaskStatus('${task.id}', 'ivy', '${getTodayStr()}')">➔ Fokus Heute</button>`
+                }
+                <button onclick="removeTask('${task.id}')">❌</button>
+            </div>
+        `;
+        return div;
+    }
+
+    function createIvyTaskCard(task, index, total, dateStr) {
+        const div = document.createElement('div');
+        div.className = 'task-card';
+        div.id = task.id;
+        div.draggable = true;
+        div.addEventListener('dragstart', (e) => handleDragStart(e, task.id));
+        div.addEventListener('dragend', () => handleDragEnd(task.id));
+
+        div.innerHTML = `
+            <div class="task-header">
+                <div class="task-text">${escapeHTML(task.text)}</div>
+            </div>
+            <div class="task-actions" style="margin-top: 8px;">
+                <button class="btn-success" onclick="changeTaskStatus('${task.id}', 'done')" title="Erledigen">✔️</button>
+                
+                <!-- Neues, direktes Datums-Feld zum Verschieben -->
+                <input type="date" class="move-date-picker" title="Auf einen anderen Tag verschieben" 
+                       value="${dateStr}" onchange="changeTaskStatus('${task.id}', 'ivy', this.value)">
+                
+                <button onclick="shiftOrder('${task.id}', 'up', '${dateStr}')" ${index === 0 ? 'disabled' : ''} title="Hoch">⬆️</button>
+                <button onclick="shiftOrder('${task.id}', 'down', '${dateStr}')" ${index === total - 1 ? 'disabled' : ''} title="Runter">⬇️</button>
+                <button onclick="changeTaskStatus('${task.id}', 'pool', null, '${task.quadrant}')" title="Zurück in Backlog">↩️</button>
+            </div>
+        `;
+        return div;
+    }
+
+    function escapeHTML(str) {
+        const d = document.createElement('div'); d.innerText = str; return d.innerHTML;
+    }
+
+    async function exportJSON() {
+        const dataStr = JSON.stringify(state, null, 2);
+        try {
+            if (window.showSaveFilePicker) {
+                const handle = await window.showSaveFilePicker({ suggestedName: 'ivy_lee_eisenhower_db.json', types: [{ accept: { 'application/json': ['.json'] } }] });
+                const writable = await handle.createWritable();
+                await writable.write(dataStr); await writable.close();
+            } else {
+                const url = URL.createObjectURL(new Blob([dataStr], { type: "application/json" }));
+                const a = document.createElement('a'); a.href = url; a.download = "ivy_lee_eisenhower_db.json";
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            }
+        } catch (err) { if (err.name !== 'AbortError') alert("Fehler beim Export."); }
+    }
+
+   function importJSON(event) {
+    const file = event.target.files[0]; 
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imp = JSON.parse(e.target.result);
+            
+            // 1. Daten übernehmen (egal ob altes Array aus V1 oder neues Objekt aus V3)
+            if (Array.isArray(imp)) { 
+                state.tasks = imp; 
+                state.customDates = []; 
+            } else if (imp && imp.tasks) { 
+                state.tasks = imp.tasks; 
+                state.customDates = imp.customDates || []; 
+            } else {
+                alert("Das Dateiformat wird nicht unterstützt.");
+                return;
+            }
+            
+            // 2. AUTOMATISCHE MIGRATION für alte Speicherstände
+            state.tasks.forEach(t => {
+                // Wenn der alte Status direkt ein Quadrant war ('q1', 'q2'...)
+                if (['q1', 'q2', 'q3', 'q4'].includes(t.status)) {
+                    t.quadrant = t.status; // Quadrant merken
+                    t.status = 'pool';     // In den Backlog-Pool legen
+                }
+                
+                // Wenn es noch das alte 'completed' Feld gibt
+                if (t.completed === true) {
+                    t.status = 'done';
+                }
+                
+                // Sicherheitsnetz für alte Ivy-Tasks ohne spezifisches Datum
+                if (t.status === 'ivy' && !t.date) {
+                    t.date = getTodayStr(); // Standardmäßig auf Heute setzen
+                }
+                
+                // Fallback, falls gar kein Quadrant definiert wurde
+                if (!t.quadrant) {
+                    t.quadrant = 'q1';
+                }
+            });
+
+            saveAndRender();
+            
+        } catch (err) { 
+            console.error("Import-Fehler:", err);
+            alert("Fehler beim Lesen der JSON-Datei. Ist die Datei beschädigt?"); 
+        }
+    };
+    
+    reader.readAsText(file); 
+    
+    // Setzt das Input-Feld zurück, damit man dieselbe Datei mehrmals hintereinander importieren könnte
+    event.target.value = ''; 
+}
+</script>
+</body>
+</html>
