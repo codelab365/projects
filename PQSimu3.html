@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netzqualitäts-Simulator: Industrie-Standard (EN 50160)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { border-radius: 0.5rem; border: 1px solid #334155; cursor: crosshair; }
+        .slider-accent { accent-color: #3b82f6; }
+        .event-slider { accent-color: #f59e0b; }
+        .event-cb { accent-color: #ef4444; width: 1.25rem; height: 1.25rem; }
+        .cause-list li { margin-bottom: 0.25rem; position: relative; padding-left: 1.25rem; }
+        .cause-list li::before { content: "•"; color: #3b82f6; position: absolute; left: 0; font-weight: bold; }
+        .damage-list li::before { content: "⚠️"; position: absolute; left: -0.25rem; font-size: 0.8rem; top: 0.1rem; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="p-6 h-screen flex flex-col overflow-hidden">
+
+    <header class="mb-4 flex justify-between items-end shrink-0">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-1">PQ-Simulator: Industrielle Netzrückwirkungen</h1>
+            <p class="text-slate-400">Vollständige Signalanalyse (bis 20. Harmonische, einzeln einstellbar), ITIC-Bewertung und konkrete Schadensbilder.</p>
+        </div>
+        <div class="flex gap-3">
+            <button id="btn-theme" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded text-sm transition">
+                🌓 Hell/Dunkel
+            </button>
+            <button id="btn-screenshot" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded font-bold text-sm transition shadow-lg flex items-center gap-2">
+                📸 Screenshot PNG
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-col xl:flex-row gap-6 flex-1 min-h-0">
+        
+        <div class="flex-1 flex flex-col gap-6 min-h-0">
+            <div class="relative flex-[2] bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl flex flex-col min-h-[350px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold text-white">Live-Oszilloskop (50 Hz)</h2>
+                    <div class="flex gap-4 items-center">
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="text-slate-400">Zoom Zeit:</span>
+                            <input type="range" id="zoom-x" min="1" max="5" step="0.5" value="1" class="w-24 slider-accent">
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="text-slate-400">Zoom Spg:</span>
+                            <input type="range" id="zoom-y" min="0.5" max="3" step="0.1" value="1" class="w-24 slider-accent">
+                        </div>
+                        <div class="text-sm bg-slate-700 px-3 py-1 rounded text-blue-300 font-mono">
+                            THD: <span id="thd-display">0.00</span> %
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 relative w-full h-full">
+                    <canvas id="scopeCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="flex-[1] min-h-[220px] flex gap-4">
+                <div class="flex-[2] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl overflow-y-auto">
+                    <h2 class="text-lg font-semibold text-white mb-3">Diagnose & Praktische Ursachen</h2>
+                    <div id="diagnosis-content" class="text-slate-300 text-sm">
+                        <p class="text-emerald-400 font-medium">Ideales Netz: Keine Störungen detektiert.</p>
+                    </div>
+                </div>
+                
+                <div class="flex-[1] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl flex flex-col">
+                    <h2 class="text-lg font-semibold text-white mb-2">ITIC / CBEMA</h2>
+                    <div class="flex-1 flex items-center justify-center rounded bg-slate-900 border border-slate-700 p-4 transition-colors duration-300" id="itic-container">
+                        <div id="itic-status" class="text-center">
+                            <span class="block text-4xl mb-2" id="itic-icon">✅</span>
+                            <span class="block font-bold text-lg" id="itic-text">Toleranzbereich</span>
+                            <span class="block text-xs text-slate-400 mt-1" id="itic-subtext">Geräte arbeiten normal.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full xl:w-[480px] bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl overflow-y-auto flex flex-col gap-6 shrink-0">
+            
+            <div>
+                <label class="block text-sm font-medium mb-2 text-slate-300">Spannungsebene</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="voltage" value="230" class="text-blue-500 focus:ring-blue-500">
+                        <span>230V L-N</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="voltage" value="400" checked class="text-blue-500 focus:ring-blue-500">
+                        <span>400V L-L (Industrie)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+                <h3 class="text-md font-bold text-amber-400 mb-4">RMS-Netzereignisse (Dips/Swells)</h3>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm font-medium text-slate-300">Spannungsniveau (Event)</label>
+                        <span id="val-event-depth" class="text-sm text-amber-400 font-mono">100%</span>
+                    </div>
+                    <input type="range" id="slider-event-depth" min="0" max="150" value="100" class="w-full event-slider">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm font-medium text-slate-300">Ereignisdauer</label>
+                        <span id="val-event-duration" class="text-sm text-amber-400 font-mono">0 ms</span>
+                    </div>
+                    <input type="range" id="slider-event-duration" min="0" max="150" step="10" value="0" class="w-full event-slider">
+                </div>
+            </div>
+
+            <div class="bg-red-900/20 p-4 rounded-lg border border-red-900/50">
+                <h3 class="text-md font-bold text-red-400 mb-3 flex items-center gap-2">
+                    <span>⚡ Transiente Schadensbilder</span>
+                </h3>
+                <div class="space-y-3">
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <input type="checkbox" id="evt-igbt" class="event-cb mt-1">
+                        <div>
+                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">IGBT-Zerstörung (Resonanz)</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <input type="checkbox" id="evt-triac" class="event-cb mt-1">
+                        <div>
+                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Unsauberer Nulldurchgang (TRIAC)</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <input type="checkbox" id="evt-transient" class="event-cb mt-1">
+                        <div>
+                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Transientes Ringing (Schalthandlung)</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <input type="checkbox" id="evt-spike" class="event-cb mt-1">
+                        <div>
+                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Massiver Überspannungs-Spike</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-4 pb-4">
+                <h3 class="text-md font-bold text-blue-400 mb-2">Kontinuierliche Netzrückwirkungen</h3>
+                
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-300">Kommutierungseinbrüche</label>
+                        <span id="val-notches" class="text-sm text-blue-400">0%</span>
+                    </div>
+                    <input type="range" id="slider-notches" min="0" max="25" value="0" class="w-full slider-accent">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-300">Ungerade Oberwellen (3. bis 15. Ordnung)</label>
+                        <span id="val-odd" class="text-sm text-blue-400">0%</span>
+                    </div>
+                    <input type="range" id="slider-odd" min="0" max="30" value="0" class="w-full slider-accent">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-300">Gerade Oberwellen (2. bis 8. Ordnung)</label>
+                        <span id="val-even" class="text-sm text-blue-400">0%</span>
+                    </div>
+                    <input type="range" id="slider-even" min="0" max="15" value="0" class="w-full slider-accent">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-300">Supraharmonische (HF-Rauschen 2-150 kHz)</label>
+                        <span id="val-supra" class="text-sm text-blue-400">0%</span>
+                    </div>
+                    <input type="range" id="slider-supra" min="0" max="30" value="0" class="w-full slider-accent">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-300">Flicker-Intensität</label>
+                        <span id="val-flicker" class="text-sm text-blue-400">0%</span>
+                    </div>
+                    <input type="range" id="slider-flicker" min="0" max="15" value="0" class="w-full slider-accent">
+                </div>
+            </div>
+
+            <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+                <button id="btn-toggle-harmonics" type="button" class="w-full flex justify-between items-center text-md font-bold text-purple-400 mb-2">
+                    <span>🎛️ Einzel-Oberwellen (Ordnung 2–20)</span>
+                    <span id="harmonics-toggle-icon">▾</span>
+                </button>
+                <p class="text-xs text-slate-400 mb-3">Direkter, unabhängiger Zugriff auf jede Oberwellenordnung von der 2. bis zur 20. (Amplitude relativ zur Grundschwingung).</p>
+                <div id="harmonics-grid" class="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto pr-1"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Datenbank mit jeweils mind. 3 Ursachen pro Phänomen
+        const causesDB = {
+            notches: { 
+                title: "Kommutierungseinbrüche", 
+                items: [
+                    "Netzgeführte Stromrichter (z.B. B6-Thyristorbrücken in großen Spritzgießmaschinen).",
+                    "Umschaltvorgänge in direkten Frequenzumrichtern (Fehlen von Netzdrosseln).",
+                    "Leistungsstarke Schweißanlagen mit Phasenanschnittsteuerung im Industrieeinsatz."
+                ] 
+            },
+            odd: { 
+                title: "Ungerade Oberwellen (3. bis 15. Ordnung)", 
+                items: [
+                    "Unkompensierte B6-Gleichrichter (AFE deaktiviert oder passiv).",
+                    "Geballte einphasige IT-Lasten (Serverfarmen verursachen massive 3., 9. und 15. Harmonische).",
+                    "Nichtlineare LED-Beleuchtungskonzepte ohne aktive Power Factor Correction (PFC)."
+                ] 
+            },
+            even: { 
+                title: "Gerade Oberwellen (2. bis 8. Ordnung)", 
+                items: [
+                    "Asymmetrische Phasenanschnittsteuerung (ungleiche Zündwinkel der Halbwellen).",
+                    "Defekte Dioden in Brückengleichrichtern (Halbwelleneffekt).",
+                    "Gleichstromvormagnetisierung von Leistungstransformatoren."
+                ] 
+            },
+            supra: { 
+                title: "Supraharmonische (HF-Rauschen)", 
+                items: [
+                    "Taktfrequenzen von Active Front End (AFE) Umrichtern (meist zwischen 2 und 15 kHz).",
+                    "Einstreuungen durch PV-Wechselrichter und DC-Schnellladeinfrastruktur.",
+                    "Powerline Communication (PLC) / Rundsteuertechnik stört sensible Elektronik."
+                ] 
+            },
+            flicker: { 
+                title: "Flicker (Amplitudenmodulation)", 
+                items: [
+                    "Lichtbogenöfen in der Stahl- und Schwerindustrie.",
+                    "Taktbetrieb von großen industriellen Punktschweißmaschinen.",
+                    "Schweranlauf großer Asynchronmaschinen im benachbarten Netzabzweig."
+                ] 
+            },
+            harmonicsIndiv: {
+                title: "🎛️ Gezielte Einzel-Oberwellen (Ordnung 2–20)",
+                items: [
+                    "Resonanzanregung einzelner Ordnungen durch Kompensationskondensatoren (Parallelresonanz mit der Netzimpedanz).",
+                    "Interharmonische Kopplungen durch parallel betriebene, unterschiedlich getaktete Stromrichter/Umrichter.",
+                    "Spezifische Pulszahl von Gleichrichterschaltungen (z.B. 12-, 18- oder 24-pulsig) erzeugt charakteristische Einzelordnungen."
+                ]
+            },
+            
+            // Events
+            evtIgbt: { 
+                title: "🔴 IGBT-Zerstörung (Resonanz / Verzerrung)", 
+                isDamage: true, 
+                items: [
+                    "Ursache: Aufschaukeln von Resonanzen durch Filterkreise benachbarter Anlagen.",
+                    "Auswirkung: Die Strom- (di/dt) oder Spannungssteilheit (du/dt) überschreitet das Limit.",
+                    "Folge: Durchlegieren der IGBTs/Thyristoren – Baugruppe brennt ab."
+                ] 
+            },
+            evtTriac: { 
+                title: "🔴 TRIAC-Fehlzündung (Unsauberer Nulldurchgang)", 
+                isDamage: true, 
+                items: [
+                    "Ursache: Verzerrungen verursachen Mehrfachnulldurchgänge am Detektor.",
+                    "Auswirkung: TRIACs (z.B. L1-L2) zünden im falschen Phasenwinkel.",
+                    "Folge: Magnetspannplatten bauen keine volle Haltekraft auf (akutes Sicherheitsrisiko)."
+                ] 
+            },
+            evtTransient: { 
+                title: "🔴 Transientes Ringing", 
+                isDamage: true, 
+                items: [
+                    "Ursache: Zuschalten großer Kondensatorbänke oder MS-Schalthandlungen.",
+                    "Auswirkung: Tiefer Spannungseinbruch am Scheitelpunkt mit hochfrequentem Ausschwingen.",
+                    "Folge: Belastet Isolationsschichten und lässt Varistoren schleichend altern."
+                ] 
+            },
+            evtSpike: { 
+                title: "🔴 Massiver Überspannungs-Spike", 
+                isDamage: true, 
+                items: [
+                    "Ursache: Naher Blitzschlag oder Abriss massiver Kurzschlussströme.",
+                    "Auswirkung: Ein extrem steiler Peak, der den Nennbereich weit übersteigt.",
+                    "Folge: Akuter Durchschlag von Motorisolationen oder Zerstörung von Netzteilen."
+                ] 
+            }
+        };
+
+        let params = {
+            voltageRMS: 400,
+            notches: 0, odd: 0, even: 0, supra: 0, flicker: 0,
+            harmonics: new Array(21).fill(0), // Index 2..20 = einzeln einstellbare Oberwellen
+            eventDepth: 1.0, eventDurationMs: 0,
+            zoomX: 1, zoomY: 1, lightMode: false,
+            evtIgbt: false, evtTriac: false, evtTransient: false, evtSpike: false
+        };
+
+        const canvas = document.getElementById('scopeCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            requestAnimationFrame(drawScope);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 100); 
+
+        const updateVal = (id, val, suffix) => document.getElementById(`val-${id}`).innerText = `${val}${suffix}`;
+        
+        // Listeners
+        document.querySelectorAll('input[name="voltage"]').forEach(r => r.addEventListener('change', (e) => { params.voltageRMS = parseInt(e.target.value); requestAnimationFrame(drawScope); }));
+        
+        ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(key => {
+            document.getElementById(`slider-${key}`).addEventListener('input', (e) => {
+                params[key] = parseFloat(e.target.value) / 100; updateVal(key, e.target.value, '%'); updateDiagnosis(); requestAnimationFrame(drawScope);
+            });
+        });
+
+        document.getElementById('slider-event-depth').addEventListener('input', (e) => {
+            params.eventDepth = parseFloat(e.target.value) / 100; updateVal('event-depth', e.target.value, '%'); updateITIC(); requestAnimationFrame(drawScope);
+        });
+        document.getElementById('slider-event-duration').addEventListener('input', (e) => {
+            params.eventDurationMs = parseInt(e.target.value); updateVal('event-duration', e.target.value, ' ms'); updateITIC(); requestAnimationFrame(drawScope);
+        });
+
+        // FIX: vorheriges Regex-Mapping erzeugte falsche Keys (z.B. "evtigbt" statt "evtIgbt"),
+        // wodurch die Checkboxen NIE den tatsächlich ausgewerteten Parameter setzten.
+        // Daher hatte das Aktivieren der Checkboxen bisher keinerlei sichtbaren Effekt im Oszilloskop.
+        const evtKeyMap = {
+            'evt-igbt': 'evtIgbt',
+            'evt-triac': 'evtTriac',
+            'evt-transient': 'evtTransient',
+            'evt-spike': 'evtSpike'
+        };
+        Object.keys(evtKeyMap).forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                params[evtKeyMap[id]] = e.target.checked;
+                updateDiagnosis(); requestAnimationFrame(drawScope);
+            });
+        });
+
+        // Dynamischer Aufbau der Einzel-Oberwellen-Regler (Ordnung 2 bis 20)
+        const harmonicsGrid = document.getElementById('harmonics-grid');
+        for (let n = 2; n <= 20; n++) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2';
+            row.innerHTML = `
+                <span class="text-xs text-slate-400 w-9 font-mono shrink-0">H${n}</span>
+                <input type="range" id="slider-h${n}" min="0" max="50" value="0" class="w-full" style="accent-color:#a855f7">
+                <span id="val-h${n}" class="text-xs text-purple-300 font-mono w-10 text-right shrink-0">0%</span>
+            `;
+            harmonicsGrid.appendChild(row);
+            row.querySelector('input').addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                params.harmonics[n] = v / 100;
+                document.getElementById(`val-h${n}`).innerText = `${v}%`;
+                updateDiagnosis(); requestAnimationFrame(drawScope);
+            });
+        }
+        document.getElementById('btn-toggle-harmonics').addEventListener('click', () => {
+            const grid = document.getElementById('harmonics-grid');
+            const icon = document.getElementById('harmonics-toggle-icon');
+            const isHidden = grid.style.display === 'none';
+            grid.style.display = isHidden ? 'grid' : 'none';
+            icon.innerText = isHidden ? '▾' : '▸';
+        });
+
+        document.getElementById('zoom-x').addEventListener('input', (e) => { params.zoomX = parseFloat(e.target.value); requestAnimationFrame(drawScope); });
+        document.getElementById('zoom-y').addEventListener('input', (e) => { params.zoomY = parseFloat(e.target.value); requestAnimationFrame(drawScope); });
+        document.getElementById('btn-theme').addEventListener('click', () => { params.lightMode = !params.lightMode; requestAnimationFrame(drawScope); });
+        document.getElementById('btn-screenshot').addEventListener('click', () => {
+            const link = document.createElement('a'); link.download = `PQ_Analyse_${params.voltageRMS}V.png`; link.href = canvas.toDataURL('image/png', 1.0); link.click();
+        });
+
+        function updateDiagnosis() {
+            const diag = document.getElementById('diagnosis-content');
+            let active = [];
+            
+            if (params.evtIgbt) active.push(causesDB.evtIgbt);
+            if (params.evtTriac) active.push(causesDB.evtTriac);
+            if (params.evtTransient) active.push(causesDB.evtTransient);
+            if (params.evtSpike) active.push(causesDB.evtSpike);
+            
+            if (params.notches > 0) active.push(causesDB.notches);
+            if (params.odd > 0) active.push(causesDB.odd);
+            if (params.even > 0) active.push(causesDB.even);
+            if (params.supra > 0) active.push(causesDB.supra);
+            if (params.flicker > 0) active.push(causesDB.flicker);
+            if (params.harmonics.some(v => v > 0)) active.push(causesDB.harmonicsIndiv);
+
+            if (active.length === 0) {
+                diag.innerHTML = '<p class="text-emerald-400 font-medium">Ideales Netz: Keine Störungen detektiert.</p>';
+                return;
+            }
+            diag.innerHTML = active.map(evt => `
+                <div class="mb-3 bg-slate-900/50 p-3 rounded border border-slate-700 shadow-sm">
+                    <span class="font-bold block mb-1 ${evt.isDamage ? 'text-red-400' : 'text-blue-300'}">${evt.title}</span>
+                    <ul class="${evt.isDamage ? 'cause-list damage-list' : 'cause-list'} ml-2 text-slate-300">${evt.items.map(i => `<li>${i}</li>`).join('')}</ul>
+                </div>
+            `).join('');
+        }
+
+        function updateITIC() {
+            const depth = params.eventDepth * 100; const duration = params.eventDurationMs;
+            const icon = document.getElementById('itic-icon'); const text = document.getElementById('itic-text');
+            const sub = document.getElementById('itic-subtext'); const cont = document.getElementById('itic-container');
+
+            if (duration === 0 || depth === 100) {
+                icon.innerText = "✅"; text.innerText = "Kein Ereignis"; text.className = "block font-bold text-lg text-emerald-400";
+                sub.innerText = "Spannung im Nennbereich."; cont.style.borderColor = "#334155"; return;
+            }
+
+            let status = "SAFE"; let msg = "Toleranzbereich.";
+            if (depth < 90) { // Unterspannung
+                if (duration <= 20) { status = "SAFE"; msg = "Überbrückung durch Netzteil-Kondensatoren ausreichend."; }
+                else if (depth < 70 && duration > 20) { status = "FAIL"; msg = "Unterspannungsschwellwert unterschritten (Reboot/Ausfall)."; }
+                else if (depth < 80 && duration > 500) { status = "FAIL"; msg = "Dauerhafter Einbruch führt zu Systemausfall."; }
+                else { status = "SAFE"; msg = "Innerhalb der ITIC-Toleranzkurve."; }
+            } else if (depth > 110) { // Überspannung
+                if (depth > 120 && duration > 3) { status = "DAMAGE"; msg = "Akute Gefahr der Zerstörung von Komponenten/Isolation."; }
+                else if (depth > 110 && duration > 500) { status = "DAMAGE"; msg = "Thermische Überlastung der IT-Netzteile."; }
+                else { status = "SAFE"; msg = "Kurzzeitige Überhöhung wird von Varistoren abgefangen."; }
+            }
+
+            if (status === "SAFE") { icon.innerText = "🟢"; text.innerText = "Toleranzbereich"; text.className = "block font-bold text-lg text-emerald-400"; cont.style.borderColor = "#10b981"; }
+            else if (status === "FAIL") { icon.innerText = "⚠️"; text.innerText = "Ausfall (Reboot)"; text.className = "block font-bold text-lg text-amber-400"; cont.style.borderColor = "#f59e0b"; }
+            else { icon.innerText = "💥"; text.innerText = "Hardwareschaden"; text.className = "block font-bold text-lg text-red-500"; cont.style.borderColor = "#ef4444"; }
+            sub.innerText = msg;
+        }
+
+        function drawScope() {
+            const w = canvas.parentElement.clientWidth; const h = canvas.parentElement.clientHeight; const centerY = h / 2;
+            const bgCol = params.lightMode ? '#ffffff' : '#1e293b'; const gridCol = params.lightMode ? '#e2e8f0' : '#334155';
+            const textCol = params.lightMode ? '#475569' : '#94a3b8'; const zeroCol = params.lightMode ? '#94a3b8' : '#64748b';
+            const hasError = params.evtIgbt || params.evtTriac || params.evtTransient || params.evtSpike;
+            const lineCol = hasError ? (params.lightMode ? '#dc2626' : '#ef4444') : (params.lightMode ? '#0284c7' : '#38bdf8');
+            const eventHighlight = params.lightMode ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.15)';
+
+            ctx.fillStyle = bgCol; ctx.fillRect(0, 0, w, h);
+            
+            const uPeak = params.voltageRMS * Math.sqrt(2);
+            const durationMs = 200 / params.zoomX; 
+            const scaleY = (h / 2) / (1000 / params.zoomY); 
+            const omega = 2 * Math.PI * 50;
+
+            const eventStartMs = 40; const eventEndMs = eventStartMs + params.eventDurationMs;
+
+            ctx.strokeStyle = gridCol; ctx.lineWidth = 1; ctx.beginPath();
+            ctx.fillStyle = textCol; ctx.font = '11px sans-serif';
+
+            for(let ms=0; ms<=durationMs; ms+=10) {
+                let x = (ms / durationMs) * w; ctx.moveTo(x, 0); ctx.lineTo(x, h);
+                if(ms % 20 === 0 && ms > 0) ctx.fillText(`${ms}ms`, x + 4, h - 5);
+            }
+            for(let v = 0; v <= (1000/params.zoomY); v += 200) {
+                let yP = centerY - (v * scaleY); ctx.moveTo(0, yP); ctx.lineTo(w, yP); if(v > 0) ctx.fillText(`+${v}V`, 5, yP - 4);
+                let yN = centerY + (v * scaleY); ctx.moveTo(0, yN); ctx.lineTo(w, yN); if(v > 0) ctx.fillText(`-${v}V`, 5, yN - 4);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = zeroCol; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(w, centerY); ctx.stroke();
+
+            // RMS Event Highlight
+            if (params.eventDurationMs > 0 && eventStartMs < durationMs) {
+                const sX = (eventStartMs / durationMs) * w; const eX = (Math.min(eventEndMs, durationMs) / durationMs) * w;
+                ctx.fillStyle = eventHighlight; ctx.fillRect(sX, 0, eX - sX, h);
+            }
+
+            ctx.beginPath(); ctx.strokeStyle = lineCol; ctx.lineWidth = params.lightMode ? 2.5 : 2; ctx.lineJoin = 'round';
+
+            // Arrays für THD Berechnung
+            const oddWeights = [1, 0.5, 0.3, 0.15, 0.1, 0.08, 0.05]; // 3., 5., 7., 9., 11., 13., 15.
+            const oddOrders = [3, 5, 7, 9, 11, 13, 15];
+            const evenWeights = [1, 0.5, 0.2, 0.1]; // 2., 4., 6., 8.
+            const evenOrders = [2, 4, 6, 8];
+
+            for (let x = 0; x <= w; x++) {
+                let t = (x / w) * (durationMs / 1000); let tMs = t * 1000;
+                let cFactor = (params.eventDurationMs > 0 && tMs >= eventStartMs && tMs <= eventEndMs) ? params.eventDepth : 1.0;
+
+                let uBase = uPeak * Math.sin(omega * t);
+                if (params.flicker > 0) uBase *= (1 + params.flicker * Math.sin(2 * Math.PI * 8 * t)); 
+                
+                uBase *= cFactor;
+
+                // Ungerade Oberwellen bis zur 15. Ordnung
+                if (params.odd > 0) {
+                    let oddSum = 0;
+                    for(let i=0; i<oddOrders.length; i++) {
+                        oddSum += oddWeights[i] * Math.sin(oddOrders[i] * omega * t);
+                    }
+                    uBase += (uPeak * cFactor) * params.odd * oddSum;
+                }
+
+                // Gerade Oberwellen bis zur 8. Ordnung
+                if (params.even > 0) {
+                    let evenSum = 0;
+                    for(let i=0; i<evenOrders.length; i++) {
+                        evenSum += evenWeights[i] * Math.sin(evenOrders[i] * omega * t);
+                    }
+                    uBase += (uPeak * cFactor) * params.even * evenSum;
+                }
+
+                // Einzel-Oberwellen 2. bis 20. Ordnung (direkter, unabhängiger Zugriff per Schieberegler)
+                let indivSum = 0;
+                for (let n = 2; n <= 20; n++) {
+                    if (params.harmonics[n] > 0) indivSum += params.harmonics[n] * Math.sin(n * omega * t);
+                }
+                if (indivSum !== 0) uBase += (uPeak * cFactor) * indivSum;
+                
+                // Supraharmonische (Mischung aus Schalttakt und Rauschen)
+                if (params.supra > 0) {
+                    let switchF = Math.sin(2 * Math.PI * 8500 * t);
+                    let pseudoR = (Math.sin(x * 12.9898) * 43758.5453) % 1; 
+                    uBase += (uPeak * cFactor) * params.supra * (0.7 * switchF + 0.3 * (pseudoR - 0.5));
+                }
+
+                // Kommutierungseinbrüche
+                if (params.notches > 0) {
+                    const phase = (omega * t) % (Math.PI); const notchW = 0.04; const notchD = (uPeak * cFactor) * params.notches * 1.5;
+                    if (Math.abs(phase - 0.5) < notchW) uBase -= notchD * (1 - Math.abs(phase - 0.5)/notchW) * Math.sign(Math.sin(omega*t));
+                    if (Math.abs(phase - 2.6) < notchW) uBase += notchD * (1 - Math.abs(phase - 2.6)/notchW) * Math.sign(Math.sin(omega*t));
+                }
+
+                // Transiente Events
+                if (params.evtTriac && tMs > 97 && tMs < 103) uBase += uPeak * 0.3 * Math.sin(2 * Math.PI * 250 * (t - 0.097));
+                if (params.evtIgbt && tMs > 82 && tMs < 92) uBase -= uPeak * 0.9 * Math.sin(2 * Math.PI * 100 * (t - 0.082)) * Math.exp(-(tMs-82)/5);
+                if (params.evtTransient && tMs > 104 && tMs < 112) uBase -= uPeak * 0.7 * Math.exp(-(tMs-104)*0.8) * Math.cos(2 * Math.PI * 1200 * t);
+                if (params.evtSpike && tMs > 120 && tMs < 125) uBase += uPeak * 1.8 * Math.exp(-(tMs-120)*1.5) * Math.sin(2 * Math.PI * 3000 * (t - 0.12));
+
+                let y = centerY - (uBase * scaleY); y = Math.max(-10, Math.min(h + 10, y));
+
+                if (x === 0) {
+                    // Korrekte THD Berechnung inkl. der allgemeinen Ordnungen UND der Einzel-Oberwellen
+                    let oddSqSum = oddWeights.reduce((sum, w) => sum + Math.pow(params.odd * w, 2), 0);
+                    let evenSqSum = evenWeights.reduce((sum, w) => sum + Math.pow(params.even * w, 2), 0);
+                    let indivSqSum = 0;
+                    for (let n = 2; n <= 20; n++) indivSqSum += Math.pow(params.harmonics[n], 2);
+                    const thd = Math.sqrt(oddSqSum + evenSqSum + indivSqSum) * 100;
+                    document.getElementById('thd-display').innerText = thd.toFixed(1);
+                    ctx.moveTo(x, y);
+                } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        updateDiagnosis(); updateITIC(); requestAnimationFrame(drawScope);
+    </script>
+</body>
+</html>
