@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ein Kerzchen für PowerPoint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        #stage {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background-color: #34495e;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Kerze */
+        #candle {
+            position: absolute;
+            bottom: 50px;
+            right: 100px;
+            width: 60px;
+            height: 150px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+            box-shadow: inset -10px 0 10px rgba(0,0,0,0.1);
+        }
+
+        #wick {
+            position: absolute;
+            top: -15px;
+            left: 28px;
+            width: 4px;
+            height: 15px;
+            background-color: #333;
+        }
+
+        /* Streichholzschachtel */
+        #matchbox {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            width: 120px;
+            height: 60px;
+            background-color: #e74c3c;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        #striking-surface {
+            position: absolute;
+            bottom: -5px;
+            left: 10px;
+            width: 100px;
+            height: 10px;
+            background-color: #2c3e50;
+            border-radius: 2px;
+        }
+
+        /* Streichholz */
+        #match {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 80px;
+            height: 10px;
+            cursor: grab;
+            transform-origin: left center;
+            z-index: 10;
+        }
+
+        #match:active {
+            cursor: grabbing;
+        }
+
+        #match-stick {
+            position: absolute;
+            top: 2px;
+            left: 15px;
+            width: 65px;
+            height: 6px;
+            background-color: #d3b88c;
+            border-radius: 2px;
+        }
+
+        #match-head {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 15px;
+            height: 10px;
+            background-color: #8b0000;
+            border-radius: 5px;
+        }
+
+        /* Flammen (CSS Animation) */
+        .flame {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255,200,0,1) 0%, rgba(255,100,0,1) 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .flame.lit {
+            opacity: 1;
+            animation: flicker 0.1s infinite alternate;
+        }
+
+        #match-flame {
+            width: 20px;
+            height: 30px;
+            top: -20px;
+            left: -5px;
+            transform: rotate(-90deg);
+        }
+
+        #candle-flame {
+            width: 30px;
+            height: 45px;
+            top: -55px;
+            left: 15px;
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.05) translate(1px, -1px); }
+        }
+
+        .success-message {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            color: #f1c40f;
+            opacity: 0;
+            transition: opacity 1s;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>R.I.P. PowerPoint</h1>
+    <p>1. Reibe das Streichholz an der Schachtel, um es zu entzünden.<br>2. Zünde damit die Kerze an.</p>
+
+    <div id="stage">
+        <div class="success-message" id="message">Möge der statische Foliensatz in Frieden ruhen.</div>
+        
+        <div id="matchbox">
+            Schachtel
+            <div id="striking-surface"></div>
+        </div>
+
+        <div id="candle">
+            <div id="candle-flame" class="flame"></div>
+            <div id="wick"></div>
+        </div>
+
+        <div id="match">
+            <div id="match-flame" class="flame"></div>
+            <div id="match-head"></div>
+            <div id="match-stick"></div>
+        </div>
+    </div>
+
+    <script>
+        const match = document.getElementById('match');
+        const strikingSurface = document.getElementById('striking-surface');
+        const matchFlame = document.getElementById('match-flame');
+        const candleWick = document.getElementById('wick');
+        const candleFlame = document.getElementById('candle-flame');
+        const stage = document.getElementById('stage');
+        const message = document.getElementById('message');
+
+        let isDragging = false;
+        let isMatchLit = false;
+        let isCandleLit = false;
+        let rubFriction = 0;
+
+        // Offset-Variablen für das flüssige Ziehen
+        let offsetX = 0;
+        let offsetY = 0;
+
+        // Start Drag
+        function startDrag(e) {
+            isDragging = true;
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            
+            const matchRect = match.getBoundingClientRect();
+            offsetX = clientX - matchRect.left;
+            offsetY = clientY - matchRect.top;
+        }
+
+        // Während des Ziehens
+        function onDrag(e) {
+            if (!isDragging) return;
+
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+            const stageRect = stage.getBoundingClientRect();
+
+            // Position innerhalb der Bühne berechnen
+            let newX = clientX - stageRect.left - offsetX;
+            let newY = clientY - stageRect.top - offsetY;
+
+            match.style.left = `${newX}px`;
+            match.style.top = `${newY}px`;
+
+            checkInteractions();
+        }
+
+        // Ende Drag
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        // Kollisionserkennung zwischen zwei Elementen
+        function isOverlapping(el1, el2) {
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+
+        // Interaktionen prüfen (Reiben & Anzünden)
+        function checkInteractions() {
+            const matchHead = document.getElementById('match-head');
+
+            // 1. Logik fürs Streichholz anzünden
+            if (!isMatchLit && isOverlapping(matchHead, strikingSurface)) {
+                rubFriction += 1; // "Reibung" aufbauen
+                if (rubFriction > 15) { // Nach etwas Bewegung zündet es
+                    isMatchLit = true;
+                    matchFlame.classList.add('lit');
+                }
+            }
+
+            // 2. Logik fürs Kerze anzünden
+            if (isMatchLit && !isCandleLit && isOverlapping(matchHead, candleWick)) {
+                isCandleLit = true;
+                candleFlame.classList.add('lit');
+                message.style.opacity = 1; // Zeige Erfolgsnachricht
+            }
+        }
+
+        // Event Listener (Maus & Touch)
+        match.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('mouseup', stopDrag);
+
+        match.addEventListener('touchstart', startDrag, {passive: false});
+        document.addEventListener('touchmove', onDrag, {passive: false});
+        document.addEventListener('touchend', stopDrag);
+    </script>
+</body>
+</html>
