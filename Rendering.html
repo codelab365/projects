@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Organic Blob</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; }
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        #ui-panel { position: absolute; top: 20px; right: 20px; z-index: 10; max-height: 90vh; overflow-y: auto; }
+        
+        /* Custom Slider Styling für Tailwind */
+        input[type=range] {
+            accent-color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-panel" class="bg-slate-800/80 backdrop-blur-md text-slate-200 p-6 rounded-xl shadow-2xl w-80 border border-slate-700">
+        <h2 class="text-xl font-bold mb-4 text-white">Blob Controls</h2>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 flex justify-between">
+                <span>Geschwindigkeit</span>
+                <span id="speed-val" class="text-blue-400">1.0</span>
+            </label>
+            <input type="range" id="speed" min="0" max="5" step="0.1" value="1.0" class="w-full">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 flex justify-between">
+                <span>Frequenz (Grob)</span>
+                <span id="freq-val" class="text-blue-400">2.0</span>
+            </label>
+            <input type="range" id="frequency" min="0.1" max="10" step="0.1" value="2.0" class="w-full">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 flex justify-between">
+                <span>Komplexität (Fein)</span>
+                <span id="comp-val" class="text-blue-400">3.0</span>
+            </label>
+            <input type="range" id="complexity" min="1" max="8" step="0.5" value="3.0" class="w-full">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 flex justify-between">
+                <span>Amplitude</span>
+                <span id="amp-val" class="text-blue-400">0.4</span>
+            </label>
+            <input type="range" id="amplitude" min="0" max="2" step="0.05" value="0.4" class="w-full">
+        </div>
+
+        <hr class="border-slate-600 my-4">
+
+        <div class="mb-4 flex items-center justify-between">
+            <label class="text-sm font-medium">Farbe</label>
+            <input type="color" id="color" value="#ff3e6c" class="h-8 w-16 rounded cursor-pointer bg-transparent border-0 p-0">
+        </div>
+
+        <div class="flex items-center">
+            <input type="checkbox" id="wireframe" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 bg-slate-700 border-slate-600">
+            <label for="wireframe" class="ml-2 text-sm font-medium cursor-pointer">Wireframe aktivieren</label>
+        </div>
+    </div>
+
+    <div id="webgl-container"></div>
+
+    <script>
+        // --- Konfiguration ---
+        const config = {
+            speed: 1.0,
+            frequency: 2.0,
+            complexity: 3.0,
+            amplitude: 0.4,
+            color: '#ff3e6c',
+            wireframe: false
+        };
+
+        // --- UI Binding ---
+        const bindSlider = (id, key) => {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(`${id}-val`);
+            el.addEventListener('input', (e) => {
+                config[key] = parseFloat(e.target.value);
+                valEl.innerText = config[key].toFixed(2);
+            });
+        };
+
+        bindSlider('speed', 'speed');
+        bindSlider('frequency', 'frequency');
+        bindSlider('complexity', 'complexity');
+        bindSlider('amplitude', 'amplitude');
+
+        document.getElementById('color').addEventListener('input', (e) => {
+            config.color = e.target.value;
+            blobMaterial.color.set(config.color);
+        });
+
+        document.getElementById('wireframe').addEventListener('change', (e) => {
+            config.wireframe = e.target.checked;
+            blobMaterial.wireframe = config.wireframe;
+        });
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('webgl-container');
+        
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 8;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        // --- Beleuchtung ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0xffffff, 0.8);
+        pointLight1.position.set(5, 5, 5);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x4444ff, 0.5);
+        pointLight2.position.set(-5, -5, -5);
+        scene.add(pointLight2);
+
+        // --- Geometrie & Material ---
+        // Hohe Segmentanzahl für weiche Vertex-Verformung
+        const geometry = new THREE.SphereGeometry(1.5, 128, 128);
+        
+        // Speichere die originalen Vertices als Referenz, damit wir nicht
+        // inkrementell deformieren und die Geometrie explodiert.
+        const originalPositions = new Float32Array(geometry.attributes.position.array);
+
+        const blobMaterial = new THREE.MeshStandardMaterial({
+            color: config.color,
+            wireframe: config.wireframe,
+            roughness: 0.2,
+            metalness: 0.1
+        });
+
+        const blob = new THREE.Mesh(geometry, blobMaterial);
+        scene.add(blob);
+
+        // --- Animationsschleife ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const t = clock.getElapsedTime();
+            const positionAttribute = geometry.attributes.position;
+            const time = t * config.speed;
+
+            // Iteriere über alle Vertices
+            for (let i = 0; i < positionAttribute.count; i++) {
+                const ox = originalPositions[i * 3];
+                const oy = originalPositions[i * 3 + 1];
+                const oz = originalPositions[i * 3 + 2];
+
+                // Normalisiere den Vektor, um die Richtung vom Zentrum zu erhalten
+                const len = Math.sqrt(ox*ox + oy*oy + oz*oz);
+                const nx = ox / len;
+                const ny = oy / len;
+                const nz = oz / len;
+
+                // Welle 1: Grobe Verzerrung
+                const wave1 = Math.sin(nx * config.frequency + time) *
+                              Math.sin(ny * config.frequency + time) *
+                              Math.sin(nz * config.frequency + time);
+
+                // Welle 2: Feine Verzerrung (Frequenz mit Komplexität multipliziert)
+                const wave2 = Math.sin(nx * config.frequency * config.complexity + time * 1.5) *
+                              Math.sin(ny * config.frequency * config.complexity + time * 1.5) *
+                              Math.sin(nz * config.frequency * config.complexity + time * 1.5);
+
+                // Addiere beide Wellen. Die feine Welle hat nur 30% der Amplitude.
+                const displacement = (wave1 * config.amplitude) + (wave2 * config.amplitude * 0.3);
+
+                // Setze die neue Position entlang des Normalenvektors
+                positionAttribute.setXYZ(i,
+                    ox + nx * displacement,
+                    oy + ny * displacement,
+                    oz + nz * displacement
+                );
+            }
+
+            // Teile Three.js mit, dass sich die Positionen geändert haben
+            positionAttribute.needsUpdate = true;
+            
+            // WICHTIG: Normalen neu berechnen, damit das Licht korrekt auf die neuen Verformungen reagiert
+            geometry.computeVertexNormals();
+
+            // Langsame Eigenrotation
+            blob.rotation.x += 0.002;
+            blob.rotation.y += 0.003;
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Fenster-Resize Handling ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        animate();
+    </script>
+</body>
+</html>
