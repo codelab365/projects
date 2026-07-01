@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { border-radius: 0.5rem; border: 1px solid #334155; cursor: crosshair; }
+        canvas { border-radius: 0.5rem; border: 1px solid #334155; cursor: crosshair; touch-action: none; }
         .slider-accent { accent-color: #3b82f6; }
         .event-slider { accent-color: #f59e0b; }
         .event-cb { accent-color: #ef4444; width: 1.25rem; height: 1.25rem; }
@@ -18,551 +18,938 @@
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .btn { @apply text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2; }
     </style>
 </head>
-<body class="p-6 h-screen flex flex-col overflow-hidden">
+<body class="p-6 min-h-screen flex flex-col">
 
-    <header class="mb-4 flex justify-between items-end shrink-0">
+    <header class="mb-4 flex flex-wrap justify-between items-end gap-3 shrink-0">
         <div>
             <h1 class="text-3xl font-bold text-white mb-1">PQ-Simulator: Industrielle Netzrückwirkungen</h1>
-            <p class="text-slate-400">Vollständige Signalanalyse (bis 20. Harmonische, einzeln einstellbar), ITIC-Bewertung und konkrete Schadensbilder.</p>
+            <p class="text-slate-400">Zeitsignal &amp; Frequenzspektrum (FFT), THD, ITIC-Bewertung und konkrete Schadensbilder.</p>
         </div>
-        <div class="flex gap-3">
-            <button id="btn-theme" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded text-sm transition">
-                🌓 Hell/Dunkel
-            </button>
-            <button id="btn-screenshot" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded font-bold text-sm transition shadow-lg flex items-center gap-2">
-                📸 Screenshot PNG
-            </button>
+        <div class="flex flex-wrap gap-2">
+            <button id="btn-theme"      class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded text-sm transition">🌓 Hell/Dunkel</button>
+            <button id="btn-save-json"  class="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2">💾 Zustand speichern</button>
+            <button id="btn-load-json"  class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2">📂 Zustand laden</button>
+            <button id="btn-export-png" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded font-bold text-sm transition shadow-lg flex items-center gap-2">📸 Bild exportieren</button>
+            <button id="btn-export-md"  class="bg-purple-600 hover:bg-purple-500 text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2">📄 Ursachen exportieren</button>
+            <input type="file" id="file-load" accept="application/json,.json" class="hidden">
         </div>
     </header>
 
     <div class="flex flex-col xl:flex-row gap-6 flex-1 min-h-0">
-        
+
         <div class="flex-1 flex flex-col gap-6 min-h-0">
-            <div class="relative flex-[2] bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl flex flex-col min-h-[350px]">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-lg font-semibold text-white">Live-Oszilloskop (50 Hz)</h2>
-                    <div class="flex gap-4 items-center">
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="text-slate-400">Zoom Zeit:</span>
-                            <input type="range" id="zoom-x" min="1" max="5" step="0.5" value="1" class="w-24 slider-accent">
-                        </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="text-slate-400">Zoom Spg:</span>
-                            <input type="range" id="zoom-y" min="0.5" max="3" step="0.1" value="1" class="w-24 slider-accent">
-                        </div>
-                        <div class="text-sm bg-slate-700 px-3 py-1 rounded text-blue-300 font-mono">
-                            THD: <span id="thd-display">0.00</span> %
-                        </div>
+
+            <!-- SCOPE -->
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl flex flex-col min-h-[320px]">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
+                    <h2 class="text-lg font-semibold text-white">Zeitsignal · Live-Oszilloskop (50 Hz)</h2>
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <div class="flex items-center gap-2 text-sm"><span class="text-slate-400">Zeit-Zoom</span>
+                            <input type="range" id="zoom-x" min="1" max="5" step="0.5" value="1" class="w-20 slider-accent"></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="text-slate-400">Position</span>
+                            <input type="range" id="pan-x" min="0" max="0" step="1" value="0" class="w-24 slider-accent"></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="text-slate-400">Spg-Zoom</span>
+                            <input type="range" id="zoom-y" min="0.5" max="3" step="0.1" value="1" class="w-20 slider-accent"></div>
+                        <label class="flex items-center gap-1 text-sm text-slate-400 cursor-pointer"><input type="checkbox" id="cur-scope" checked class="slider-accent"> Cursor</label>
+                        <div class="text-sm bg-slate-700 px-3 py-1 rounded text-blue-300 font-mono">THD: <span id="thd-display">0.0</span> %</div>
                     </div>
                 </div>
-                <div class="flex-1 relative w-full h-full">
-                    <canvas id="scopeCanvas"></canvas>
-                </div>
+                <div class="flex-1 relative w-full" style="min-height:240px"><canvas id="scopeCanvas"></canvas></div>
+                <div id="scope-readout" class="mt-2 text-xs font-mono flex flex-wrap gap-x-6 gap-y-1"></div>
             </div>
 
-            <div class="flex-[1] min-h-[220px] flex gap-4">
-                <div class="flex-[2] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl overflow-y-auto">
-                    <h2 class="text-lg font-semibold text-white mb-3">Diagnose & Praktische Ursachen</h2>
-                    <div id="diagnosis-content" class="text-slate-300 text-sm">
-                        <p class="text-emerald-400 font-medium">Ideales Netz: Keine Störungen detektiert.</p>
+            <!-- SPECTRUM -->
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl flex flex-col min-h-[280px]">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
+                    <h2 class="text-lg font-semibold text-white">Frequenzspektrum · FFT (Amplitude v. Grundschwingung)</h2>
+                    <div class="flex flex-wrap gap-4 items-center text-sm">
+                        <div class="flex items-center gap-2"><span class="text-slate-400">Bereich</span>
+                            <select id="spec-range" class="bg-slate-700 text-slate-100 rounded px-2 py-1 text-sm border border-slate-600">
+                                <option value="1000">bis 1 kHz (H1–H20)</option>
+                                <option value="2500" selected>bis 2,5 kHz (H1–H50)</option>
+                                <option value="10000">bis 10 kHz</option>
+                                <option value="20480">bis Nyquist (20 kHz)</option>
+                            </select></div>
+                        <div class="flex items-center gap-2"><span class="text-slate-400">Achse</span>
+                            <select id="spec-scale" class="bg-slate-700 text-slate-100 rounded px-2 py-1 text-sm border border-slate-600">
+                                <option value="pct" selected>% linear</option>
+                                <option value="log">dB (log)</option>
+                            </select></div>
+                        <label class="flex items-center gap-1 text-slate-400 cursor-pointer"><input type="checkbox" id="cur-spec" checked class="slider-accent"> Cursor</label>
                     </div>
                 </div>
-                
+                <div class="flex-1 relative w-full" style="min-height:200px"><canvas id="specCanvas"></canvas></div>
+                <div id="spec-readout" class="mt-2 text-xs font-mono flex flex-wrap gap-x-6 gap-y-1"></div>
+            </div>
+
+            <!-- DIAGNOSIS + ITIC -->
+            <div class="min-h-[220px] flex flex-col md:flex-row gap-4">
+                <div class="flex-[2] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl overflow-y-auto max-h-[340px]">
+                    <h2 class="text-lg font-semibold text-white mb-3">Diagnose &amp; praktische Ursachen</h2>
+                    <div id="diagnosis-content" class="text-slate-300 text-sm">
+                        <p class="text-emerald-400 font-medium">Ideales Netz: keine Störungen aktiv.</p>
+                    </div>
+                </div>
                 <div class="flex-[1] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl flex flex-col">
                     <h2 class="text-lg font-semibold text-white mb-2">ITIC / CBEMA</h2>
                     <div class="flex-1 flex items-center justify-center rounded bg-slate-900 border border-slate-700 p-4 transition-colors duration-300" id="itic-container">
                         <div id="itic-status" class="text-center">
                             <span class="block text-4xl mb-2" id="itic-icon">✅</span>
-                            <span class="block font-bold text-lg" id="itic-text">Toleranzbereich</span>
-                            <span class="block text-xs text-slate-400 mt-1" id="itic-subtext">Geräte arbeiten normal.</span>
+                            <span class="block font-bold text-lg" id="itic-text">Kein Ereignis</span>
+                            <span class="block text-xs text-slate-400 mt-1" id="itic-subtext">Spannung im Nennbereich.</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- CONTROLS -->
         <div class="w-full xl:w-[480px] bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl overflow-y-auto flex flex-col gap-6 shrink-0">
-            
+
             <div>
                 <label class="block text-sm font-medium mb-2 text-slate-300">Spannungsebene</label>
                 <div class="flex gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="voltage" value="230" class="text-blue-500 focus:ring-blue-500">
-                        <span>230V L-N</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="voltage" value="400" checked class="text-blue-500 focus:ring-blue-500">
-                        <span>400V L-L (Industrie)</span>
-                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="voltage" value="230" class="text-blue-500 focus:ring-blue-500"><span>230V L-N</span></label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="voltage" value="400" checked class="text-blue-500 focus:ring-blue-500"><span>400V L-L (Industrie)</span></label>
                 </div>
             </div>
 
             <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
                 <h3 class="text-md font-bold text-amber-400 mb-4">RMS-Netzereignisse (Dips/Swells)</h3>
-                
                 <div class="mb-4">
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm font-medium text-slate-300">Spannungsniveau (Event)</label>
-                        <span id="val-event-depth" class="text-sm text-amber-400 font-mono">100%</span>
-                    </div>
+                    <div class="flex justify-between mb-1"><label class="text-sm font-medium text-slate-300">Spannungsniveau (Event)</label><span id="val-event-depth" class="text-sm text-amber-400 font-mono">100%</span></div>
                     <input type="range" id="slider-event-depth" min="0" max="150" value="100" class="w-full event-slider">
                 </div>
-
                 <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm font-medium text-slate-300">Ereignisdauer</label>
-                        <span id="val-event-duration" class="text-sm text-amber-400 font-mono">0 ms</span>
-                    </div>
-                    <input type="range" id="slider-event-duration" min="0" max="150" step="10" value="0" class="w-full event-slider">
+                    <div class="flex justify-between mb-1"><label class="text-sm font-medium text-slate-300">Ereignisdauer</label><span id="val-event-duration" class="text-sm text-amber-400 font-mono">0 ms</span></div>
+                    <input type="range" id="slider-event-duration" min="0" max="1000" step="5" value="0" class="w-full event-slider">
                 </div>
             </div>
 
             <div class="bg-red-900/20 p-4 rounded-lg border border-red-900/50">
-                <h3 class="text-md font-bold text-red-400 mb-3 flex items-center gap-2">
-                    <span>⚡ Transiente Schadensbilder</span>
-                </h3>
+                <h3 class="text-md font-bold text-red-400 mb-3 flex items-center gap-2"><span>⚡ Transiente Schadensbilder</span></h3>
                 <div class="space-y-3">
-                    <label class="flex items-start gap-3 cursor-pointer group">
-                        <input type="checkbox" id="evt-igbt" class="event-cb mt-1">
-                        <div>
-                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">IGBT-Zerstörung (Resonanz)</span>
-                        </div>
-                    </label>
-                    <label class="flex items-start gap-3 cursor-pointer group">
-                        <input type="checkbox" id="evt-triac" class="event-cb mt-1">
-                        <div>
-                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Unsauberer Nulldurchgang (TRIAC)</span>
-                        </div>
-                    </label>
-                    <label class="flex items-start gap-3 cursor-pointer group">
-                        <input type="checkbox" id="evt-transient" class="event-cb mt-1">
-                        <div>
-                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Transientes Ringing (Schalthandlung)</span>
-                        </div>
-                    </label>
-                    <label class="flex items-start gap-3 cursor-pointer group">
-                        <input type="checkbox" id="evt-spike" class="event-cb mt-1">
-                        <div>
-                            <span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Massiver Überspannungs-Spike</span>
-                        </div>
-                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-igbt" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">IGBT-Zerstörung (Resonanz)</span></div></label>
+                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-triac" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Unsauberer Nulldurchgang (TRIAC)</span></div></label>
+                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-transient" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Transientes Ringing (Schalthandlung)</span></div></label>
+                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-spike" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Massiver Überspannungs-Spike</span></div></label>
                 </div>
             </div>
 
             <div class="space-y-4 pb-4">
                 <h3 class="text-md font-bold text-blue-400 mb-2">Kontinuierliche Netzrückwirkungen</h3>
-                
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm text-slate-300">Kommutierungseinbrüche</label>
-                        <span id="val-notches" class="text-sm text-blue-400">0%</span>
-                    </div>
-                    <input type="range" id="slider-notches" min="0" max="25" value="0" class="w-full slider-accent">
-                </div>
-
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm text-slate-300">Ungerade Oberwellen (3. bis 15. Ordnung)</label>
-                        <span id="val-odd" class="text-sm text-blue-400">0%</span>
-                    </div>
-                    <input type="range" id="slider-odd" min="0" max="30" value="0" class="w-full slider-accent">
-                </div>
-
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm text-slate-300">Gerade Oberwellen (2. bis 8. Ordnung)</label>
-                        <span id="val-even" class="text-sm text-blue-400">0%</span>
-                    </div>
-                    <input type="range" id="slider-even" min="0" max="15" value="0" class="w-full slider-accent">
-                </div>
-
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm text-slate-300">Supraharmonische (HF-Rauschen 2-150 kHz)</label>
-                        <span id="val-supra" class="text-sm text-blue-400">0%</span>
-                    </div>
-                    <input type="range" id="slider-supra" min="0" max="30" value="0" class="w-full slider-accent">
-                </div>
-
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-sm text-slate-300">Flicker-Intensität</label>
-                        <span id="val-flicker" class="text-sm text-blue-400">0%</span>
-                    </div>
-                    <input type="range" id="slider-flicker" min="0" max="15" value="0" class="w-full slider-accent">
-                </div>
+                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Kommutierungseinbrüche</label><span id="val-notches" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-notches" min="0" max="25" value="0" class="w-full slider-accent"></div>
+                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Ungerade Oberwellen (3.–15. Ordnung)</label><span id="val-odd" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-odd" min="0" max="30" value="0" class="w-full slider-accent"></div>
+                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Gerade Oberwellen (2.–8. Ordnung)</label><span id="val-even" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-even" min="0" max="15" value="0" class="w-full slider-accent"></div>
+                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Supraharmonische (HF, ~8,5 kHz)</label><span id="val-supra" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-supra" min="0" max="30" value="0" class="w-full slider-accent"></div>
+                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Flicker-Intensität</label><span id="val-flicker" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-flicker" min="0" max="15" value="0" class="w-full slider-accent"></div>
             </div>
 
             <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-                <button id="btn-toggle-harmonics" type="button" class="w-full flex justify-between items-center text-md font-bold text-purple-400 mb-2">
-                    <span>🎛️ Einzel-Oberwellen (Ordnung 2–20)</span>
-                    <span id="harmonics-toggle-icon">▾</span>
-                </button>
-                <p class="text-xs text-slate-400 mb-3">Direkter, unabhängiger Zugriff auf jede Oberwellenordnung von der 2. bis zur 20. (Amplitude relativ zur Grundschwingung).</p>
+                <button id="btn-toggle-harmonics" type="button" class="w-full flex justify-between items-center text-md font-bold text-purple-400 mb-2"><span>🎛️ Einzel-Oberwellen (Ordnung 2–20)</span><span id="harmonics-toggle-icon">▾</span></button>
+                <p class="text-xs text-slate-400 mb-3">Direkter, unabhängiger Zugriff auf jede Oberwellenordnung (Amplitude relativ zur Grundschwingung).</p>
                 <div id="harmonics-grid" class="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto pr-1"></div>
             </div>
 
+            <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded text-sm transition">↺ Alles zurücksetzen (ideales Netz)</button>
         </div>
     </div>
 
     <script>
-        // Datenbank mit jeweils mind. 3 Ursachen pro Phänomen
-        const causesDB = {
-            notches: { 
-                title: "Kommutierungseinbrüche", 
-                items: [
-                    "Netzgeführte Stromrichter (z.B. B6-Thyristorbrücken in großen Spritzgießmaschinen).",
-                    "Umschaltvorgänge in direkten Frequenzumrichtern (Fehlen von Netzdrosseln).",
-                    "Leistungsstarke Schweißanlagen mit Phasenanschnittsteuerung im Industrieeinsatz."
-                ] 
-            },
-            odd: { 
-                title: "Ungerade Oberwellen (3. bis 15. Ordnung)", 
-                items: [
-                    "Unkompensierte B6-Gleichrichter (AFE deaktiviert oder passiv).",
-                    "Geballte einphasige IT-Lasten (Serverfarmen verursachen massive 3., 9. und 15. Harmonische).",
-                    "Nichtlineare LED-Beleuchtungskonzepte ohne aktive Power Factor Correction (PFC)."
-                ] 
-            },
-            even: { 
-                title: "Gerade Oberwellen (2. bis 8. Ordnung)", 
-                items: [
-                    "Asymmetrische Phasenanschnittsteuerung (ungleiche Zündwinkel der Halbwellen).",
-                    "Defekte Dioden in Brückengleichrichtern (Halbwelleneffekt).",
-                    "Gleichstromvormagnetisierung von Leistungstransformatoren."
-                ] 
-            },
-            supra: { 
-                title: "Supraharmonische (HF-Rauschen)", 
-                items: [
-                    "Taktfrequenzen von Active Front End (AFE) Umrichtern (meist zwischen 2 und 15 kHz).",
-                    "Einstreuungen durch PV-Wechselrichter und DC-Schnellladeinfrastruktur.",
-                    "Powerline Communication (PLC) / Rundsteuertechnik stört sensible Elektronik."
-                ] 
-            },
-            flicker: { 
-                title: "Flicker (Amplitudenmodulation)", 
-                items: [
-                    "Lichtbogenöfen in der Stahl- und Schwerindustrie.",
-                    "Taktbetrieb von großen industriellen Punktschweißmaschinen.",
-                    "Schweranlauf großer Asynchronmaschinen im benachbarten Netzabzweig."
-                ] 
-            },
-            harmonicsIndiv: {
-                title: "🎛️ Gezielte Einzel-Oberwellen (Ordnung 2–20)",
-                items: [
-                    "Resonanzanregung einzelner Ordnungen durch Kompensationskondensatoren (Parallelresonanz mit der Netzimpedanz).",
-                    "Interharmonische Kopplungen durch parallel betriebene, unterschiedlich getaktete Stromrichter/Umrichter.",
-                    "Spezifische Pulszahl von Gleichrichterschaltungen (z.B. 12-, 18- oder 24-pulsig) erzeugt charakteristische Einzelordnungen."
-                ]
-            },
-            
-            // Events
-            evtIgbt: { 
-                title: "🔴 IGBT-Zerstörung (Resonanz / Verzerrung)", 
-                isDamage: true, 
-                items: [
-                    "Ursache: Aufschaukeln von Resonanzen durch Filterkreise benachbarter Anlagen.",
-                    "Auswirkung: Die Strom- (di/dt) oder Spannungssteilheit (du/dt) überschreitet das Limit.",
-                    "Folge: Durchlegieren der IGBTs/Thyristoren – Baugruppe brennt ab."
-                ] 
-            },
-            evtTriac: { 
-                title: "🔴 TRIAC-Fehlzündung (Unsauberer Nulldurchgang)", 
-                isDamage: true, 
-                items: [
-                    "Ursache: Verzerrungen verursachen Mehrfachnulldurchgänge am Detektor.",
-                    "Auswirkung: TRIACs (z.B. L1-L2) zünden im falschen Phasenwinkel.",
-                    "Folge: Magnetspannplatten bauen keine volle Haltekraft auf (akutes Sicherheitsrisiko)."
-                ] 
-            },
-            evtTransient: { 
-                title: "🔴 Transientes Ringing", 
-                isDamage: true, 
-                items: [
-                    "Ursache: Zuschalten großer Kondensatorbänke oder MS-Schalthandlungen.",
-                    "Auswirkung: Tiefer Spannungseinbruch am Scheitelpunkt mit hochfrequentem Ausschwingen.",
-                    "Folge: Belastet Isolationsschichten und lässt Varistoren schleichend altern."
-                ] 
-            },
-            evtSpike: { 
-                title: "🔴 Massiver Überspannungs-Spike", 
-                isDamage: true, 
-                items: [
-                    "Ursache: Naher Blitzschlag oder Abriss massiver Kurzschlussströme.",
-                    "Auswirkung: Ein extrem steiler Peak, der den Nennbereich weit übersteigt.",
-                    "Folge: Akuter Durchschlag von Motorisolationen oder Zerstörung von Netzteilen."
-                ] 
+    /* =======================================================================
+       Signal- & Analyse-Kern
+       ======================================================================= */
+    const FUND = 50;                 // Grundfrequenz [Hz]
+    const FFT_CYCLES = 10;           // Analysefenster = 10 Perioden = 200 ms
+    const NFFT = 8192;               // FFT-Länge (Zweierpotenz)
+    const WIN_S = FFT_CYCLES / FUND; // 0.2 s
+    const FS = NFFT / WIN_S;         // Abtastrate = 40960 Hz
+    const BIN_HZ = FS / NFFT;        // 5 Hz je Bin -> Harmonische liegen exakt auf Bins
+    const K_FUND = Math.round(FUND / BIN_HZ); // Bin der Grundschwingung (=10)
+
+    const ODD_ORDERS  = [3, 5, 7, 9, 11, 13, 15];
+    const ODD_WEIGHTS = [1, 0.5, 0.3, 0.15, 0.1, 0.08, 0.05];
+    const EVEN_ORDERS  = [2, 4, 6, 8];
+    const EVEN_WEIGHTS = [1, 0.5, 0.2, 0.1];
+    const EVENT_START_MS = 40;
+
+    const defaultParams = () => ({
+        voltageRMS: 400,
+        notches: 0, odd: 0, even: 0, supra: 0, flicker: 0,
+        harmonics: new Array(21).fill(0),   // Index 2..20
+        eventDepth: 1.0, eventDurationMs: 0,
+        zoomX: 1, zoomY: 1, panMs: 0, lightMode: false,
+        evtIgbt: false, evtTriac: false, evtTransient: false, evtSpike: false,
+        specRangeHz: 2500, specScale: 'pct'
+    });
+    let params = defaultParams();
+
+    // deterministisches HF-Rauschen (zeit-/indexbasiert, reproduzierbar)
+    function hashNoise(i){ const x = Math.sin(i * 127.1 + 31.7) * 43758.5453; return (x - Math.floor(x)) - 0.5; }
+
+    // Ein einziger Signalgenerator, den Oszilloskop UND FFT verwenden -> garantiert konsistent.
+    function computeSample(t){
+        const tMs = t * 1000;
+        const uPeak = params.voltageRMS * Math.SQRT2;
+        const omega = 2 * Math.PI * FUND;
+        const eventEndMs = EVENT_START_MS + params.eventDurationMs;
+        const cFactor = (params.eventDurationMs > 0 && tMs >= EVENT_START_MS && tMs <= eventEndMs) ? params.eventDepth : 1.0;
+
+        let u = uPeak * Math.sin(omega * t);
+        if (params.flicker > 0) u *= (1 + params.flicker * Math.sin(2 * Math.PI * 8 * t));
+        u *= cFactor;
+
+        if (params.odd > 0){
+            let s = 0; for (let i = 0; i < ODD_ORDERS.length; i++) s += ODD_WEIGHTS[i] * Math.sin(ODD_ORDERS[i] * omega * t);
+            u += uPeak * cFactor * params.odd * s;
+        }
+        if (params.even > 0){
+            let s = 0; for (let i = 0; i < EVEN_ORDERS.length; i++) s += EVEN_WEIGHTS[i] * Math.sin(EVEN_ORDERS[i] * omega * t);
+            u += uPeak * cFactor * params.even * s;
+        }
+        let indiv = 0;
+        for (let n = 2; n <= 20; n++){ const a = params.harmonics[n]; if (a > 0) indiv += a * Math.sin(n * omega * t); }
+        if (indiv !== 0) u += uPeak * cFactor * indiv;
+
+        if (params.supra > 0){
+            const carrier = Math.sin(2 * Math.PI * 8500 * t);
+            const noise = hashNoise(Math.floor(t * FS));
+            u += uPeak * cFactor * params.supra * (0.7 * carrier + 0.3 * noise);
+        }
+
+        // 6 Kommutierungseinbrüche pro Periode (6-Puls-Gleichrichter), Einschnitt Richtung Null
+        if (params.notches > 0){
+            const theta = ((omega * t) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            const wN = 0.05, depth = uPeak * cFactor * params.notches * 2.0, sgn = Math.sign(Math.sin(omega * t)) || 1;
+            for (let k = 0; k < 6; k++){
+                const center = Math.PI / 6 + k * Math.PI / 3; // 30°,90°,...,330°
+                const d = Math.abs(theta - center);
+                if (d < wN) u -= sgn * depth * (1 - d / wN);
             }
+        }
+
+        // Transiente Einzelereignisse (im 0..200 ms Fenster -> immer im FFT-Fenster enthalten)
+        if (params.evtIgbt      && tMs > 82  && tMs < 92 ) u -= uPeak * 0.9 * Math.sin(2 * Math.PI * 100  * (t - 0.082)) * Math.exp(-(tMs - 82) / 5);
+        if (params.evtTriac     && tMs > 97  && tMs < 103) u += uPeak * 0.3 * Math.sin(2 * Math.PI * 250  * (t - 0.097));
+        if (params.evtTransient && tMs > 104 && tMs < 112) u -= uPeak * 0.7 * Math.exp(-(tMs - 104) * 0.8) * Math.cos(2 * Math.PI * 1200 * t);
+        if (params.evtSpike     && tMs > 120 && tMs < 125) u += uPeak * 1.8 * Math.exp(-(tMs - 120) * 1.5) * Math.sin(2 * Math.PI * 3000 * (t - 0.120));
+
+        return u;
+    }
+
+    // Iterative Radix-2 FFT (in-place)
+    function fft(re, im){
+        const n = re.length;
+        for (let i = 1, j = 0; i < n; i++){
+            let bit = n >> 1;
+            for (; j & bit; bit >>= 1) j ^= bit;
+            j ^= bit;
+            if (i < j){ let tr = re[i]; re[i] = re[j]; re[j] = tr; let ti = im[i]; im[i] = im[j]; im[j] = ti; }
+        }
+        for (let len = 2; len <= n; len <<= 1){
+            const ang = -2 * Math.PI / len, wRe = Math.cos(ang), wIm = Math.sin(ang);
+            for (let i = 0; i < n; i += len){
+                let curRe = 1, curIm = 0;
+                for (let k = 0; k < len / 2; k++){
+                    const a = i + k, b = i + k + len / 2;
+                    const vRe = re[b] * curRe - im[b] * curIm;
+                    const vIm = re[b] * curIm + im[b] * curRe;
+                    re[b] = re[a] - vRe; im[b] = im[a] - vIm;
+                    re[a] = re[a] + vRe; im[a] = im[a] + vIm;
+                    const nRe = curRe * wRe - curIm * wIm;
+                    curIm = curRe * wIm + curIm * wRe; curRe = nRe;
+                }
+            }
+        }
+    }
+
+    let lastMag = new Float64Array(NFFT / 2); // einseitige Amplitude je Bin
+    let lastThd = 0;
+
+    function computeSpectrum(){
+        const re = new Float64Array(NFFT), im = new Float64Array(NFFT);
+        for (let i = 0; i < NFFT; i++) re[i] = computeSample(i / FS);
+        fft(re, im);
+        const half = NFFT / 2;
+        for (let k = 0; k < half; k++){
+            const m = Math.hypot(re[k], im[k]);
+            lastMag[k] = (k === 0) ? m / NFFT : (2 * m / NFFT); // Amplitude in Volt
+        }
+        // THD-F aus den Bins (Harmonische 2..50, bezogen auf Grundschwingung)
+        const h1 = lastMag[K_FUND];
+        let sumSq = 0;
+        for (let n = 2; n <= 50; n++){ const k = n * K_FUND; if (k < half) sumSq += lastMag[k] * lastMag[k]; }
+        lastThd = h1 > 0 ? Math.sqrt(sumSq) / h1 * 100 : 0;
+        document.getElementById('thd-display').innerText = lastThd.toFixed(1);
+    }
+
+    /* =======================================================================
+       Rendering
+       ======================================================================= */
+    const scopeCanvas = document.getElementById('scopeCanvas');
+    const scopeCtx = scopeCanvas.getContext('2d');
+    const specCanvas = document.getElementById('specCanvas');
+    const specCtx = specCanvas.getContext('2d');
+
+    // Spektrum-Ränder (müssen zu Rendering UND Cursor-Trefferprüfung passen)
+    const SPEC_ML = 46, SPEC_MR = 12, SPEC_MT = 10, SPEC_MB = 24;
+
+    // Cursor-Zustand (Positionen normiert 0..1, bleiben bei Zoom/Bereichswechsel gültig)
+    const cursors = {
+        scope: { on: true, a: 0.33, b: 0.66, drag: null },
+        spec:  { on: true, a: 0.20, b: 0.50, drag: null }
+    };
+    const CUR_A = '#f59e0b', CUR_B = '#22d3ee';
+
+    function theme(){
+        const light = params.lightMode;
+        return {
+            bg:   light ? '#ffffff' : '#1e293b',
+            grid: light ? '#e2e8f0' : '#334155',
+            text: light ? '#475569' : '#94a3b8',
+            zero: light ? '#94a3b8' : '#64748b',
+            accent: light ? '#0284c7' : '#38bdf8',
+            error:  light ? '#dc2626' : '#ef4444',
+            fund:   light ? '#7c3aed' : '#a855f7',
+            evt:    light ? 'rgba(245,158,11,0.20)' : 'rgba(245,158,11,0.15)'
+        };
+    }
+
+    function renderScope(ctx, W, H, opts = {}){
+        const T = theme(), centerY = H / 2;
+        const hasError = params.evtIgbt || params.evtTriac || params.evtTransient || params.evtSpike;
+        const lineCol = hasError ? T.error : T.accent;
+
+        ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
+
+        const uPeak = params.voltageRMS * Math.SQRT2;
+        const durationMs = 200 / params.zoomX;
+        const startMs = Math.min(params.panMs, Math.max(0, 200 - durationMs));
+        const endMs = startMs + durationMs;
+        const scaleY = (H / 2) / (1000 / params.zoomY);
+
+        // Raster
+        ctx.strokeStyle = T.grid; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.fillStyle = T.text; ctx.font = '11px sans-serif';
+        const gridStepMs = durationMs <= 60 ? 5 : 10;
+        for (let ms = Math.ceil(startMs / gridStepMs) * gridStepMs; ms <= endMs; ms += gridStepMs){
+            const x = ((ms - startMs) / durationMs) * W; ctx.moveTo(x, 0); ctx.lineTo(x, H);
+            if (ms % (gridStepMs * 2) === 0) ctx.fillText(`${ms}ms`, x + 3, H - 5);
+        }
+        for (let v = 0; v <= (1000 / params.zoomY); v += 200){
+            const yP = centerY - v * scaleY, yN = centerY + v * scaleY;
+            ctx.moveTo(0, yP); ctx.lineTo(W, yP); ctx.moveTo(0, yN); ctx.lineTo(W, yN);
+            if (v > 0){ ctx.fillText(`+${v}V`, 5, yP - 4); ctx.fillText(`-${v}V`, 5, yN - 4); }
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = T.zero; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(W, centerY); ctx.stroke();
+
+        // RMS-Event-Markierung
+        if (params.eventDurationMs > 0){
+            const eS = EVENT_START_MS, eE = EVENT_START_MS + params.eventDurationMs;
+            if (eE > startMs && eS < endMs){
+                const sX = Math.max(0, ((eS - startMs) / durationMs) * W);
+                const eX = Math.min(W, ((eE - startMs) / durationMs) * W);
+                ctx.fillStyle = T.evt; ctx.fillRect(sX, 0, eX - sX, H);
+            }
+        }
+
+        // Signal
+        ctx.beginPath(); ctx.strokeStyle = lineCol; ctx.lineWidth = params.lightMode ? 2.5 : 2; ctx.lineJoin = 'round';
+        for (let x = 0; x <= W; x++){
+            const tMs = startMs + (x / W) * durationMs;
+            const u = computeSample(tMs / 1000);
+            let y = centerY - u * scaleY; y = Math.max(-10, Math.min(H + 10, y));
+            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Messcursor A/B
+        if (opts.cursors){
+            [['a', CUR_A, 'A'], ['b', CUR_B, 'B']].forEach(([key, col, lab]) => {
+                const nx = cursors.scope[key], x = nx * W;
+                const u = computeSample((startMs + nx * durationMs) / 1000);
+                let y = centerY - u * scaleY; y = Math.max(6, Math.min(H - 6, y));
+                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
+                ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(lab, Math.max(8, Math.min(W - 8, x)), 12); ctx.textAlign = 'left';
+            });
+        }
+    }
+
+    function renderSpectrum(ctx, W, H, opts = {}){
+        const T = theme();
+        const mL = SPEC_ML, mR = SPEC_MR, mT = SPEC_MT, mB = SPEC_MB;
+        const plotW = W - mL - mR, plotH = H - mT - mB;
+        const maxHz = params.specRangeHz;
+        const isLog = params.specScale === 'log';
+        const h1 = lastMag[K_FUND] || 1e-9;
+
+        ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
+
+        const xOf = f => mL + (f / maxHz) * plotW;
+        // y-Mapping
+        const LOG_FLOOR = -60; // dBc
+        let pctMax = 2;
+        if (!isLog){
+            const kMax = Math.min(lastMag.length - 1, Math.floor(maxHz / BIN_HZ));
+            for (let k = 2; k <= kMax; k++){
+                if (Math.abs(k - K_FUND) <= 1) continue; // Grundschwingung ausklammern
+                const p = lastMag[k] / h1 * 100; if (p > pctMax) pctMax = p;
+            }
+            pctMax = pctMax * 1.15;
+        }
+        const yOf = valPct => {
+            if (isLog){
+                const db = valPct > 0 ? 20 * Math.log10(valPct / 100) : LOG_FLOOR;
+                const c = Math.max(LOG_FLOOR, Math.min(0, db));
+                return mT + (1 - (c - LOG_FLOOR) / (0 - LOG_FLOOR)) * plotH;
+            }
+            const c = Math.min(pctMax, valPct);
+            return mT + (1 - c / pctMax) * plotH;
         };
 
-        let params = {
-            voltageRMS: 400,
-            notches: 0, odd: 0, even: 0, supra: 0, flicker: 0,
-            harmonics: new Array(21).fill(0), // Index 2..20 = einzeln einstellbare Oberwellen
-            eventDepth: 1.0, eventDurationMs: 0,
-            zoomX: 1, zoomY: 1, lightMode: false,
-            evtIgbt: false, evtTriac: false, evtTransient: false, evtSpike: false
+        // Raster + y-Beschriftung
+        ctx.strokeStyle = T.grid; ctx.lineWidth = 1; ctx.fillStyle = T.text; ctx.font = '10px sans-serif';
+        ctx.textAlign = 'right';
+        if (isLog){
+            for (let db = 0; db >= LOG_FLOOR; db -= 10){
+                const y = mT + (1 - (db - LOG_FLOOR) / (0 - LOG_FLOOR)) * plotH;
+                ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
+                ctx.fillText(`${db}`, mL - 4, y + 3);
+            }
+            ctx.save(); ctx.textAlign = 'center'; ctx.translate(12, mT + plotH / 2); ctx.rotate(-Math.PI / 2);
+            ctx.fillText('dBc', 0, 0); ctx.restore();
+        } else {
+            const steps = 4;
+            for (let s = 0; s <= steps; s++){
+                const p = pctMax * s / steps, y = mT + (1 - s / steps) * plotH;
+                ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
+                ctx.fillText(`${p.toFixed(p < 10 ? 1 : 0)}%`, mL - 4, y + 3);
+            }
+        }
+
+        // x-Raster (Frequenz) + Harmonischen-Marker
+        ctx.textAlign = 'center';
+        const fStep = maxHz <= 1000 ? 100 : (maxHz <= 2500 ? 250 : (maxHz <= 10000 ? 1000 : 2000));
+        for (let f = 0; f <= maxHz + 1; f += fStep){
+            const x = xOf(f);
+            ctx.strokeStyle = T.grid; ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, mT + plotH); ctx.stroke();
+            ctx.fillStyle = T.text; ctx.fillText(f >= 1000 ? `${(f/1000)}k` : `${f}`, x, H - 8);
+        }
+        ctx.fillStyle = T.text; ctx.fillText('Hz', W - mR - 6, H - 8);
+
+        // Supraharmonischer Bereich (>2 kHz) dezent markieren
+        if (maxHz > 2000){
+            const sx = xOf(2000);
+            ctx.fillStyle = params.lightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)';
+            ctx.fillRect(sx, mT, (W - mR) - sx, plotH);
+        }
+
+        // Spektrum als Fläche
+        const kMaxDraw = Math.min(lastMag.length - 1, Math.floor(maxHz / BIN_HZ));
+        const baseY = mT + plotH;
+        ctx.beginPath(); ctx.moveTo(mL, baseY);
+        for (let k = 0; k <= kMaxDraw; k++){
+            const f = k * BIN_HZ; const p = lastMag[k] / h1 * 100;
+            ctx.lineTo(xOf(f), yOf(p));
+        }
+        ctx.lineTo(xOf(kMaxDraw * BIN_HZ), baseY); ctx.closePath();
+        ctx.fillStyle = params.lightMode ? 'rgba(2,132,199,0.25)' : 'rgba(56,189,248,0.22)';
+        ctx.fill();
+        ctx.beginPath();
+        for (let k = 0; k <= kMaxDraw; k++){
+            const f = k * BIN_HZ; const p = lastMag[k] / h1 * 100;
+            const x = xOf(f), y = yOf(p);
+            if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = T.accent; ctx.lineWidth = 1.5; ctx.stroke();
+
+        // Grundschwingung + Ordnungs-Labels an markanten Harmonischen
+        const xF = xOf(FUND);
+        ctx.strokeStyle = T.fund; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(xF, mT); ctx.lineTo(xF, mT + plotH); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = T.fund; ctx.textAlign = 'left'; ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('H1', xF + 3, mT + 11);
+
+        ctx.fillStyle = T.text; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        const nMax = Math.floor(maxHz / FUND);
+        for (let n = 2; n <= nMax; n++){
+            const k = n * K_FUND; if (k >= lastMag.length) break;
+            const p = lastMag[k] / h1 * 100;
+            if (p > 1.5){ const x = xOf(n * FUND); ctx.fillText(`H${n}`, x, Math.max(mT + 9, yOf(p) - 4)); }
+        }
+
+        // Messcursor A/B
+        if (opts.cursors){
+            [['a', CUR_A, 'A'], ['b', CUR_B, 'B']].forEach(([key, col, lab]) => {
+                const nx = cursors.spec[key], x = mL + nx * plotW, f = nx * maxHz;
+                const k = Math.min(lastMag.length - 1, Math.round(f / BIN_HZ));
+                const p = lastMag[k] / h1 * 100; let y = yOf(p); y = Math.max(mT + 4, Math.min(mT + plotH - 2, y));
+                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+                ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, mT + plotH); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
+                ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(lab, Math.max(mL + 8, Math.min(W - 8, x)), mT + 11);
+            });
+        }
+        ctx.textAlign = 'left';
+    }
+
+    // On-Screen-Wrapper mit korrektem DPR
+    function paint(canvas, ctx, renderFn){
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const W = Math.max(50, rect.width), H = Math.max(50, rect.height);
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        renderFn(ctx, W, H);
+    }
+
+    let needSpec = false, scheduled = false;
+    function drawFrame(){
+        if (needSpec){ needSpec = false; computeSpectrum(); }
+        paint(scopeCanvas, scopeCtx, (c, W, H) => renderScope(c, W, H, { cursors: cursors.scope.on }));
+        paint(specCanvas, specCtx, (c, W, H) => renderSpectrum(c, W, H, { cursors: cursors.spec.on }));
+        updateReadouts();
+    }
+    function schedule(){ if (scheduled) return; scheduled = true; requestAnimationFrame(() => { scheduled = false; drawFrame(); }); }
+    function refresh(){ needSpec = true; schedule(); } // Signal geändert -> FFT neu berechnen
+    function render(){ schedule(); }                   // nur neu zeichnen (z.B. Cursor bewegt)
+
+    window.addEventListener('resize', render);
+
+    // ---- Cursor: Wertanzeige ----
+    function scopeWindow(){
+        const durationMs = 200 / params.zoomX;
+        const startMs = Math.min(params.panMs, Math.max(0, 200 - durationMs));
+        return { startMs, durationMs };
+    }
+    function updateReadouts(){
+        const sr = document.getElementById('scope-readout');
+        if (cursors.scope.on){
+            const { startMs, durationMs } = scopeWindow();
+            const tA = startMs + cursors.scope.a * durationMs, tB = startMs + cursors.scope.b * durationMs;
+            const uA = computeSample(tA / 1000), uB = computeSample(tB / 1000);
+            const dt = Math.abs(tB - tA), du = uB - uA, fq = dt > 0 ? 1000 / dt : 0;
+            sr.innerHTML =
+                `<span style="color:${CUR_A}">A: t=${tA.toFixed(2)} ms · U=${uA.toFixed(1)} V</span>` +
+                `<span style="color:${CUR_B}">B: t=${tB.toFixed(2)} ms · U=${uB.toFixed(1)} V</span>` +
+                `<span class="text-slate-100">Δt=${dt.toFixed(2)} ms${dt > 0 ? ` (≙ ${fq.toFixed(1)} Hz)` : ''} · ΔU=${du.toFixed(1)} V</span>`;
+        } else sr.innerHTML = '';
+
+        const pr = document.getElementById('spec-readout');
+        if (cursors.spec.on){
+            const maxHz = params.specRangeHz, h1 = lastMag[K_FUND] || 1e-9;
+            const fA = cursors.spec.a * maxHz, fB = cursors.spec.b * maxHz;
+            const kA = Math.min(lastMag.length - 1, Math.round(fA / BIN_HZ)), kB = Math.min(lastMag.length - 1, Math.round(fB / BIN_HZ));
+            const pA = lastMag[kA] / h1 * 100, pB = lastMag[kB] / h1 * 100;
+            const df = Math.abs(fB - fA), dp = pB - pA;
+            pr.innerHTML =
+                `<span style="color:${CUR_A}">A: f=${fA.toFixed(0)} Hz (H${(fA / FUND).toFixed(1)}) · ${pA.toFixed(2)} %</span>` +
+                `<span style="color:${CUR_B}">B: f=${fB.toFixed(0)} Hz (H${(fB / FUND).toFixed(1)}) · ${pB.toFixed(2)} %</span>` +
+                `<span class="text-slate-100">Δf=${df.toFixed(0)} Hz · ΔAmp=${dp.toFixed(2)} %</span>`;
+        } else pr.innerHTML = '';
+    }
+
+    // ---- Cursor: Ziehen (Maus/Touch/Pen über Pointer-Events) ----
+    function nxScope(e){ const r = scopeCanvas.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); }
+    function nxSpec(e){ const r = specCanvas.getBoundingClientRect(); const pw = r.width - SPEC_ML - SPEC_MR; return Math.min(1, Math.max(0, ((e.clientX - r.left) - SPEC_ML) / pw)); }
+    function attachCursor(canvas, state, nxFn){
+        canvas.addEventListener('pointerdown', e => {
+            if (!state.on) return;
+            const nx = nxFn(e);
+            state.drag = Math.abs(nx - state.a) <= Math.abs(nx - state.b) ? 'a' : 'b';
+            state[state.drag] = nx; canvas.setPointerCapture(e.pointerId); render();
+        });
+        canvas.addEventListener('pointermove', e => { if (state.drag){ state[state.drag] = nxFn(e); render(); } });
+        const end = () => { state.drag = null; };
+        canvas.addEventListener('pointerup', end);
+        canvas.addEventListener('pointercancel', end);
+    }
+    attachCursor(scopeCanvas, cursors.scope, nxScope);
+    attachCursor(specCanvas, cursors.spec, nxSpec);
+    document.getElementById('cur-scope').addEventListener('change', e => { cursors.scope.on = e.target.checked; render(); });
+    document.getElementById('cur-spec').addEventListener('change', e => { cursors.spec.on = e.target.checked; render(); });
+
+    /* =======================================================================
+       Ursachen-Datenbank
+       ======================================================================= */
+    const causesDB = {
+        dip: { title: "🟠 Spannungseinbruch (Dip)", isDamage: false, items: [
+            "Anlauf großer Asynchronmaschinen / Pumpen im selben oder benachbarten Abzweig.",
+            "Kurzschlüsse im vorgelagerten Netz (Fehlerklärung durch Schutzeinrichtungen).",
+            "Zuschalten sehr großer Lasten (Öfen, Schweißanlagen) an weicher Netzimpedanz."
+        ]},
+        swell: { title: "🟠 Spannungsanhebung (Swell)", isDamage: false, items: [
+            "Lastabwurf großer Verbraucher (Spannung steigt kurzzeitig an).",
+            "Erdschluss in einer anderen Phase hebt die beiden gesunden Außenleiter an.",
+            "Zuschalten / Fehlabstimmung von Kompensationskondensatoren."
+        ]},
+        notches: { title: "Kommutierungseinbrüche", items: [
+            "Netzgeführte Stromrichter (z.B. B6-Thyristorbrücken in großen Spritzgießmaschinen).",
+            "Umschaltvorgänge in Frequenzumrichtern ohne ausreichende Netzdrosseln.",
+            "Leistungsstarke Schweißanlagen mit Phasenanschnittsteuerung."
+        ]},
+        odd: { title: "Ungerade Oberwellen (3.–15. Ordnung)", items: [
+            "Unkompensierte B6-Gleichrichter (AFE deaktiviert oder passiv).",
+            "Geballte einphasige IT-Lasten (Serverfarmen: 3., 9. und 15. Harmonische).",
+            "Nichtlineare LED-Beleuchtung ohne aktive Power Factor Correction (PFC)."
+        ]},
+        even: { title: "Gerade Oberwellen (2.–8. Ordnung)", items: [
+            "Asymmetrische Phasenanschnittsteuerung (ungleiche Zündwinkel der Halbwellen).",
+            "Defekte Dioden in Brückengleichrichtern (Halbwelleneffekt).",
+            "Gleichstromvormagnetisierung von Leistungstransformatoren."
+        ]},
+        supra: { title: "Supraharmonische (HF, 2–150 kHz)", items: [
+            "Taktfrequenzen von Active-Front-End-(AFE)-Umrichtern (meist 2–15 kHz).",
+            "Einstreuungen durch PV-Wechselrichter und DC-Schnellladeinfrastruktur.",
+            "Powerline Communication (PLC) / Rundsteuertechnik stört sensible Elektronik."
+        ]},
+        flicker: { title: "Flicker (Amplitudenmodulation)", items: [
+            "Lichtbogenöfen in der Stahl- und Schwerindustrie.",
+            "Taktbetrieb großer industrieller Punktschweißmaschinen.",
+            "Schweranlauf großer Asynchronmaschinen im benachbarten Netzabzweig."
+        ]},
+        harmonicsIndiv: { title: "🎛️ Gezielte Einzel-Oberwellen (Ordnung 2–20)", items: [
+            "Resonanzanregung einzelner Ordnungen durch Kompensationskondensatoren (Parallelresonanz mit Netzimpedanz).",
+            "Interharmonische Kopplungen durch parallel betriebene, unterschiedlich getaktete Umrichter.",
+            "Charakteristische Pulszahl von Gleichrichtern (12-, 18-, 24-pulsig) erzeugt bestimmte Einzelordnungen."
+        ]},
+        evtIgbt: { title: "🔴 IGBT-Zerstörung (Resonanz / Verzerrung)", isDamage: true, items: [
+            "Ursache: Aufschaukeln von Resonanzen durch Filterkreise benachbarter Anlagen.",
+            "Auswirkung: Strom- (di/dt) oder Spannungssteilheit (du/dt) überschreitet das Limit.",
+            "Folge: Durchlegieren der IGBTs/Thyristoren – Baugruppe brennt ab."
+        ]},
+        evtTriac: { title: "🔴 TRIAC-Fehlzündung (Unsauberer Nulldurchgang)", isDamage: true, items: [
+            "Ursache: Verzerrungen verursachen Mehrfachnulldurchgänge am Detektor.",
+            "Auswirkung: TRIACs (z.B. L1-L2) zünden im falschen Phasenwinkel.",
+            "Folge: Magnetspannplatten bauen keine volle Haltekraft auf (Sicherheitsrisiko)."
+        ]},
+        evtTransient: { title: "🔴 Transientes Ringing", isDamage: true, items: [
+            "Ursache: Zuschalten großer Kondensatorbänke oder MS-Schalthandlungen.",
+            "Auswirkung: Tiefer Spannungseinbruch am Scheitelpunkt mit hochfrequentem Ausschwingen.",
+            "Folge: Belastet Isolationsschichten und lässt Varistoren schleichend altern."
+        ]},
+        evtSpike: { title: "🔴 Massiver Überspannungs-Spike", isDamage: true, items: [
+            "Ursache: Naher Blitzschlag oder Abriss massiver Kurzschlussströme.",
+            "Auswirkung: Ein extrem steiler Peak, der den Nennbereich weit übersteigt.",
+            "Folge: Akuter Durchschlag von Motorisolationen oder Zerstörung von Netzteilen."
+        ]}
+    };
+
+    function activeCauses(){
+        const a = [];
+        if (params.evtIgbt) a.push(causesDB.evtIgbt);
+        if (params.evtTriac) a.push(causesDB.evtTriac);
+        if (params.evtTransient) a.push(causesDB.evtTransient);
+        if (params.evtSpike) a.push(causesDB.evtSpike);
+        if (params.eventDurationMs > 0 && params.eventDepth < 1) a.push(causesDB.dip);
+        if (params.eventDurationMs > 0 && params.eventDepth > 1) a.push(causesDB.swell);
+        if (params.notches > 0) a.push(causesDB.notches);
+        if (params.odd > 0) a.push(causesDB.odd);
+        if (params.even > 0) a.push(causesDB.even);
+        if (params.supra > 0) a.push(causesDB.supra);
+        if (params.flicker > 0) a.push(causesDB.flicker);
+        if (params.harmonics.some(v => v > 0)) a.push(causesDB.harmonicsIndiv);
+        return a;
+    }
+
+    function updateDiagnosis(){
+        const diag = document.getElementById('diagnosis-content');
+        const active = activeCauses();
+        if (active.length === 0){ diag.innerHTML = '<p class="text-emerald-400 font-medium">Ideales Netz: keine Störungen aktiv.</p>'; return; }
+        diag.innerHTML = active.map(evt => `
+            <div class="mb-3 bg-slate-900/50 p-3 rounded border border-slate-700 shadow-sm">
+                <span class="font-bold block mb-1 ${evt.isDamage ? 'text-red-400' : 'text-blue-300'}">${evt.title}</span>
+                <ul class="${evt.isDamage ? 'cause-list damage-list' : 'cause-list'} ml-2 text-slate-300">${evt.items.map(i => `<li>${i}</li>`).join('')}</ul>
+            </div>`).join('');
+    }
+
+    // ITIC/CBEMA – an reale Stützpunkte angelehnt
+    function iticClassify(depthPct, durMs){
+        if (durMs === 0 || depthPct === 100) return { status: 'NONE', msg: 'Spannung im Nennbereich.' };
+        if (depthPct >= 90 && depthPct <= 110) return { status: 'SAFE', msg: 'Innerhalb ±10 % (EN 50160 Normalbetrieb).' };
+        if (depthPct > 110){ // Überspannung
+            if (depthPct > 200 && durMs > 1)   return { status: 'DAMAGE', msg: 'Weit über der ITIC-Kurve – akute Zerstörungsgefahr.' };
+            if (depthPct > 140 && durMs > 3)   return { status: 'DAMAGE', msg: 'Oberhalb der zulässigen Überspannungskurve.' };
+            if (depthPct > 120 && durMs > 500) return { status: 'DAMAGE', msg: 'Dauer-Überspannung > 0,5 s: Bauteil-/Isolationsschaden.' };
+            return { status: 'SAFE', msg: 'Kurzzeitige Überhöhung – von Varistoren abgefangen.' };
+        }
+        // Unterspannung
+        if (durMs <= 20) return { status: 'SAFE', msg: 'Sehr kurzer Einbruch – von Netzteil-Kondensatoren überbrückt.' };
+        if (depthPct < 70)  return { status: 'FAIL', msg: 'Unter 70 % > 20 ms: Reboot/Ausfall von Elektronik.' };
+        if (depthPct < 80 && durMs > 500) return { status: 'FAIL', msg: 'Unter 80 % > 0,5 s: Systemausfall wahrscheinlich.' };
+        return { status: 'SAFE', msg: 'Innerhalb der ITIC-Toleranzkurve.' };
+    }
+
+    function updateITIC(){
+        const depth = params.eventDepth * 100, dur = params.eventDurationMs;
+        const r = iticClassify(depth, dur);
+        const icon = document.getElementById('itic-icon'), text = document.getElementById('itic-text');
+        const sub = document.getElementById('itic-subtext'), cont = document.getElementById('itic-container');
+        const map = {
+            NONE:   ['✅', 'Kein Ereignis', 'text-emerald-400', '#334155'],
+            SAFE:   ['🟢', 'Toleranzbereich', 'text-emerald-400', '#10b981'],
+            FAIL:   ['⚠️', 'Ausfall (Reboot)', 'text-amber-400', '#f59e0b'],
+            DAMAGE: ['💥', 'Hardwareschaden', 'text-red-500', '#ef4444']
         };
+        const [ic, tx, cls, bc] = map[r.status];
+        icon.innerText = ic; text.innerText = tx; text.className = `block font-bold text-lg ${cls}`;
+        cont.style.borderColor = bc; sub.innerText = r.msg;
+    }
 
-        const canvas = document.getElementById('scopeCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        function resizeCanvas() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-            canvas.style.width = `${rect.width}px`;
-            canvas.style.height = `${rect.height}px`;
-            requestAnimationFrame(drawScope);
+    /* =======================================================================
+       UI-Aufbau & Bindung
+       ======================================================================= */
+    const harmonicsGrid = document.getElementById('harmonics-grid');
+    for (let n = 2; n <= 20; n++){
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+            <span class="text-xs text-slate-400 w-9 font-mono shrink-0">H${n}</span>
+            <input type="range" id="slider-h${n}" min="0" max="50" value="0" class="w-full" style="accent-color:#a855f7">
+            <span id="val-h${n}" class="text-xs text-purple-300 font-mono w-10 text-right shrink-0">0%</span>`;
+        harmonicsGrid.appendChild(row);
+        row.querySelector('input').addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value);
+            params.harmonics[n] = v / 100;
+            document.getElementById(`val-h${n}`).innerText = `${v}%`;
+            updateDiagnosis(); refresh();
+        });
+    }
+
+    const updateVal = (id, val, suffix) => document.getElementById(`val-${id}`).innerText = `${val}${suffix}`;
+
+    document.querySelectorAll('input[name="voltage"]').forEach(r => r.addEventListener('change', e => { params.voltageRMS = parseInt(e.target.value); refresh(); }));
+
+    ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(key => {
+        document.getElementById(`slider-${key}`).addEventListener('input', e => {
+            params[key] = parseFloat(e.target.value) / 100; updateVal(key, e.target.value, '%'); updateDiagnosis(); refresh();
+        });
+    });
+
+    document.getElementById('slider-event-depth').addEventListener('input', e => {
+        params.eventDepth = parseFloat(e.target.value) / 100; updateVal('event-depth', e.target.value, '%'); updateDiagnosis(); updateITIC(); refresh();
+    });
+    document.getElementById('slider-event-duration').addEventListener('input', e => {
+        params.eventDurationMs = parseInt(e.target.value); updateVal('event-duration', e.target.value, ' ms'); updateDiagnosis(); updateITIC(); refresh();
+    });
+
+    const evtKeyMap = { 'evt-igbt': 'evtIgbt', 'evt-triac': 'evtTriac', 'evt-transient': 'evtTransient', 'evt-spike': 'evtSpike' };
+    Object.keys(evtKeyMap).forEach(id => {
+        document.getElementById(id).addEventListener('change', e => { params[evtKeyMap[id]] = e.target.checked; updateDiagnosis(); refresh(); });
+    });
+
+    document.getElementById('btn-toggle-harmonics').addEventListener('click', () => {
+        const grid = document.getElementById('harmonics-grid'), icon = document.getElementById('harmonics-toggle-icon');
+        const hidden = grid.style.display === 'none';
+        grid.style.display = hidden ? 'grid' : 'none'; icon.innerText = hidden ? '▾' : '▸';
+    });
+
+    function syncPanRange(){
+        const durationMs = 200 / params.zoomX;
+        const pan = document.getElementById('pan-x');
+        const max = Math.max(0, Math.round(200 - durationMs));
+        pan.max = max; if (params.panMs > max) params.panMs = max; pan.value = params.panMs;
+        pan.disabled = max === 0;
+    }
+    document.getElementById('zoom-x').addEventListener('input', e => { params.zoomX = parseFloat(e.target.value); syncPanRange(); refresh(); });
+    document.getElementById('zoom-y').addEventListener('input', e => { params.zoomY = parseFloat(e.target.value); refresh(); });
+    document.getElementById('pan-x').addEventListener('input', e => { params.panMs = parseInt(e.target.value); refresh(); });
+    document.getElementById('btn-theme').addEventListener('click', () => { params.lightMode = !params.lightMode; refresh(); });
+
+    document.getElementById('spec-range').addEventListener('change', e => { params.specRangeHz = parseInt(e.target.value); refresh(); });
+    document.getElementById('spec-scale').addEventListener('change', e => { params.specScale = e.target.value; refresh(); });
+
+    /* =======================================================================
+       Zustand: setzt UI aus params
+       ======================================================================= */
+    function applyParamsToUI(){
+        document.querySelectorAll('input[name="voltage"]').forEach(r => r.checked = (parseInt(r.value) === params.voltageRMS));
+        ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(k => {
+            const pct = Math.round(params[k] * 100);
+            document.getElementById(`slider-${k}`).value = pct; updateVal(k, pct, '%');
+        });
+        document.getElementById('slider-event-depth').value = Math.round(params.eventDepth * 100);
+        updateVal('event-depth', Math.round(params.eventDepth * 100), '%');
+        document.getElementById('slider-event-duration').value = params.eventDurationMs;
+        updateVal('event-duration', params.eventDurationMs, ' ms');
+        for (let n = 2; n <= 20; n++){
+            const pct = Math.round((params.harmonics[n] || 0) * 100);
+            const s = document.getElementById(`slider-h${n}`); if (s) s.value = pct;
+            const l = document.getElementById(`val-h${n}`); if (l) l.innerText = `${pct}%`;
         }
-        window.addEventListener('resize', resizeCanvas);
-        setTimeout(resizeCanvas, 100); 
+        Object.keys(evtKeyMap).forEach(id => document.getElementById(id).checked = !!params[evtKeyMap[id]]);
+        document.getElementById('zoom-x').value = params.zoomX;
+        document.getElementById('zoom-y').value = params.zoomY;
+        document.getElementById('spec-range').value = String(params.specRangeHz);
+        document.getElementById('spec-scale').value = params.specScale;
+        syncPanRange();
+        updateDiagnosis(); updateITIC(); refresh();
+    }
 
-        const updateVal = (id, val, suffix) => document.getElementById(`val-${id}`).innerText = `${val}${suffix}`;
-        
-        // Listeners
-        document.querySelectorAll('input[name="voltage"]').forEach(r => r.addEventListener('change', (e) => { params.voltageRMS = parseInt(e.target.value); requestAnimationFrame(drawScope); }));
-        
-        ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(key => {
-            document.getElementById(`slider-${key}`).addEventListener('input', (e) => {
-                params[key] = parseFloat(e.target.value) / 100; updateVal(key, e.target.value, '%'); updateDiagnosis(); requestAnimationFrame(drawScope);
-            });
-        });
-
-        document.getElementById('slider-event-depth').addEventListener('input', (e) => {
-            params.eventDepth = parseFloat(e.target.value) / 100; updateVal('event-depth', e.target.value, '%'); updateITIC(); requestAnimationFrame(drawScope);
-        });
-        document.getElementById('slider-event-duration').addEventListener('input', (e) => {
-            params.eventDurationMs = parseInt(e.target.value); updateVal('event-duration', e.target.value, ' ms'); updateITIC(); requestAnimationFrame(drawScope);
-        });
-
-        // FIX: vorheriges Regex-Mapping erzeugte falsche Keys (z.B. "evtigbt" statt "evtIgbt"),
-        // wodurch die Checkboxen NIE den tatsächlich ausgewerteten Parameter setzten.
-        // Daher hatte das Aktivieren der Checkboxen bisher keinerlei sichtbaren Effekt im Oszilloskop.
-        const evtKeyMap = {
-            'evt-igbt': 'evtIgbt',
-            'evt-triac': 'evtTriac',
-            'evt-transient': 'evtTransient',
-            'evt-spike': 'evtSpike'
+    function currentStateSummary(){
+        return {
+            voltageRMS: params.voltageRMS,
+            thd: Number(lastThd.toFixed(2)),
+            event: params.eventDurationMs > 0 ? { niveau_pct: Math.round(params.eventDepth * 100), dauer_ms: params.eventDurationMs } : null,
+            kontinuierlich: {
+                notches_pct: Math.round(params.notches * 100), odd_pct: Math.round(params.odd * 100),
+                even_pct: Math.round(params.even * 100), supra_pct: Math.round(params.supra * 100),
+                flicker_pct: Math.round(params.flicker * 100)
+            },
+            einzelharmonische: params.harmonics.map((v, n) => ({ ordnung: n, pct: Math.round(v * 100) })).filter(h => h.ordnung >= 2 && h.pct > 0),
+            transienten: Object.keys(evtKeyMap).map(id => evtKeyMap[id]).filter(k => params[k])
         };
-        Object.keys(evtKeyMap).forEach(id => {
-            document.getElementById(id).addEventListener('change', (e) => {
-                params[evtKeyMap[id]] = e.target.checked;
-                updateDiagnosis(); requestAnimationFrame(drawScope);
+    }
+
+    /* =======================================================================
+       Speichern / Laden (JSON)
+       ======================================================================= */
+    function download(filename, content, mime){
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function tstamp(){ const d = new Date(); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+
+    document.getElementById('btn-save-json').addEventListener('click', () => {
+        const wrap = { app: 'PQ-Simulator', version: 4, timestamp: new Date().toISOString(), params };
+        download(`PQ_Zustand_${tstamp()}.json`, JSON.stringify(wrap, null, 2), 'application/json');
+    });
+
+    document.getElementById('btn-load-json').addEventListener('click', () => document.getElementById('file-load').click());
+    document.getElementById('file-load').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                const p = data.params || data; // toleriert reine params-Dateien
+                const merged = Object.assign(defaultParams(), p);
+                merged.harmonics = defaultParams().harmonics.map((_, i) => (p.harmonics && p.harmonics[i] != null) ? p.harmonics[i] : 0);
+                params = merged;
+                applyParamsToUI();
+            } catch (err) {
+                alert('Diese Datei konnte nicht gelesen werden. Bitte eine gültige PQ-Zustand-JSON wählen.');
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(f);
+    });
+
+    /* =======================================================================
+       Export: PNG (Zeitsignal + Spektrum + Ursachen) und Ursachen-Markdown
+       ======================================================================= */
+    function wrapText(ctx, text, maxW){
+        const words = text.split(' '); const lines = []; let line = '';
+        for (const w of words){ const test = line ? line + ' ' + w : w; if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; } else line = test; }
+        if (line) lines.push(line); return lines;
+    }
+
+    function buildExportCanvas(){
+        const light = params.lightMode;
+        const W = 1600, pad = 40, scopeH = 380, specH = 320, gap = 24;
+        // Höhe der Ursachen dynamisch messen
+        const measure = document.createElement('canvas').getContext('2d');
+        const active = activeCauses();
+        measure.font = '15px sans-serif';
+        let causeLines = 0;
+        active.forEach(c => { causeLines += 1; c.items.forEach(it => { causeLines += wrapText(measure, '•  ' + it, W - 2 * pad - 20).length; }); causeLines += 0.4; });
+        const causesH = active.length ? Math.ceil(40 + causeLines * 22 + 20) : 60;
+        const headerH = 110;
+        const H = pad + headerH + scopeH + gap + specH + gap + causesH + pad;
+
+        const cv = document.createElement('canvas');
+        const dpr = 2; cv.width = W * dpr; cv.height = H * dpr;
+        const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        ctx.fillStyle = light ? '#f8fafc' : '#0f172a'; ctx.fillRect(0, 0, W, H);
+
+        // Header
+        ctx.fillStyle = light ? '#0f172a' : '#ffffff'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('PQ-Simulator · Netzqualitäts-Analyse', pad, pad + 34);
+        ctx.font = '16px sans-serif'; ctx.fillStyle = light ? '#475569' : '#94a3b8';
+        const meta = `Spannungsebene: ${params.voltageRMS} V   ·   THD: ${lastThd.toFixed(1)} %   ·   ${new Date().toLocaleString('de-DE')}`;
+        ctx.fillText(meta, pad, pad + 64);
+        const ev = params.eventDurationMs > 0 ? `RMS-Ereignis: ${Math.round(params.eventDepth*100)} % für ${params.eventDurationMs} ms` : 'Kein RMS-Ereignis';
+        ctx.fillText(ev, pad, pad + 90);
+
+        // Scope + Spectrum in Teilcanvas rendern, dann einbetten
+        const innerW = W - 2 * pad;
+        const sc = document.createElement('canvas'); sc.width = innerW; sc.height = scopeH;
+        renderScope(sc.getContext('2d'), innerW, scopeH);
+        const sp = document.createElement('canvas'); sp.width = innerW; sp.height = specH;
+        renderSpectrum(sp.getContext('2d'), innerW, specH);
+
+        let y = pad + headerH;
+        ctx.strokeStyle = light ? '#cbd5e1' : '#334155'; ctx.lineWidth = 1;
+        ctx.fillStyle = light ? '#0f172a' : '#e2e8f0'; ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('Zeitsignal (Oszilloskop)', pad, y - 8);
+        ctx.drawImage(sc, pad, y, innerW, scopeH); ctx.strokeRect(pad, y, innerW, scopeH);
+        y += scopeH + gap;
+        ctx.fillText('Frequenzspektrum (FFT)', pad, y - 8);
+        ctx.drawImage(sp, pad, y, innerW, specH); ctx.strokeRect(pad, y, innerW, specH);
+        y += specH + gap;
+
+        // Ursachen
+        ctx.fillStyle = light ? '#0f172a' : '#ffffff'; ctx.font = 'bold 18px sans-serif';
+        ctx.fillText('Angegebene Fehlerursachen', pad, y + 6); y += 28;
+        ctx.font = '15px sans-serif';
+        if (!active.length){
+            ctx.fillStyle = light ? '#059669' : '#34d399';
+            ctx.fillText('Ideales Netz – keine Störungen aktiv.', pad, y + 6);
+        } else {
+            active.forEach(c => {
+                ctx.fillStyle = c.isDamage ? (light ? '#dc2626' : '#f87171') : (light ? '#2563eb' : '#60a5fa');
+                ctx.font = 'bold 15px sans-serif';
+                ctx.fillText(c.title, pad, y + 6); y += 24;
+                ctx.font = '14px sans-serif'; ctx.fillStyle = light ? '#334155' : '#cbd5e1';
+                c.items.forEach(it => { wrapText(ctx, '•  ' + it, innerW - 20).forEach(l => { ctx.fillText(l, pad + 14, y + 4); y += 20; }); });
+                y += 8;
             });
-        });
-
-        // Dynamischer Aufbau der Einzel-Oberwellen-Regler (Ordnung 2 bis 20)
-        const harmonicsGrid = document.getElementById('harmonics-grid');
-        for (let n = 2; n <= 20; n++) {
-            const row = document.createElement('div');
-            row.className = 'flex items-center gap-2';
-            row.innerHTML = `
-                <span class="text-xs text-slate-400 w-9 font-mono shrink-0">H${n}</span>
-                <input type="range" id="slider-h${n}" min="0" max="50" value="0" class="w-full" style="accent-color:#a855f7">
-                <span id="val-h${n}" class="text-xs text-purple-300 font-mono w-10 text-right shrink-0">0%</span>
-            `;
-            harmonicsGrid.appendChild(row);
-            row.querySelector('input').addEventListener('input', (e) => {
-                const v = parseFloat(e.target.value);
-                params.harmonics[n] = v / 100;
-                document.getElementById(`val-h${n}`).innerText = `${v}%`;
-                updateDiagnosis(); requestAnimationFrame(drawScope);
-            });
         }
-        document.getElementById('btn-toggle-harmonics').addEventListener('click', () => {
-            const grid = document.getElementById('harmonics-grid');
-            const icon = document.getElementById('harmonics-toggle-icon');
-            const isHidden = grid.style.display === 'none';
-            grid.style.display = isHidden ? 'grid' : 'none';
-            icon.innerText = isHidden ? '▾' : '▸';
-        });
+        return cv;
+    }
 
-        document.getElementById('zoom-x').addEventListener('input', (e) => { params.zoomX = parseFloat(e.target.value); requestAnimationFrame(drawScope); });
-        document.getElementById('zoom-y').addEventListener('input', (e) => { params.zoomY = parseFloat(e.target.value); requestAnimationFrame(drawScope); });
-        document.getElementById('btn-theme').addEventListener('click', () => { params.lightMode = !params.lightMode; requestAnimationFrame(drawScope); });
-        document.getElementById('btn-screenshot').addEventListener('click', () => {
-            const link = document.createElement('a'); link.download = `PQ_Analyse_${params.voltageRMS}V.png`; link.href = canvas.toDataURL('image/png', 1.0); link.click();
-        });
+    document.getElementById('btn-export-png').addEventListener('click', () => {
+        computeSpectrum();
+        const cv = buildExportCanvas();
+        const a = document.createElement('a'); a.download = `PQ_Analyse_${params.voltageRMS}V_${tstamp()}.png`;
+        a.href = cv.toDataURL('image/png', 1.0); a.click();
+    });
 
-        function updateDiagnosis() {
-            const diag = document.getElementById('diagnosis-content');
-            let active = [];
-            
-            if (params.evtIgbt) active.push(causesDB.evtIgbt);
-            if (params.evtTriac) active.push(causesDB.evtTriac);
-            if (params.evtTransient) active.push(causesDB.evtTransient);
-            if (params.evtSpike) active.push(causesDB.evtSpike);
-            
-            if (params.notches > 0) active.push(causesDB.notches);
-            if (params.odd > 0) active.push(causesDB.odd);
-            if (params.even > 0) active.push(causesDB.even);
-            if (params.supra > 0) active.push(causesDB.supra);
-            if (params.flicker > 0) active.push(causesDB.flicker);
-            if (params.harmonics.some(v => v > 0)) active.push(causesDB.harmonicsIndiv);
+    document.getElementById('btn-export-md').addEventListener('click', () => {
+        const active = activeCauses();
+        let md = `# PQ-Simulator – Fehlerursachen\n\n`;
+        md += `**Erstellt:** ${new Date().toLocaleString('de-DE')}\n\n`;
+        md += `## Betriebspunkt\n\n`;
+        md += `- Spannungsebene: **${params.voltageRMS} V**\n`;
+        md += `- THD: **${lastThd.toFixed(1)} %**\n`;
+        md += params.eventDurationMs > 0
+            ? `- RMS-Ereignis: **${Math.round(params.eventDepth*100)} %** für **${params.eventDurationMs} ms** (ITIC: ${iticClassify(params.eventDepth*100, params.eventDurationMs).status})\n`
+            : `- RMS-Ereignis: keins\n`;
+        md += `\n## Aktive Phänomene & Ursachen\n\n`;
+        if (!active.length){ md += `_Ideales Netz – keine Störungen aktiv._\n`; }
+        else active.forEach(c => { md += `### ${c.title}\n\n`; c.items.forEach(it => md += `- ${it}\n`); md += `\n`; });
+        md += `\n---\n\n## Konfiguration (JSON)\n\n\`\`\`json\n${JSON.stringify(currentStateSummary(), null, 2)}\n\`\`\`\n`;
+        download(`PQ_Ursachen_${tstamp()}.md`, md, 'text/markdown');
+    });
 
-            if (active.length === 0) {
-                diag.innerHTML = '<p class="text-emerald-400 font-medium">Ideales Netz: Keine Störungen detektiert.</p>';
-                return;
-            }
-            diag.innerHTML = active.map(evt => `
-                <div class="mb-3 bg-slate-900/50 p-3 rounded border border-slate-700 shadow-sm">
-                    <span class="font-bold block mb-1 ${evt.isDamage ? 'text-red-400' : 'text-blue-300'}">${evt.title}</span>
-                    <ul class="${evt.isDamage ? 'cause-list damage-list' : 'cause-list'} ml-2 text-slate-300">${evt.items.map(i => `<li>${i}</li>`).join('')}</ul>
-                </div>
-            `).join('');
-        }
+    document.getElementById('btn-reset').addEventListener('click', () => { params = defaultParams(); applyParamsToUI(); });
 
-        function updateITIC() {
-            const depth = params.eventDepth * 100; const duration = params.eventDurationMs;
-            const icon = document.getElementById('itic-icon'); const text = document.getElementById('itic-text');
-            const sub = document.getElementById('itic-subtext'); const cont = document.getElementById('itic-container');
-
-            if (duration === 0 || depth === 100) {
-                icon.innerText = "✅"; text.innerText = "Kein Ereignis"; text.className = "block font-bold text-lg text-emerald-400";
-                sub.innerText = "Spannung im Nennbereich."; cont.style.borderColor = "#334155"; return;
-            }
-
-            let status = "SAFE"; let msg = "Toleranzbereich.";
-            if (depth < 90) { // Unterspannung
-                if (duration <= 20) { status = "SAFE"; msg = "Überbrückung durch Netzteil-Kondensatoren ausreichend."; }
-                else if (depth < 70 && duration > 20) { status = "FAIL"; msg = "Unterspannungsschwellwert unterschritten (Reboot/Ausfall)."; }
-                else if (depth < 80 && duration > 500) { status = "FAIL"; msg = "Dauerhafter Einbruch führt zu Systemausfall."; }
-                else { status = "SAFE"; msg = "Innerhalb der ITIC-Toleranzkurve."; }
-            } else if (depth > 110) { // Überspannung
-                if (depth > 120 && duration > 3) { status = "DAMAGE"; msg = "Akute Gefahr der Zerstörung von Komponenten/Isolation."; }
-                else if (depth > 110 && duration > 500) { status = "DAMAGE"; msg = "Thermische Überlastung der IT-Netzteile."; }
-                else { status = "SAFE"; msg = "Kurzzeitige Überhöhung wird von Varistoren abgefangen."; }
-            }
-
-            if (status === "SAFE") { icon.innerText = "🟢"; text.innerText = "Toleranzbereich"; text.className = "block font-bold text-lg text-emerald-400"; cont.style.borderColor = "#10b981"; }
-            else if (status === "FAIL") { icon.innerText = "⚠️"; text.innerText = "Ausfall (Reboot)"; text.className = "block font-bold text-lg text-amber-400"; cont.style.borderColor = "#f59e0b"; }
-            else { icon.innerText = "💥"; text.innerText = "Hardwareschaden"; text.className = "block font-bold text-lg text-red-500"; cont.style.borderColor = "#ef4444"; }
-            sub.innerText = msg;
-        }
-
-        function drawScope() {
-            const w = canvas.parentElement.clientWidth; const h = canvas.parentElement.clientHeight; const centerY = h / 2;
-            const bgCol = params.lightMode ? '#ffffff' : '#1e293b'; const gridCol = params.lightMode ? '#e2e8f0' : '#334155';
-            const textCol = params.lightMode ? '#475569' : '#94a3b8'; const zeroCol = params.lightMode ? '#94a3b8' : '#64748b';
-            const hasError = params.evtIgbt || params.evtTriac || params.evtTransient || params.evtSpike;
-            const lineCol = hasError ? (params.lightMode ? '#dc2626' : '#ef4444') : (params.lightMode ? '#0284c7' : '#38bdf8');
-            const eventHighlight = params.lightMode ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.15)';
-
-            ctx.fillStyle = bgCol; ctx.fillRect(0, 0, w, h);
-            
-            const uPeak = params.voltageRMS * Math.sqrt(2);
-            const durationMs = 200 / params.zoomX; 
-            const scaleY = (h / 2) / (1000 / params.zoomY); 
-            const omega = 2 * Math.PI * 50;
-
-            const eventStartMs = 40; const eventEndMs = eventStartMs + params.eventDurationMs;
-
-            ctx.strokeStyle = gridCol; ctx.lineWidth = 1; ctx.beginPath();
-            ctx.fillStyle = textCol; ctx.font = '11px sans-serif';
-
-            for(let ms=0; ms<=durationMs; ms+=10) {
-                let x = (ms / durationMs) * w; ctx.moveTo(x, 0); ctx.lineTo(x, h);
-                if(ms % 20 === 0 && ms > 0) ctx.fillText(`${ms}ms`, x + 4, h - 5);
-            }
-            for(let v = 0; v <= (1000/params.zoomY); v += 200) {
-                let yP = centerY - (v * scaleY); ctx.moveTo(0, yP); ctx.lineTo(w, yP); if(v > 0) ctx.fillText(`+${v}V`, 5, yP - 4);
-                let yN = centerY + (v * scaleY); ctx.moveTo(0, yN); ctx.lineTo(w, yN); if(v > 0) ctx.fillText(`-${v}V`, 5, yN - 4);
-            }
-            ctx.stroke();
-
-            ctx.strokeStyle = zeroCol; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(w, centerY); ctx.stroke();
-
-            // RMS Event Highlight
-            if (params.eventDurationMs > 0 && eventStartMs < durationMs) {
-                const sX = (eventStartMs / durationMs) * w; const eX = (Math.min(eventEndMs, durationMs) / durationMs) * w;
-                ctx.fillStyle = eventHighlight; ctx.fillRect(sX, 0, eX - sX, h);
-            }
-
-            ctx.beginPath(); ctx.strokeStyle = lineCol; ctx.lineWidth = params.lightMode ? 2.5 : 2; ctx.lineJoin = 'round';
-
-            // Arrays für THD Berechnung
-            const oddWeights = [1, 0.5, 0.3, 0.15, 0.1, 0.08, 0.05]; // 3., 5., 7., 9., 11., 13., 15.
-            const oddOrders = [3, 5, 7, 9, 11, 13, 15];
-            const evenWeights = [1, 0.5, 0.2, 0.1]; // 2., 4., 6., 8.
-            const evenOrders = [2, 4, 6, 8];
-
-            for (let x = 0; x <= w; x++) {
-                let t = (x / w) * (durationMs / 1000); let tMs = t * 1000;
-                let cFactor = (params.eventDurationMs > 0 && tMs >= eventStartMs && tMs <= eventEndMs) ? params.eventDepth : 1.0;
-
-                let uBase = uPeak * Math.sin(omega * t);
-                if (params.flicker > 0) uBase *= (1 + params.flicker * Math.sin(2 * Math.PI * 8 * t)); 
-                
-                uBase *= cFactor;
-
-                // Ungerade Oberwellen bis zur 15. Ordnung
-                if (params.odd > 0) {
-                    let oddSum = 0;
-                    for(let i=0; i<oddOrders.length; i++) {
-                        oddSum += oddWeights[i] * Math.sin(oddOrders[i] * omega * t);
-                    }
-                    uBase += (uPeak * cFactor) * params.odd * oddSum;
-                }
-
-                // Gerade Oberwellen bis zur 8. Ordnung
-                if (params.even > 0) {
-                    let evenSum = 0;
-                    for(let i=0; i<evenOrders.length; i++) {
-                        evenSum += evenWeights[i] * Math.sin(evenOrders[i] * omega * t);
-                    }
-                    uBase += (uPeak * cFactor) * params.even * evenSum;
-                }
-
-                // Einzel-Oberwellen 2. bis 20. Ordnung (direkter, unabhängiger Zugriff per Schieberegler)
-                let indivSum = 0;
-                for (let n = 2; n <= 20; n++) {
-                    if (params.harmonics[n] > 0) indivSum += params.harmonics[n] * Math.sin(n * omega * t);
-                }
-                if (indivSum !== 0) uBase += (uPeak * cFactor) * indivSum;
-                
-                // Supraharmonische (Mischung aus Schalttakt und Rauschen)
-                if (params.supra > 0) {
-                    let switchF = Math.sin(2 * Math.PI * 8500 * t);
-                    let pseudoR = (Math.sin(x * 12.9898) * 43758.5453) % 1; 
-                    uBase += (uPeak * cFactor) * params.supra * (0.7 * switchF + 0.3 * (pseudoR - 0.5));
-                }
-
-                // Kommutierungseinbrüche
-                if (params.notches > 0) {
-                    const phase = (omega * t) % (Math.PI); const notchW = 0.04; const notchD = (uPeak * cFactor) * params.notches * 1.5;
-                    if (Math.abs(phase - 0.5) < notchW) uBase -= notchD * (1 - Math.abs(phase - 0.5)/notchW) * Math.sign(Math.sin(omega*t));
-                    if (Math.abs(phase - 2.6) < notchW) uBase += notchD * (1 - Math.abs(phase - 2.6)/notchW) * Math.sign(Math.sin(omega*t));
-                }
-
-                // Transiente Events
-                if (params.evtTriac && tMs > 97 && tMs < 103) uBase += uPeak * 0.3 * Math.sin(2 * Math.PI * 250 * (t - 0.097));
-                if (params.evtIgbt && tMs > 82 && tMs < 92) uBase -= uPeak * 0.9 * Math.sin(2 * Math.PI * 100 * (t - 0.082)) * Math.exp(-(tMs-82)/5);
-                if (params.evtTransient && tMs > 104 && tMs < 112) uBase -= uPeak * 0.7 * Math.exp(-(tMs-104)*0.8) * Math.cos(2 * Math.PI * 1200 * t);
-                if (params.evtSpike && tMs > 120 && tMs < 125) uBase += uPeak * 1.8 * Math.exp(-(tMs-120)*1.5) * Math.sin(2 * Math.PI * 3000 * (t - 0.12));
-
-                let y = centerY - (uBase * scaleY); y = Math.max(-10, Math.min(h + 10, y));
-
-                if (x === 0) {
-                    // Korrekte THD Berechnung inkl. der allgemeinen Ordnungen UND der Einzel-Oberwellen
-                    let oddSqSum = oddWeights.reduce((sum, w) => sum + Math.pow(params.odd * w, 2), 0);
-                    let evenSqSum = evenWeights.reduce((sum, w) => sum + Math.pow(params.even * w, 2), 0);
-                    let indivSqSum = 0;
-                    for (let n = 2; n <= 20; n++) indivSqSum += Math.pow(params.harmonics[n], 2);
-                    const thd = Math.sqrt(oddSqSum + evenSqSum + indivSqSum) * 100;
-                    document.getElementById('thd-display').innerText = thd.toFixed(1);
-                    ctx.moveTo(x, y);
-                } else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-        }
-
-        updateDiagnosis(); updateITIC(); requestAnimationFrame(drawScope);
+    /* Start */
+    applyParamsToUI();
+    setTimeout(refresh, 60);
     </script>
 </body>
 </html>
