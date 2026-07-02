@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gebersignal-Simulator · codeLAB365</title>
+<style>
+/* =========================================================================
+   codeLAB365 · Design System (eingebettet)
+   ========================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  color-scheme: light dark;
+  --cl-navy:      #002E59;
+  --cl-navy-600:  #003F78;
+  --cl-navy-700:  #001F42;
+  --cl-signal:    #0BA9CC;
+  --cl-signal-600:#0894B4;
+  --cl-bg:        #F5F8FC;
+  --cl-surface:   #FFFFFF;
+  --cl-surface-2: #EEF3F9;
+  --cl-line:      #DCE4EE;
+  --cl-text:      #0E2136;
+  --cl-muted:     #5A6B80;
+  --cl-primary:      var(--cl-navy);
+  --cl-primary-hover:var(--cl-navy-600);
+  --cl-on-primary:   #FFFFFF;
+  --cl-accent:       var(--cl-signal);
+  --cl-link:         var(--cl-navy-600);
+  --cl-focus:        var(--cl-signal);
+  --cl-ok:   #1F9D6B;
+  --cl-warn: #C9840E;
+  --cl-err:  #C43D3D;
+  --cl-font-display: 'Space Grotesk', system-ui, sans-serif;
+  --cl-font-body:    'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --cl-font-mono:    'Space Mono', ui-monospace, 'JetBrains Mono', monospace;
+  --cl-radius:    14px;
+  --cl-radius-sm: 10px;
+  --cl-radius-pill: 999px;
+  --cl-shadow:    0 1px 2px rgba(0,35,66,.06), 0 10px 30px -16px rgba(0,46,89,.28);
+  --cl-shadow-lg: 0 4px 10px rgba(0,35,66,.08), 0 24px 48px -20px rgba(0,46,89,.35);
+  --cl-ring:      0 0 0 3px color-mix(in srgb, var(--cl-focus) 45%, transparent);
+  --cl-maxw:      1240px;
+  --cl-space-1: .375rem; --cl-space-2: .75rem; --cl-space-3: 1.25rem;
+  --cl-space-4: 2rem; --cl-space-5: 3.25rem; --cl-space-6: 5rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cl-bg:        #0A1622; --cl-surface:   #0F1E2E; --cl-surface-2: #13273A;
+    --cl-line:      #21374D; --cl-text:      #E7EEF6; --cl-muted:     #96A9BF;
+    --cl-primary:      #1C4B7A; --cl-primary-hover:#245F97; --cl-on-primary:   #F2F8FF;
+    --cl-link:         #6FC7E2; --cl-signal:       #34C0DF;
+    --cl-shadow:    0 1px 2px rgba(0,0,0,.4), 0 12px 34px -18px rgba(0,0,0,.7);
+    --cl-shadow-lg: 0 4px 12px rgba(0,0,0,.45), 0 26px 54px -22px rgba(0,0,0,.75);
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; font-family: var(--cl-font-body); font-size: 1rem; line-height: 1.6;
+  color: var(--cl-text); background: var(--cl-bg);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+img, svg, video { max-width: 100%; height: auto; display: block; }
+h1, h2, h3, h4 {
+  font-family: var(--cl-font-display); color: var(--cl-text); line-height: 1.15;
+  margin: 0 0 .5em; font-weight: 600; letter-spacing: -0.01em;
+}
+h1 { font-size: clamp(1.7rem, 1.3rem + 1.8vw, 2.5rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.3rem, 1.1rem + 1vw, 1.7rem); }
+h3 { font-size: 1.02rem; }
+p  { margin: 0 0 1rem; }
+a { color: var(--cl-link); text-decoration-color: color-mix(in srgb, var(--cl-link) 40%, transparent); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+hr { border: none; border-top: 1px solid var(--cl-line); margin: var(--cl-space-3) 0; }
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none; box-shadow: var(--cl-ring); border-radius: var(--cl-radius-sm);
+}
+.cl-container { width: 100%; max-width: var(--cl-maxw); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+.cl-section   { padding-block: var(--cl-space-4); }
+.cl-stack > * + * { margin-top: var(--cl-space-3); }
+.cl-grid { display: grid; gap: var(--cl-space-3); }
+.cl-header {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--cl-surface) 85%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--cl-line);
+}
+.cl-header__inner { display: flex; align-items: center; gap: var(--cl-space-3); min-height: 64px; }
+.cl-brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--cl-text); font-weight: 600; }
+.cl-brand svg { width: 30px; height: 30px; }
+.cl-brand__name { font-family: var(--cl-font-display); font-size: 1.1rem; letter-spacing: -0.01em; }
+.cl-brand__name b { color: var(--cl-navy-600); }
+@media (prefers-color-scheme: dark){ .cl-brand__name b { color: var(--cl-signal); } }
+.cl-header__spacer { margin-left: auto; }
+.cl-footer {
+  border-top: 1px solid var(--cl-line); color: var(--cl-muted); font-size: .85rem;
+  padding-block: var(--cl-space-4); margin-top: var(--cl-space-5);
+}
+.cl-eyebrow {
+  font-family: var(--cl-font-mono); font-size: .74rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--cl-muted); display: inline-flex; align-items: center; gap: .55rem;
+}
+.cl-eyebrow::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--cl-signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cl-signal) 22%, transparent);
+}
+.cl-muted { color: var(--cl-muted); }
+.cl-lead  { font-size: 1.05rem; color: var(--cl-muted); max-width: 68ch; }
+.cl-btn {
+  --_bg: var(--cl-primary); --_fg: var(--cl-on-primary); --_bd: transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  font-family: var(--cl-font-body); font-weight: 600; font-size: .88rem; line-height: 1;
+  padding: .62rem 1rem; border-radius: var(--cl-radius-pill);
+  background: var(--_bg); color: var(--_fg); border: 1.5px solid var(--_bd);
+  text-decoration: none; cursor: pointer;
+  transition: transform .12s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.cl-btn:hover { background: var(--cl-primary-hover); transform: translateY(-1px); }
+.cl-btn--ghost  { --_bg: transparent; --_fg: var(--cl-text); --_bd: var(--cl-line); }
+.cl-btn--ghost:hover { --_bg: var(--cl-surface-2); background: var(--cl-surface-2); border-color: var(--cl-navy-600); }
+.cl-btn--sm { padding: .48rem .85rem; font-size: .8rem; }
+.cl-badge {
+  font-size: .72rem; font-weight: 700; padding: .18rem .6rem; border-radius: var(--cl-radius-pill);
+  background: var(--cl-surface-2); color: var(--cl-muted); font-family: var(--cl-font-mono); letter-spacing: .03em;
+  white-space: nowrap;
+}
+.cl-badge--ok   { background: color-mix(in srgb, var(--cl-ok) 15%, transparent);   color: var(--cl-ok); }
+.cl-badge--warn { background: color-mix(in srgb, var(--cl-warn) 15%, transparent); color: var(--cl-warn); }
+.cl-badge--err  { background: color-mix(in srgb, var(--cl-err) 15%, transparent);  color: var(--cl-err); }
+.cl-card {
+  background: var(--cl-surface); border: 1px solid var(--cl-line); border-radius: var(--cl-radius);
+  padding: var(--cl-space-3); box-shadow: var(--cl-shadow);
+}
+.cl-card--pad { padding: var(--cl-space-4); }
+.cl-label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .3rem; color: var(--cl-text); }
+.cl-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.cl-table th, .cl-table td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--cl-line); }
+.cl-table thead th {
+  font-family: var(--cl-font-mono); font-size: .68rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--cl-muted); font-weight: 700;
+}
+.cl-table tbody tr:hover { background: var(--cl-surface-2); }
+.cl-flex       { display: flex; gap: var(--cl-space-2); align-items: center; }
+.cl-mono       { font-family: var(--cl-font-mono); }
+.cl-tag {
+  font-family: var(--cl-font-mono); font-size: .62rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cl-navy-600); background: color-mix(in srgb, var(--cl-signal) 12%, var(--cl-surface));
+  border: 1px solid color-mix(in srgb, var(--cl-signal) 30%, transparent);
+  padding: .16rem .45rem; border-radius: 6px; display: inline-block;
+}
+@media (prefers-color-scheme: dark){ .cl-tag { color: var(--cl-signal); } }
+
+/* ---------- Simulator-spezifische Ergänzungen ---------- */
+.gs-layout { grid-template-columns: 340px 1fr; align-items: start; }
+@media (max-width: 900px) { .gs-layout { grid-template-columns: 1fr; } }
+.gs-plots-grid { grid-template-columns: 1.3fr 1fr; }
+@media (max-width: 760px) { .gs-plots-grid { grid-template-columns: 1fr; } }
+
+.gs-slider-row + .gs-slider-row { margin-top: var(--cl-space-3); }
+.gs-slider-row__head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+.gs-range {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px;
+  background: var(--cl-line); outline: none; margin-top: .5rem; accent-color: var(--cl-signal);
+  cursor: pointer;
+}
+.gs-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%;
+  background: var(--cl-navy-600); border: 2px solid var(--cl-surface); box-shadow: var(--cl-shadow);
+  cursor: pointer; margin-top: -1px;
+}
+.gs-range::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--cl-navy-600);
+  border: 2px solid var(--cl-surface); box-shadow: var(--cl-shadow); cursor: pointer;
+}
+.gs-hint { font-size: .78rem; color: var(--cl-muted); margin-top: .15rem; }
+.gs-section-title {
+  font-family: var(--cl-font-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cl-navy-600); margin: 0 0 .2rem;
+}
+@media (prefers-color-scheme: dark){ .gs-section-title{ color: var(--cl-signal);} }
+canvas.gs-canvas { width: 100%; display: block; border-radius: var(--cl-radius-sm); background: var(--cl-surface); }
+#timeCanvas { height: 260px; }
+#xyCanvas { height: 340px; }
+.gs-legend { display:flex; gap: 1rem; font-size:.78rem; color:var(--cl-muted); margin-top:.4rem; flex-wrap:wrap; }
+.gs-legend span { display:inline-flex; align-items:center; gap:.4rem; }
+.gs-dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+.gs-cause {
+  display:flex; gap:.8rem; align-items:flex-start; padding: .75rem .9rem; border-radius: var(--cl-radius-sm);
+  border: 1px solid var(--cl-line); background: var(--cl-surface-2); transition: opacity .15s ease, border-color .15s ease;
+}
+.gs-cause.is-inactive { opacity: .45; }
+.gs-cause.is-active { border-color: color-mix(in srgb, var(--cl-err) 45%, var(--cl-line)); background: color-mix(in srgb, var(--cl-err) 6%, var(--cl-surface-2)); }
+.gs-cause__title { font-weight: 600; font-size: .9rem; margin-bottom: .15rem; }
+.gs-cause__text { font-size: .84rem; color: var(--cl-muted); }
+.gs-quality { display:flex; align-items:center; gap:.6rem; margin-top: .6rem; }
+details.gs-details summary { cursor: pointer; font-weight: 600; font-size: .88rem; color: var(--cl-navy-600); }
+@media (prefers-color-scheme: dark){ details.gs-details summary{ color: var(--cl-signal);} }
+details.gs-details { border-top: 1px solid var(--cl-line); padding-top: .8rem; margin-top: .8rem; font-size: .88rem; color: var(--cl-muted); }
+details.gs-details code { font-family: var(--cl-font-mono); background: var(--cl-surface-2); padding: .05rem .3rem; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header class="cl-header">
+  <div class="cl-container cl-header__inner">
+    <a class="cl-brand" href="#">
+      <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="17" cy="17" r="15.5" stroke="var(--cl-navy-600)" stroke-width="2"/>
+        <path d="M6 17 C 10 8, 14 26, 17 17 S 24 8, 28 17" stroke="var(--cl-signal)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="cl-brand__name">code<b>LAB</b>365</span>
+    </a>
+    <div class="cl-header__spacer"></div>
+    <span class="cl-eyebrow">Gebersignal-Diagnose</span>
+  </div>
+</header>
+
+<main class="cl-container cl-section">
+  <div class="cl-stack">
+
+    <div>
+      <span class="cl-eyebrow">Sinus-Cosinus-Geber</span>
+      <h1>Gebersignal-Simulator</h1>
+      <p class="cl-lead">
+        Ein Sinus-Cosinus-Geber liefert zwei um 90° versetzte Spuren. Zeichnet man sie gegeneinander
+        auf (Sinus über Cosinus), ergibt sich im Idealfall ein Einheitskreis. Phasenfehler verformen
+        den Kreis zur Ellipse, Offsets verschieben den Mittelpunkt, unterschiedliche Amplituden stauchen
+        eine Achse – und punktuelle Signaleinbrüche (z. B. durch Verschmutzung der Maßverkörperung)
+        erzeugen Zacken auf der Kreisbahn. Stelle unten die Fehlerbilder ein und beobachte den Kreis
+        sowie die automatische Diagnose.
+      </p>
+    </div>
+
+    <div class="cl-grid gs-layout">
+
+      <!-- ---------------- Regler ---------------- -->
+      <div class="cl-card cl-card--pad">
+        <p class="gs-section-title">Systematische Fehler</p>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="phase">Zeitversatz (Phasenfehler)</label>
+            <span class="cl-mono cl-muted" id="phaseVal">0.0°</span>
+          </div>
+          <input type="range" class="gs-range" id="phase" min="-30" max="30" step="0.5" value="0">
+          <p class="gs-hint">Abweichung vom idealen 90°-Versatz zwischen Sinus- und Cosinusspur → verformt den Kreis zur Ellipse.</p>
+        </div>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="ampC">Amplitudenfehler Cosinusspur</label>
+            <span class="cl-mono cl-muted" id="ampCVal">0 %</span>
+          </div>
+          <input type="range" class="gs-range" id="ampC" min="-30" max="30" step="1" value="0">
+          <p class="gs-hint">Verstärkungsunterschied Cosinus gegenüber Sinus → Kreis wird zur Ellipse gestaucht.</p>
+        </div>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="offS">Offset Sinusspur</label>
+            <span class="cl-mono cl-muted" id="offSVal">0 %</span>
+          </div>
+          <input type="range" class="gs-range" id="offS" min="-20" max="20" step="0.5" value="0">
+        </div>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="offC">Offset Cosinusspur</label>
+            <span class="cl-mono cl-muted" id="offCVal">0 %</span>
+          </div>
+          <input type="range" class="gs-range" id="offC" min="-20" max="20" step="0.5" value="0">
+          <p class="gs-hint">Gleichanteil auf einer Spur → verschiebt den Kreismittelpunkt aus dem Ursprung.</p>
+        </div>
+
+        <hr>
+        <p class="gs-section-title">Störungen &amp; Einbrüche</p>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="dropCount">Einbruch-Häufigkeit</label>
+            <span class="cl-mono cl-muted" id="dropCountVal">3 / Umdrehung</span>
+          </div>
+          <input type="range" class="gs-range" id="dropCount" min="0" max="20" step="1" value="3">
+        </div>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="dropDepth">Einbruch-Intensität</label>
+            <span class="cl-mono cl-muted" id="dropDepthVal">40 %</span>
+          </div>
+          <input type="range" class="gs-range" id="dropDepth" min="0" max="100" step="1" value="40">
+        </div>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="dropWidth">Einbruch-Breite</label>
+            <span class="cl-mono cl-muted" id="dropWidthVal">2.0°</span>
+          </div>
+          <input type="range" class="gs-range" id="dropWidth" min="0.5" max="10" step="0.5" value="2">
+          <p class="gs-hint">Punktuelle Amplitudeneinbrüche (z. B. Verschmutzung/Beschädigung einzelner Striche) → Zacken auf der Kreisbahn.</p>
+        </div>
+
+        <div class="gs-slider-row">
+          <div class="gs-slider-row__head">
+            <label class="cl-label" for="noise">Rauschen (stochastisch)</label>
+            <span class="cl-mono cl-muted" id="noiseVal">1.0 %</span>
+          </div>
+          <input type="range" class="gs-range" id="noise" min="0" max="10" step="0.2" value="1">
+        </div>
+
+        <div class="cl-flex" style="margin-top: var(--cl-space-3); flex-wrap: wrap;">
+          <button class="cl-btn cl-btn--sm" id="idealBtn">Ideales Signal</button>
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" id="rerollBtn">Einbrüche neu würfeln</button>
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" id="resetBtn">Zurücksetzen</button>
+        </div>
+        <p class="gs-hint">„Ideales Signal" setzt alle Fehlerquellen auf 0 – der perfekte Einheitskreis als Referenz.</p>
+      </div>
+
+      <!-- ---------------- Plots ---------------- -->
+      <div class="cl-stack">
+
+        <div class="cl-card cl-card--pad">
+          <h3>Zeitverlauf über eine Signalperiode</h3>
+          <canvas class="gs-canvas" id="timeCanvas"></canvas>
+          <div class="gs-legend">
+            <span><span class="gs-dot" style="background:var(--cl-navy-600)"></span>sin</span>
+            <span><span class="gs-dot" style="background:var(--cl-err)"></span>cos</span>
+          </div>
+        </div>
+
+        <div class="cl-grid gs-plots-grid">
+          <div class="cl-card cl-card--pad">
+            <h3>Lissajous-Darstellung (Einheitskreis)</h3>
+            <canvas class="gs-canvas" id="xyCanvas"></canvas>
+            <div class="gs-legend">
+              <span><span class="gs-dot" style="background:color-mix(in srgb, var(--cl-ok) 35%, transparent); border:1px solid var(--cl-ok)"></span>Toleranz 75–125 %</span>
+              <span><span class="gs-dot" style="background:var(--cl-navy-600)"></span>Messpunkte</span>
+            </div>
+          </div>
+
+          <div class="cl-card cl-card--pad">
+            <h3>Plausibilitätscheck</h3>
+            <table class="cl-table" id="diagTable">
+              <thead><tr><th>Kenngröße</th><th>Soll (Regler)</th><th>Gemessen</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="gs-quality">
+              <span id="qualityBadge" class="cl-badge">–</span>
+              <span class="cl-mono cl-muted" id="qualityText" style="font-size:.8rem;"></span>
+            </div>
+
+            <details class="gs-details">
+              <summary>Wie wird gemessen? (Formeln)</summary>
+              <p style="margin-top:.6rem;">
+                Aus den generierten Abtastwerten <code>s(θ)</code>, <code>c(θ)</code> werden Mittelwert
+                (Offset), Varianz (Amplitude über <code>A = √(2·Var)</code>) und die Kreuzkorrelation
+                bestimmt. Da orthogonale Sinus/Cosinus-Signale über eine volle Periode unkorreliert sind,
+                liefert <code>sin(Δφ) = −2·E[(s−Os)(c−Oc)] / (As·Ac)</code> den Phasenfehler. Der Radius
+                <code>r(θ) = √(s² + c²)</code> je Abtastwert zeigt, wie nah die Bahn am Einheitskreis liegt
+                (Grob-/Feinlagefehler).
+              </p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cl-card cl-card--pad">
+      <h3>Mögliche Fehlerursachen</h3>
+      <p class="cl-muted" style="font-size:.88rem; margin-top:-.4rem;">
+        Automatisch aus dem gemessenen Signal abgeleitet. Aktive Ursachen sind hervorgehoben.
+      </p>
+      <div id="causesList" class="cl-stack" style="margin-top: var(--cl-space-2);"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="cl-footer">
+  <div class="cl-container">
+    Simulation dient der Veranschaulichung typischer Fehlerbilder bei Sinus-Cosinus-Gebersignalen
+    (Offset-, Amplituden- und Phasenfehler, punktuelle Einbrüche, Rauschen). Kein Ersatz für eine
+    Messung am realen System.
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  const state = { phase:0, ampC:0, offS:0, offC:0, dropCount:3, dropDepth:40, dropWidth:2, noise:1 };
+  const defaults = Object.assign({}, state);
+  let dropoutSeed = [];
+
+  const ids = ['phase','ampC','offS','offC','dropCount','dropDepth','dropWidth','noise'];
+  const els = {};
+  ids.forEach(id => { els[id] = document.getElementById(id); els[id+'Val'] = document.getElementById(id+'Val'); });
+
+  function reroll(count){
+    dropoutSeed = [];
+    for (let i=0; i<count; i++){
+      dropoutSeed.push({ center: Math.random()*360, depthFactor: 0.6 + 0.7*Math.random() });
+    }
+  }
+  reroll(state.dropCount);
+
+  function angDiff(a,b){
+    let d = ((a-b+180) % 360 + 360) % 360 - 180;
+    return d;
+  }
+
+  const N = 720;
+  function generateSignals(){
+    const thetaDeg = new Float64Array(N);
+    const sArr = new Float64Array(N);
+    const cArr = new Float64Array(N);
+    const ampCFactor = 1 + state.ampC/100;
+    const phaseRad = state.phase * Math.PI/180;
+    for (let i=0; i<N; i++){
+      const td = i*360/N;
+      thetaDeg[i] = td;
+      const tr = td*Math.PI/180;
+      let sPure = Math.sin(tr);
+      let cPure = ampCFactor * Math.cos(tr + phaseRad);
+
+      let atten = 1;
+      const halfW = Math.max(state.dropWidth/2, 0.01);
+      for (const d of dropoutSeed){
+        const diff = angDiff(td, d.center);
+        if (Math.abs(diff) < halfW){
+          const w = 0.5*(1+Math.cos(Math.PI*diff/halfW));
+          const localAtten = 1 - (state.dropDepth/100) * d.depthFactor * w;
+          if (localAtten < atten) atten = localAtten;
+        }
+      }
+      let s = sPure*atten + state.offS/100;
+      let c = cPure*atten + state.offC/100;
+      s += (Math.random()*2-1) * (state.noise/100);
+      c += (Math.random()*2-1) * (state.noise/100);
+      sArr[i]=s; cArr[i]=c;
+    }
+    return {thetaDeg, sArr, cArr};
+  }
+
+  function analyze(sArr, cArr){
+    const n = sArr.length;
+    let sumS=0, sumC=0;
+    for (let i=0;i<n;i++){ sumS+=sArr[i]; sumC+=cArr[i]; }
+    const offsetS = sumS/n, offsetC = sumC/n;
+
+    let varS=0, varC=0, cross=0;
+    for (let i=0;i<n;i++){
+      const sc = sArr[i]-offsetS, cc = cArr[i]-offsetC;
+      varS += sc*sc; varC += cc*cc; cross += sc*cc;
+    }
+    varS/=n; varC/=n; cross/=n;
+
+    const ampS = Math.sqrt(2*Math.max(varS,1e-9));
+    const ampC = Math.sqrt(2*Math.max(varC,1e-9));
+    let sinPhi = -2*cross/(ampS*ampC);
+    sinPhi = Math.max(-1, Math.min(1, sinPhi));
+    const phaseEstDeg = Math.asin(sinPhi) * 180/Math.PI;
+
+    let rSum=0, rMin=Infinity, rMax=-Infinity, inOpt=0, inTol=0;
+    const rArr = new Float64Array(n);
+    for (let i=0;i<n;i++){
+      const r = Math.sqrt(sArr[i]*sArr[i]+cArr[i]*cArr[i]);
+      rArr[i]=r;
+      rSum+=r; if(r<rMin) rMin=r; if(r>rMax) rMax=r;
+      if (r>=0.9 && r<=1.1) inOpt++;
+      if (r>=0.75 && r<=1.25) inTol++;
+    }
+    const rMean = rSum/n;
+    let rVar=0;
+    for (let i=0;i<n;i++){ rVar += (rArr[i]-rMean)*(rArr[i]-rMean); }
+    rVar/=n;
+    const rStd = Math.sqrt(rVar);
+
+    return { offsetS, offsetC, ampS, ampC, phaseEstDeg, rMean, rStd, rMin, rMax,
+      pctOptimum: 100*inOpt/n, pctTol: 100*inTol/n };
+  }
+
+  function cssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function setupCanvas(canvas){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(rect.width*dpr));
+    canvas.height = Math.max(1, Math.round(rect.height*dpr));
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return { ctx, w: rect.width, h: rect.height };
+  }
+
+  function drawTimePlot(thetaDeg, sArr, cArr){
+    const canvas = document.getElementById('timeCanvas');
+    const { ctx, w, h } = setupCanvas(canvas);
+    if (w <= 0 || h <= 0) return;
+    ctx.clearRect(0,0,w,h);
+
+    const pad = { l:38, r:12, t:14, b:26 };
+    const pw = w-pad.l-pad.r, ph = h-pad.t-pad.b;
+    const yMin=-1.6, yMax=1.6;
+    const X = td => pad.l + (td/360)*pw;
+    const Y = v => pad.t + (1-(v-yMin)/(yMax-yMin))*ph;
+
+    const line = cssVar('--cl-line'), muted = cssVar('--cl-muted');
+    const navy = cssVar('--cl-navy-600'), err = cssVar('--cl-err');
+
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.font = '10px ' + cssVar('--cl-font-mono');
+    ctx.fillStyle = muted;
+    [-1,-0.5,0,0.5,1].forEach(v=>{
+      ctx.beginPath(); ctx.moveTo(pad.l, Y(v)); ctx.lineTo(w-pad.r, Y(v)); ctx.stroke();
+      ctx.fillText(v.toString(), 4, Y(v)+3);
+    });
+    [0,90,180,270,360].forEach(td=>{
+      ctx.beginPath(); ctx.moveTo(X(td), pad.t); ctx.lineTo(X(td), h-pad.b); ctx.stroke();
+      ctx.fillText(td+'°', X(td)-(td===360?18:8), h-8);
+    });
+
+    function drawSeries(arr, color){
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+      for (let i=0;i<arr.length;i++){
+        const x=X(thetaDeg[i]), y=Y(arr[i]);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    drawSeries(sArr, navy);
+    drawSeries(cArr, err);
+  }
+
+  function drawXYPlot(sArr, cArr){
+    const canvas = document.getElementById('xyCanvas');
+    const { ctx, w, h } = setupCanvas(canvas);
+    if (w <= 0 || h <= 0) return;
+    ctx.clearRect(0,0,w,h);
+
+    const size = Math.max(40, Math.min(w,h) - 24);
+    const cx = w/2, cy = h/2;
+    const scale = (size/2) / 1.45;
+    const X = s => cx + s*scale;
+    const Y = c => cy - c*scale;
+
+    const ok = cssVar('--cl-ok'), muted = cssVar('--cl-muted'), navy = cssVar('--cl-navy-600');
+    const surface = cssVar('--cl-surface');
+
+    // Toleranzband 75-125% als Ring
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,1.25*scale,0,Math.PI*2); ctx.fillStyle = hexA(ok, 0.14); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,0.75*scale,0,Math.PI*2); ctx.fillStyle = surface; ctx.fill();
+    ctx.restore();
+
+    // Optimum-Band 90-110%
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle = hexA(ok, 0.7); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx,cy,1.10*scale,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,0.90*scale,0,Math.PI*2); ctx.stroke();
+
+    // Idealer Einheitskreis
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle = muted; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx,cy,1.0*scale,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Achsenkreuz
+    ctx.strokeStyle = muted; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx-size/2-4, cy); ctx.lineTo(cx+size/2+4, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy-size/2-4); ctx.lineTo(cx, cy+size/2+4); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.font = '10px ' + cssVar('--cl-font-mono'); ctx.fillStyle = muted;
+    ctx.fillText('Sin', cx+size/2-8, cy-6);
+    ctx.fillText('Cos', cx+6, cy-size/2-6);
+
+    // Messkurve
+    ctx.beginPath(); ctx.strokeStyle = navy; ctx.lineWidth = 1.4;
+    for (let i=0;i<sArr.length;i++){
+      const x=X(sArr[i]), y=Y(cArr[i]);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); ctx.stroke();
+
+    // Mittelpunkt
+    ctx.beginPath(); ctx.fillStyle = cssVar('--cl-err');
+    ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  function hexA(hex, alpha){
+    // hex like #RRGGBB -> rgba string
+    hex = hex.replace('#','');
+    if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+    const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function badgeClass(kind){
+    return kind==='ok' ? 'cl-badge cl-badge--ok' : kind==='warn' ? 'cl-badge cl-badge--warn' : 'cl-badge cl-badge--err';
+  }
+
+  function updateTable(a){
+    const rows = [
+      ['Offset Sinusspur', state.offS.toFixed(1)+' %', (a.offsetS*100).toFixed(2)+' %'],
+      ['Offset Cosinusspur', state.offC.toFixed(1)+' %', (a.offsetC*100).toFixed(2)+' %'],
+      ['Amplitudenfehler Cosinus', state.ampC.toFixed(1)+' %', ((a.ampC/a.ampS-1)*100).toFixed(2)+' %'],
+      ['Phasenfehler', state.phase.toFixed(1)+'°', a.phaseEstDeg.toFixed(2)+'°'],
+      ['Radius, Mittelwert', '–', a.rMean.toFixed(3)],
+      ['Radius-Streuung (Feinlage)', '–', (a.rStd*100).toFixed(2)+' %'],
+      ['Punkte im Toleranzband (75–125%)', '–', a.pctTol.toFixed(1)+' %'],
+      ['Punkte im Optimum (90–110%)', '–', a.pctOptimum.toFixed(1)+' %'],
+    ];
+    const tbody = document.querySelector('#diagTable tbody');
+    tbody.innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td class="cl-mono">${r[1]}</td><td class="cl-mono">${r[2]}</td></tr>`).join('');
+
+    const badge = document.getElementById('qualityBadge');
+    const text = document.getElementById('qualityText');
+    if (a.pctOptimum>=90){
+      badge.className = badgeClass('ok'); badge.textContent = 'Optimal';
+      text.textContent = '≥ 90 % der Messpunkte im Kernbereich (90–110 % Radius).';
+    } else if (a.pctTol>=90){
+      badge.className = badgeClass('warn'); badge.textContent = 'Im Toleranzband';
+      text.textContent = 'Innerhalb 75–125 %, aber nicht im Optimum – Korrektur empfohlen.';
+    } else {
+      badge.className = badgeClass('err'); badge.textContent = 'Außerhalb Toleranz';
+      text.textContent = 'Deutliche Abweichung vom Einheitskreis – Signal prüfen.';
+    }
+  }
+
+  function causeRow(active, title, text){
+    return `<div class="gs-cause ${active?'is-active':'is-inactive'}">
+      <span class="cl-badge ${active?'cl-badge--err':''}" style="margin-top:2px;">${active?'aktiv':'—'}</span>
+      <div><div class="gs-cause__title">${title}</div><div class="gs-cause__text">${text}</div></div>
+    </div>`;
+  }
+
+  function updateCauses(a){
+    const items = [];
+    items.push(causeRow(Math.abs(a.offsetS*100) > 1,
+      'Offset auf der Sinusspur',
+      'Elektronischer Gleichanteil im AD-Wandler/Verstärker der Sinusspur oder ungünstiger Arbeitspunkt der Sensorik. Führt zu einer Lageabweichung, die einmal pro Signalperiode durchläuft (1ε-Abweichung).'));
+    items.push(causeRow(Math.abs(a.offsetC*100) > 1,
+      'Offset auf der Cosinusspur',
+      'Analog zur Sinusspur: Gleichanteil im Verstärkungspfad der Cosinusspur, z. B. durch Bauteiltoleranzen oder Temperaturdrift (1ε-Abweichung).'));
+    items.push(causeRow(Math.abs(a.ampC/a.ampS - 1)*100 > 3,
+      'Amplitudenunterschied Sinus/Cosinus',
+      'Unterschiedliche Verstärkung oder Empfindlichkeit der beiden Kanäle (z. B. Photoelement-Toleranzen). Staucht den Kreis zur Ellipse entlang einer Achse (2ε-Abweichung).'));
+    items.push(causeRow(Math.abs(a.phaseEstDeg) > 1,
+      'Phasenfehler zwischen den Spuren',
+      'Abweichung vom idealen 90°-Versatz, z. B. durch Justagefehler der Abtastköpfe oder Gitterfehler der Maßverkörperung. Verkippt die Ellipse diagonal (2ε-Abweichung).'));
+    items.push(causeRow(state.dropCount>0 && state.dropDepth>5,
+      'Punktuelle Signaleinbrüche',
+      'Lokale Verschmutzung, Beschädigung oder Kratzer auf der Maßverkörperung sowie punktförmige Fehler einzelner Striche. Erzeugen kurzwellige Zacken auf der Kreisbahn (Feinlagefehler, wiederholt sich nicht zwingend jede Umdrehung).'));
+    items.push(causeRow(state.noise > 1.5,
+      'Erhöhtes stochastisches Rauschen',
+      'EMV-Einstreuungen, unzureichende Schirmung des Übertragungswegs oder Rauschen der Folgeelektronik. Verbreitert die Kreisbahn diffus, ohne feste Vorzugsrichtung.'));
+    items.push(causeRow(false,
+      'Schwingungen der Anbauteile',
+      'Ungenügende Steifigkeit der Geber-Anbauteile kann periodische, drehzahlabhängige Störungen erzeugen – in dieser Simulation nicht separat modelliert, aber typische Ursache realer Feinlagefehler.'));
+    document.getElementById('causesList').innerHTML = items.join('');
+  }
+
+  function readInputs(){
+    state.phase = parseFloat(els.phase.value);
+    state.ampC = parseFloat(els.ampC.value);
+    state.offS = parseFloat(els.offS.value);
+    state.offC = parseFloat(els.offC.value);
+    state.dropCount = parseInt(els.dropCount.value,10);
+    state.dropDepth = parseFloat(els.dropDepth.value);
+    state.dropWidth = parseFloat(els.dropWidth.value);
+    state.noise = parseFloat(els.noise.value);
+
+    els.phaseVal.textContent = state.phase.toFixed(1)+'°';
+    els.ampCVal.textContent = state.ampC.toFixed(0)+' %';
+    els.offSVal.textContent = state.offS.toFixed(1)+' %';
+    els.offCVal.textContent = state.offC.toFixed(1)+' %';
+    els.dropCountVal.textContent = state.dropCount+' / Umdrehung';
+    els.dropDepthVal.textContent = state.dropDepth.toFixed(0)+' %';
+    els.dropWidthVal.textContent = state.dropWidth.toFixed(1)+'°';
+    els.noiseVal.textContent = state.noise.toFixed(1)+' %';
+  }
+
+  let lastDropCount = state.dropCount;
+  function update(){
+    readInputs();
+    if (state.dropCount !== lastDropCount){
+      reroll(state.dropCount);
+      lastDropCount = state.dropCount;
+    }
+    const { thetaDeg, sArr, cArr } = generateSignals();
+    const a = analyze(sArr, cArr);
+    drawTimePlot(thetaDeg, sArr, cArr);
+    drawXYPlot(sArr, cArr);
+    updateTable(a);
+    updateCauses(a);
+  }
+
+  ids.forEach(id => els[id].addEventListener('input', update));
+
+  const idealValues = { phase:0, ampC:0, offS:0, offC:0, dropCount:0, dropDepth:0, dropWidth: defaults.dropWidth, noise:0 };
+  document.getElementById('idealBtn').addEventListener('click', ()=>{
+    Object.assign(state, idealValues);
+    ids.forEach(id => els[id].value = state[id]);
+    reroll(state.dropCount);
+    update();
+  });
+
+  document.getElementById('rerollBtn').addEventListener('click', ()=>{
+    if (state.dropCount === 0) state.dropCount = defaults.dropCount;
+    if (state.dropDepth === 0) state.dropDepth = defaults.dropDepth;
+    els.dropCount.value = state.dropCount;
+    els.dropDepth.value = state.dropDepth;
+    reroll(state.dropCount);
+    update();
+  });
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    Object.assign(state, defaults);
+    ids.forEach(id => els[id].value = state[id]);
+    reroll(state.dropCount);
+    update();
+  });
+
+  let resizeTimer = null;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(update, 80);
+  });
+
+  // Erst zeichnen, sobald das Layout tatsächlich Maße hat (verhindert Breite/Höhe 0 beim ersten Frame).
+  requestAnimationFrame(()=> requestAnimationFrame(update));
+})();
+</script>
+</body>
+</html>
