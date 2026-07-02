@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Universal Oszi-Viewer (Pro Version)</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { max-width: 1700px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #drop_zone { border: 2px dashed #005A9C; padding: 30px; text-align: center; border-radius: 5px; cursor: pointer; background: #eef4f9; color: #005A9C; font-weight: bold; margin-bottom: 20px; transition: 0.3s; }
+        #drop_zone:hover { background: #ddecfa; }
+        
+        #kpi_board { display: flex; gap: 15px; margin-bottom: 15px; }
+        .kpi_card { flex: 1; background: #fafafa; border-left: 4px solid #005A9C; padding: 10px 15px; border-radius: 4px; }
+        .kpi_card span { display: block; font-size: 11px; color: #666; text-transform: uppercase; }
+        .kpi_card strong { font-size: 18px; color: #333; }
+        
+        button { padding: 6px 12px; margin-right: 10px; cursor: pointer; background-color: #005A9C; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        button:hover { background-color: #004578; }
+        .btn-secondary { background-color: #e0e0e0; color: #333; }
+        .btn-secondary:hover { background-color: #ccc; }
+
+        .main-wrapper { display: flex; gap: 20px; margin-bottom: 20px; display: none; }
+        
+        .sidebar { width: 350px; background: #fdfdfd; border: 1px solid #ddd; border-radius: 4px; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 10px; background: #eee; border-bottom: 1px solid #ddd; font-weight: bold; font-size: 14px; }
+        
+        .sidebar-controls { padding: 10px; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; }
+        .sidebar-buttons { display: flex; gap: 5px; }
+        .sidebar-buttons button { flex: 1; font-size: 11px; padding: 5px; margin: 0; }
+        .sysvar-toggle { font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #444; }
+        
+        .channel-list { padding: 10px; overflow-y: auto; height: 600px; }
+        .checkbox-item { display: flex; align-items: flex-start; margin-bottom: 8px; font-size: 12px; cursor: pointer; }
+        .checkbox-item input { margin-right: 8px; margin-top: 2px; }
+        
+        #chart_div { flex-grow: 1; height: 680px; }
+        
+        .table-container { margin-top: 20px; overflow-x: auto; display: none; }
+        .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .table-header-left { display: flex; align-items: center; }
+        
+        #delta_t_display { font-size: 15px; font-weight: bold; margin-left: 20px; color: #005A9C; background: #eef4f9; padding: 4px 12px; border-radius: 4px; border: 1px solid #ddecfa; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: right; }
+        th { background-color: #005A9C; color: white; position: sticky; top: 0; }
+        td:first-child, th:first-child { text-align: left; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        .c1-col { color: #d62728; font-weight: bold; }
+        .c2-col { color: #1f77b4; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Universal Oszi-Analyse</h2>
+    
+    <div id="drop_zone" onclick="document.getElementById('file_input').click()">
+        TXT (Engel) oder CSV (Zimmer) hier klicken und hochladen
+        <input type="file" id="file_input" style="display: none;" accept=".txt, .csv">
+    </div>
+
+    <div id="kpi_board" style="display:none;">
+        <div class="kpi_card"><span>Maschine / Gerät</span><strong id="kpi_serial">-</strong></div>
+        <div class="kpi_card"><span>Schusszähler</span><strong id="kpi_shots">-</strong></div>
+        <div class="kpi_card"><span>Messdauer</span><strong id="kpi_duration">-</strong></div>
+    </div>
+
+    <div class="main-wrapper" id="main_wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">Kanalauswahl</div>
+            <div class="sidebar-controls">
+                <div class="sidebar-buttons">
+                    <button onclick="toggleAllChannels(false)">Alle abwählen</button>
+                    <button onclick="toggleAllChannels(true)">Alle anwählen</button>
+                </div>
+                <label class="sysvar-toggle">
+                    <input type="checkbox" id="cb_sysvars" onchange="toggleSysVars()"> 
+                    Systemvariablen (sv_...) anzeigen
+                </label>
+                <label class="sysvar-toggle">
+                    <input type="checkbox" id="cb_legend" onchange="toggleLegend()" checked> 
+                    Legende im Diagramm anzeigen
+                </label>
+                <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 2px 0;">
+                <label class="sysvar-toggle" style="color:#005A9C; font-weight:bold;">
+                    <input type="checkbox" id="cb_normalize" onchange="toggleNormalize()"> 
+                    Graphen auf 0-100% normieren
+                </label>
+            </div>
+            <div class="channel-list" id="channel_list">
+            </div>
+        </div>
+        
+        <div id="chart_div"></div>
+    </div>
+
+    <div class="table-container" id="table_container">
+        <div class="table-header-flex">
+            <div class="table-header-left">
+                <h3 style="margin: 0;">Cursor-Auswertung</h3>
+                <span id="delta_t_display">Δt = - s</span>
+                <button class="btn-secondary" style="margin-left: 20px;" onclick="resetCursorsToFull()">|&lt;--&gt;| Gesamte Messung</button>
+            </div>
+            <button onclick="exportTableToCSV()">📥 Tabelle als CSV exportieren</button>
+        </div>
+        <table id="analysis_table">
+            <thead>
+                <tr>
+                    <th>Kanal / Variable</th>
+                    <th class="c1-col">Cursor 1 <br><span id="th_c1_time" style="font-size:11px; font-weight:normal;"></span></th>
+                    <th class="c2-col">Cursor 2 <br><span id="th_c2_time" style="font-size:11px; font-weight:normal;"></span></th>
+                    <th>Δ t (s)</th>
+                    <th>Δ y (C2 - C1)</th>
+                    <th>Minimum</th>
+                    <th>Maximum</th>
+                    <th>Mittelwert</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let globalTimeArray = [];
+    let globalPlotData = [];
+    let globalDataSeries = []; 
+    let showSystemVariables = false;
+    let cursor1_x = 0;
+    let cursor2_x = 0;
+    let currentFileName = "Export";
+
+    document.getElementById('file_input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        currentFileName = file.name.replace(/\.[^/.]+$/, ""); 
+        const isCSV = file.name.toLowerCase().endsWith('.csv');
+
+        const reader = new FileReader();
+        reader.onload = function(e) { 
+            const text = e.target.result;
+            if (isCSV && text.includes('ts_norm1')) {
+                parseZimmerCSV(text, currentFileName);
+            } else {
+                parseEngelTXT(text, currentFileName); 
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function toggleAllChannels(state) {
+        let checkboxes = document.querySelectorAll('.channel-cb');
+        checkboxes.forEach(cb => cb.checked = state);
+        Plotly.restyle('chart_div', 'visible', state ? true : false);
+        updateAnalysisTable();
+    }
+
+    function toggleSingleChannel(traceIndex, isChecked) {
+        Plotly.restyle('chart_div', 'visible', isChecked ? true : false, [traceIndex]);
+        updateAnalysisTable();
+    }
+
+    function toggleLegend() {
+        let show = document.getElementById('cb_legend').checked;
+        Plotly.relayout('chart_div', { showlegend: show });
+    }
+
+    function toggleNormalize() {
+        let isNormalized = document.getElementById('cb_normalize').checked;
+        let update = { y: [], yaxis: [], hovertemplate: [] };
+
+        for (let i = 0; i < globalPlotData.length; i++) {
+            let sIdx = globalPlotData[i].seriesIndex;
+            let series = globalDataSeries[sIdx];
+            
+            if (isNormalized) {
+                update.y.push(series.normalizedValues);
+                update.yaxis.push('y'); 
+                update.hovertemplate.push('Rohwert: %{customdata:.3f}<br>Skaliert: %{y:.1f}%<extra>%{name}</extra>');
+            } else {
+                update.y.push(series.values);
+                update.yaxis.push(series.isDigital ? 'y2' : 'y'); 
+                update.hovertemplate.push('%{y:.3f}<extra>%{name}</extra>');
+            }
+        }
+
+        Plotly.restyle('chart_div', update);
+        Plotly.relayout('chart_div', {
+            'yaxis.title': isNormalized ? 'Normierte Kurven (%)' : 'Analoge Werte',
+            'yaxis.autorange': true 
+        });
+    }
+
+    function getDisplayName(seriesObj) {
+        let name = seriesObj.translatedName;
+        let isDuplicateOriginal = (seriesObj.sysVar && seriesObj.translatedName === seriesObj.originalCleanName && seriesObj.hasMappingInfo);
+        let needsSysVar = showSystemVariables || isDuplicateOriginal;
+        
+        if (needsSysVar && seriesObj.sysVar && seriesObj.sysVar !== seriesObj.translatedName) {
+            name += ` (${seriesObj.sysVar})`;
+        }
+        
+        if (seriesObj.unit) name += ` [${seriesObj.unit}]`;
+        return name;
+    }
+
+    function toggleSysVars() {
+        showSystemVariables = document.getElementById('cb_sysvars').checked;
+        let newNames = [];
+        for (let i = 0; i < globalPlotData.length; i++) {
+            let sIdx = globalPlotData[i].seriesIndex;
+            let updatedName = getDisplayName(globalDataSeries[sIdx]);
+            globalPlotData[i].name = updatedName; 
+            newNames.push(updatedName);
+        }
+        Plotly.restyle('chart_div', 'name', newNames);
+        
+        let labels = document.querySelectorAll('.channel-cb-label-text');
+        labels.forEach(label => {
+            let sIdx = label.getAttribute('data-series-index');
+            label.innerText = getDisplayName(globalDataSeries[sIdx]);
+        });
+        updateAnalysisTable();
+    }
+
+    function resetCursorsToFull() {
+        if (globalTimeArray.length === 0) return;
+        cursor1_x = globalTimeArray[0];
+        cursor2_x = globalTimeArray[globalTimeArray.length - 1];
+        Plotly.relayout('chart_div', {
+            'shapes[0].x0': cursor1_x,
+            'shapes[0].x1': cursor1_x,
+            'shapes[1].x0': cursor2_x,
+            'shapes[1].x1': cursor2_x
+        });
+        updateAnalysisTable();
+    }
+
+    function calculateNormalizationData() {
+        for (let j = 0; j < globalDataSeries.length; j++) {
+            let series = globalDataSeries[j];
+            if (series && series.values.length > 0) {
+                let min = Infinity;
+                let max = -Infinity;
+                for (let k = 0; k < series.values.length; k++) {
+                    let v = series.values[k];
+                    if (v < min) min = v;
+                    if (v > max) max = v;
+                }
+                
+                let range = max - min;
+                series.normalizedValues = new Array(series.values.length);
+                for (let k = 0; k < series.values.length; k++) {
+                    series.normalizedValues[k] = (range === 0) ? 0 : ((series.values[k] - min) / range) * 100;
+                }
+            }
+        }
+    }
+
+    function parseZimmerCSV(text, filename) {
+        const lines = text.split('\n');
+        if (lines.length < 2) return;
+
+        let headers = lines[0].split(';');
+        globalTimeArray = [];
+        globalDataSeries = [];
+        
+        for (let j = 3; j < headers.length; j++) {
+            let rawHeader = headers[j].trim();
+            if (!rawHeader) continue;
+            
+            let cleanName = rawHeader.replace(/\{.*?\}/g, '').trim();
+            let unit = '';
+            let unitMatch = cleanName.match(/(.*?)\/(.*?)$/);
+            if (unitMatch) {
+                cleanName = unitMatch[1].trim();
+                unit = unitMatch[2].trim();
+            }
+            
+            globalDataSeries[j] = {
+                originalCleanName: rawHeader,
+                translatedName: cleanName,
+                sysVar: '',
+                unit: unit,
+                hasMappingInfo: false,
+                values: [],
+                normalizedValues: [],
+                isDigital: false
+            };
+        }
+        
+        let startTimeMs = -1;
+        
+        for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].trim();
+            if (row === '') continue;
+            const cols = row.split(';');
+            
+            if (cols.length >= headers.length) {
+                let timeStr = cols[0].replace(' ', 'T').replace(',', '.');
+                let timeMs = new Date(timeStr).getTime();
+                
+                if (isNaN(timeMs)) continue;
+                if (startTimeMs === -1) startTimeMs = timeMs;
+                
+                let relativeTimeSec = (timeMs - startTimeMs) / 1000;
+                globalTimeArray.push(relativeTimeSec);
+                
+                for (let j = 3; j < headers.length; j++) {
+                    if (globalDataSeries[j]) {
+                        let valStr = cols[j];
+                        let val = parseFloat(valStr.replace(',', '.'));
+                        globalDataSeries[j].values.push(isNaN(val) ? 0 : val);
+                    }
+                }
+            }
+        }
+        
+        calculateNormalizationData();
+        
+        let dur = globalTimeArray.length > 0 ? globalTimeArray[globalTimeArray.length - 1] : 0;
+        let metadata = { serial: 'Zimmer Power Meter', shots: 'N/A', duration: dur.toFixed(2) + ' s' };
+        renderData(filename, metadata);
+    }
+
+    function parseEngelTXT(text, filename) {
+        const lines = text.split('\n');
+        let dataStartIndex = -1;
+        let headers = [];
+        let metadata = { serial: 'Unbekannt', shots: 'Unbekannt', duration: 'Unbekannt' };
+        
+        let oldMappings = [];
+        let vdiMappings = [];
+        let isVDIFormat = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            const originalLine = lines[i]; 
+            const parts = line.split(/\s{2,}|\t+/);
+            
+            if (line.match(/Serial number|Fabrikationsnummer/i) && parts.length > 1) metadata.serial = parts[parts.length - 1];
+            if (line.match(/Schusszähler/i) && parts.length > 1) metadata.shots = parts[parts.length - 1];
+            if (line.match(/Messdauer/i) && parts.length > 1) metadata.duration = parts[parts.length - 1];
+
+            if (originalLine.startsWith(' ;')) {
+                const mapParts = originalLine.trim().substring(1).split(';');
+                if (mapParts.length >= 2) {
+                    vdiMappings.push({ 
+                        col1: mapParts[0].trim(), 
+                        col2: mapParts[0].trim(), 
+                        col3: mapParts[1] ? mapParts[1].trim() : '', 
+                        used: false 
+                    });
+                    isVDIFormat = true;
+                }
+            } else if (!line.startsWith(';') && line.includes(';')) {
+                const mapParts = line.split(';');
+                if (mapParts.length >= 3) {
+                    oldMappings.push({ 
+                        col1: mapParts[0].trim(), 
+                        col2: mapParts[1].trim(), 
+                        col3: mapParts[2].trim(), 
+                        used: false 
+                    });
+                }
+            }
+
+            if (line.startsWith(';') && line.includes('[')) {
+                let fileHeaders = line.split(';').map(h => h.trim());
+                let activeMappings = isVDIFormat ? vdiMappings : oldMappings;
+                
+                if (isVDIFormat) {
+                    headers = ['Time', 'Timestamp'];
+                    for (let k = 0; k < activeMappings.length; k++) {
+                        headers.push(activeMappings[k].col1);
+                    }
+                    while(headers.length < fileHeaders.length) {
+                        headers.push('[ ]');
+                    }
+                } else {
+                    headers = fileHeaders;
+                }
+                dataStartIndex = i + 1; 
+                break;
+            }
+        }
+
+        if (dataStartIndex === -1) { alert('Keine gültigen Oszi-Daten gefunden!'); return; }
+
+        let activeMappings = isVDIFormat ? vdiMappings : oldMappings;
+        globalTimeArray = [];
+        globalDataSeries = []; 
+        
+        for (let j = 2; j < headers.length; j++) {
+            if (headers[j]) {
+                let rawHeader = headers[j];
+                let cleanName = rawHeader;
+                let unit = '';
+                let unitMatch = rawHeader.match(/(.*?)\[(.*?)\]/);
+                if (unitMatch) { cleanName = unitMatch[1].trim(); unit = unitMatch[2].trim(); }
+
+                let finalName = cleanName;
+                let systemVar = '';
+                let mapIndex = activeMappings.findIndex(m => !m.used && (m.col1 === cleanName || m.col3 === cleanName));
+                if (mapIndex !== -1) { 
+                    finalName = activeMappings[mapIndex].col2; 
+                    systemVar = activeMappings[mapIndex].col3; 
+                    activeMappings[mapIndex].used = true; 
+                }
+
+                let isDigi = false;
+                if (systemVar && /\.(di_|do_|sdi_|sdo_|vdi_|vdo_|b[A-Z]|sv_b)/i.test(systemVar)) {
+                    isDigi = true;
+                }
+
+                globalDataSeries[j] = { 
+                    originalCleanName: cleanName,
+                    translatedName: finalName === '[ ]' ? `Kanal ${j-1}` : finalName,
+                    sysVar: systemVar,
+                    unit: unit,
+                    hasMappingInfo: activeMappings.length > 0,
+                    values: [], 
+                    normalizedValues: [],
+                    isDigital: isDigi 
+                };
+            }
+        }
+
+        for (let i = dataStartIndex; i < lines.length; i++) {
+            const row = lines[i].trim();
+            if (row === '') continue;
+            const cols = row.split(';');
+            
+            if (cols.length > 2) {
+                let t = parseFloat(cols[0].replace(',', '.'));
+                if (isNaN(t)) continue; 
+                globalTimeArray.push(t);
+                
+                let maxCols = Math.min(headers.length, cols.length);
+                for (let j = 2; j < maxCols; j++) {
+                    if (headers[j] && globalDataSeries[j]) {
+                        let valStr = cols[j]; 
+                        let val = 0;
+                        if (valStr.toLowerCase() === 'true') { 
+                            val = 1; 
+                            globalDataSeries[j].isDigital = true; 
+                        } else if (valStr.toLowerCase() === 'false') { 
+                            val = 0; 
+                            globalDataSeries[j].isDigital = true; 
+                        } else { 
+                            let p = parseFloat(valStr.replace(',', '.'));
+                            if (!isNaN(p)) val = p;
+                        }
+                        globalDataSeries[j].values.push(val);
+                    }
+                }
+            }
+        }
+
+        calculateNormalizationData();
+        renderData(filename, metadata);
+    }
+
+    function renderData(filename, metadata) {
+        document.getElementById('kpi_serial').innerText = metadata.serial;
+        document.getElementById('kpi_shots').innerText = metadata.shots;
+        let durStr = metadata.duration.toString();
+        document.getElementById('kpi_duration').innerText = durStr + (durStr.includes('s') ? '' : ' s');
+        
+        document.getElementById('kpi_board').style.display = 'flex';
+        document.getElementById('main_wrapper').style.display = 'flex';
+        document.getElementById('table_container').style.display = 'block';
+
+        let isNormalized = document.getElementById('cb_normalize').checked;
+        globalPlotData = [];
+        const sidebarList = document.getElementById('channel_list');
+        sidebarList.innerHTML = '';
+        let traceIndex = 0;
+
+        for (let j = 0; j < globalDataSeries.length; j++) {
+            if (globalDataSeries[j]) {
+                let series = globalDataSeries[j];
+                let isVisible = (traceIndex < 5); 
+                let currentDisplayName = getDisplayName(series);
+
+                let yData = isNormalized ? series.normalizedValues : series.values;
+                let yAxisConfig = isNormalized ? 'y' : (series.isDigital ? 'y2' : 'y');
+                let hoverTpl = isNormalized ? 'Rohwert: %{customdata:.3f}<br>Skaliert: %{y:.1f}%<extra>%{name}</extra>' : '%{y:.3f}<extra>%{name}</extra>';
+
+                globalPlotData.push({
+                    x: globalTimeArray,
+                    y: yData,
+                    customdata: series.values, 
+                    hovertemplate: hoverTpl,
+                    name: currentDisplayName,
+                    mode: 'lines',
+                    visible: isVisible ? true : false,
+                    yaxis: yAxisConfig,
+                    line: { shape: series.isDigital ? 'hv' : 'linear', width: 1.5 },
+                    seriesIndex: j 
+                });
+
+                let label = document.createElement('label');
+                label.className = 'checkbox-item';
+                let checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'channel-cb';
+                checkbox.checked = isVisible;
+                
+                (function(idx) {
+                    checkbox.addEventListener('change', function() { toggleSingleChannel(idx, this.checked); });
+                })(traceIndex);
+
+                label.appendChild(checkbox);
+                
+                let span = document.createElement('span');
+                span.className = 'channel-cb-label-text';
+                span.setAttribute('data-series-index', j);
+                span.innerText = currentDisplayName;
+                
+                label.appendChild(span);
+                sidebarList.appendChild(label);
+
+                traceIndex++;
+            }
+        }
+
+        let t_start = globalTimeArray[0] || 0;
+        let t_end = globalTimeArray[globalTimeArray.length - 1] || 1;
+        cursor1_x = t_start + (t_end - t_start) * 0.1;
+        cursor2_x = t_start + (t_end - t_start) * 0.9;
+
+        let isLegendEnabled = document.getElementById('cb_legend').checked;
+
+        const layout = {
+            title: `Oszi-Analyse: ${filename}`,
+            margin: { t: 40, b: 40, r: 240 },
+            xaxis: { title: 'Zeit (s)' },
+            yaxis: { title: isNormalized ? 'Normierte Kurven (%)' : 'Analoge Werte', side: 'left' },
+            yaxis2: { title: 'Digital', overlaying: 'y', side: 'right', range: [-0.1, 1.2], tickvals: [0, 1], ticktext: ['0', '1'], showgrid: false },
+            hovermode: 'x unified',
+            showlegend: isLegendEnabled,
+            legend: { x: 1.08, y: 1, xanchor: 'left', yanchor: 'top' },
+            shapes: [
+                { type: 'line', x0: cursor1_x, x1: cursor1_x, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: '#d62728', width: 2, dash: 'dot' } },
+                { type: 'line', x0: cursor2_x, x1: cursor2_x, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: '#1f77b4', width: 2, dash: 'dot' } }
+            ]
+        };
+
+        const chartDiv = document.getElementById('chart_div');
+        chartDiv.innerHTML = '';
+        Plotly.newPlot(chartDiv, globalPlotData, layout, {responsive: true, edits: { shapePosition: true } });
+
+        updateAnalysisTable();
+
+        chartDiv.on('plotly_relayout', function(eventData) {
+            let shapesChanged = false;
+            if (eventData['shapes[0].x0'] !== undefined) { cursor1_x = eventData['shapes[0].x0']; shapesChanged = true; }
+            if (eventData['shapes[1].x0'] !== undefined) { cursor2_x = eventData['shapes[1].x0']; shapesChanged = true; }
+            if (eventData.shapes) { cursor1_x = eventData.shapes[0].x0; cursor2_x = eventData.shapes[1].x0; shapesChanged = true; }
+            if (shapesChanged) updateAnalysisTable(); 
+        });
+    }
+
+    function getClosestIndex(targetTime) {
+        let closest = 0; let minDiff = Infinity;
+        for (let i = 0; i < globalTimeArray.length; i++) {
+            let diff = Math.abs(globalTimeArray[i] - targetTime);
+            if (diff < minDiff) { minDiff = diff; closest = i; }
+            else if (diff > minDiff) { break; } 
+        }
+        return closest;
+    }
+
+    function updateAnalysisTable() {
+        const tbody = document.getElementById('table_body');
+        tbody.innerHTML = '';
+
+        let idx1 = getClosestIndex(cursor1_x);
+        let idx2 = getClosestIndex(cursor2_x);
+        let startIndex = Math.min(idx1, idx2);
+        let endIndex = Math.max(idx1, idx2);
+
+        let t1 = globalTimeArray[idx1];
+        let t2 = globalTimeArray[idx2];
+        let deltaT = Math.abs(t2 - t1);
+
+        document.getElementById('th_c1_time').innerText = `t = ${t1.toFixed(3)} s`;
+        document.getElementById('th_c2_time').innerText = `t = ${t2.toFixed(3)} s`;
+        document.getElementById('delta_t_display').innerText = `Δt = ${deltaT.toFixed(3)} s`;
+
+        const chartDiv = document.getElementById('chart_div');
+
+        for (let i = 0; i < chartDiv.data.length; i++) {
+            let trace = chartDiv.data[i];
+            
+            if (trace.visible === true || trace.visible === undefined) {
+                let originalSeries = globalDataSeries[trace.seriesIndex];
+                
+                let y1 = originalSeries.values[idx1];
+                let y2 = originalSeries.values[idx2];
+                let deltaY = y2 - y1;
+
+                let slice = originalSeries.values.slice(startIndex, endIndex + 1);
+                let min = Math.min(...slice);
+                let max = Math.max(...slice);
+                let sum = slice.reduce((a, b) => a + b, 0);
+                let mean = slice.length > 0 ? (sum / slice.length) : 0;
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${trace.name}</td>
+                    <td class="c1-col">${formatNumber(y1)}</td>
+                    <td class="c2-col">${formatNumber(y2)}</td>
+                    <td>${formatNumber(deltaT)}</td>
+                    <td>${formatNumber(deltaY)}</td>
+                    <td>${formatNumber(min)}</td>
+                    <td>${formatNumber(max)}</td>
+                    <td>${formatNumber(mean)}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+    }
+
+    function formatNumber(num) {
+        if (num === undefined || isNaN(num)) return '-';
+        if (Number.isInteger(num)) return num;
+        return num.toFixed(3).replace('.', ',');
+    }
+
+    function exportTableToCSV() {
+        let csv = [];
+        let rows = document.querySelectorAll("#analysis_table tr");
+        
+        for (let i = 0; i < rows.length; i++) {
+            let row = [];
+            let cols = rows[i].querySelectorAll("td, th");
+            
+            for (let j = 0; j < cols.length; j++) {
+                let text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, " ").trim();
+                row.push('"' + text + '"');
+            }
+            csv.push(row.join(";"));
+        }
+
+        let csvFile = new Blob(["\ufeff" + csv.join("\n")], {type: "text/csv;charset=utf-8;"});
+        let downloadLink = document.createElement("a");
+        downloadLink.download = currentFileName + "_Auswertung.csv";
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+</script>
+</body>
+</html>
