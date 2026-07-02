@@ -361,6 +361,14 @@ details.gs-details code { font-family: var(--cl-font-mono); background: var(--cl
                 <code>r(θ) = √(s² + c²)</code> je Abtastwert zeigt, wie nah die Bahn am Einheitskreis liegt
                 (Grob-/Feinlagefehler).
               </p>
+              <p>
+                <strong>Bewertung nach Worst-Case:</strong> Der Anteil „Punkte im Toleranzband" ist ein
+                Mittelwert über alle 720 Abtastpunkte – ein kurzer, aber tiefer Einbruch betrifft nur
+                wenige davon und würde diesen Wert kaum verschlechtern. Die Ampel (Optimal / Im
+                Toleranzband / Außerhalb Toleranz) bewertet deshalb die <em>größte Einzelabweichung</em>
+                <code>max(|r−1|)</code> entlang der gesamten Bahn – ein einzelner starker Einbruch schlägt
+                also unabhängig von seiner Breite auf die Bewertung durch.
+              </p>
             </details>
           </div>
         </div>
@@ -478,7 +486,12 @@ details.gs-details code { font-family: var(--cl-font-mono); background: var(--cl
     rVar/=n;
     const rStd = Math.sqrt(rVar);
 
-    return { offsetS, offsetC, ampS, ampC, phaseEstDeg, rMean, rStd, rMin, rMax,
+    // Worst-Case: größte Einzelabweichung vom idealen Einheitskreis (Radius = 1).
+    // Bewusst NICHT prozentual über alle Punkte gemittelt, damit ein kurzer,
+    // tiefer Einbruch nicht von vielen "guten" Punkten überdeckt wird.
+    const maxDevPct = Math.max(rMax-1, 1-rMin, 0) * 100;
+
+    return { offsetS, offsetC, ampS, ampC, phaseEstDeg, rMean, rStd, rMin, rMax, maxDevPct,
       pctOptimum: 100*inOpt/n, pctTol: 100*inTol/n };
   }
 
@@ -609,6 +622,7 @@ details.gs-details code { font-family: var(--cl-font-mono); background: var(--cl
       ['Phasenfehler', state.phase.toFixed(1)+'°', a.phaseEstDeg.toFixed(2)+'°'],
       ['Radius, Mittelwert', '–', a.rMean.toFixed(3)],
       ['Radius-Streuung (Feinlage)', '–', (a.rStd*100).toFixed(2)+' %'],
+      ['Größte Einzelabweichung (Worst-Case)', '–', a.maxDevPct.toFixed(1)+' %'],
       ['Punkte im Toleranzband (75–125%)', '–', a.pctTol.toFixed(1)+' %'],
       ['Punkte im Optimum (90–110%)', '–', a.pctOptimum.toFixed(1)+' %'],
     ];
@@ -617,15 +631,18 @@ details.gs-details code { font-family: var(--cl-font-mono); background: var(--cl
 
     const badge = document.getElementById('qualityBadge');
     const text = document.getElementById('qualityText');
-    if (a.pctOptimum>=90){
+    // Bewertung nach Worst-Case, nicht nach Punktanteil: ein kurzer, tiefer
+    // Einbruch soll die Bewertung auch dann verschlechtern, wenn er nur
+    // wenige der 720 Abtastpunkte betrifft.
+    if (a.maxDevPct <= 10){
       badge.className = badgeClass('ok'); badge.textContent = 'Optimal';
-      text.textContent = '≥ 90 % der Messpunkte im Kernbereich (90–110 % Radius).';
-    } else if (a.pctTol>=90){
+      text.textContent = 'Keine Stelle der Kreisbahn weicht mehr als 10 % vom Einheitskreis ab.';
+    } else if (a.maxDevPct <= 25){
       badge.className = badgeClass('warn'); badge.textContent = 'Im Toleranzband';
-      text.textContent = 'Innerhalb 75–125 %, aber nicht im Optimum – Korrektur empfohlen.';
+      text.textContent = `Größte Einzelabweichung ${a.maxDevPct.toFixed(0)} % – noch innerhalb 75–125 %, Korrektur empfohlen.`;
     } else {
       badge.className = badgeClass('err'); badge.textContent = 'Außerhalb Toleranz';
-      text.textContent = 'Deutliche Abweichung vom Einheitskreis – Signal prüfen.';
+      text.textContent = `Mindestens eine Stelle weicht ${a.maxDevPct.toFixed(0)} % vom Einheitskreis ab – auch wenn der Großteil der Bahn im Toleranzband liegt (${a.pctTol.toFixed(0)} % der Punkte).`;
     }
   }
 
