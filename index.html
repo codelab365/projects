@@ -72,6 +72,33 @@
   .p-card:hover .p-card__go svg { transform: translateX(4px); }
   .p-card.is-hidden { display: none; }
   .cat-block.is-hidden { display: none; }
+
+  /* Teilen-Button */
+  .p-card__share {
+    position: relative; z-index: 2;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; padding: 0; margin: 0;
+    border-radius: 50%; border: 1.5px solid var(--cl-line); background: var(--cl-surface);
+    color: var(--cl-muted); cursor: pointer;
+    transition: all .16s ease;
+  }
+  .p-card__share:hover { border-color: var(--cl-navy-600); color: var(--cl-navy-600); background: var(--cl-surface-2); }
+  @media (prefers-color-scheme: dark){ .p-card__share:hover { color: var(--cl-signal); } }
+  .p-card__share-ico { width: 15px; height: 15px; position: absolute; transition: opacity .15s ease, transform .15s ease; }
+  .p-card__share .is-check { opacity: 0; transform: scale(.6); color: var(--cl-ok); }
+  .p-card__share .is-icon  { opacity: 1; transform: scale(1); }
+  .p-card__share.is-copied { border-color: var(--cl-ok); background: color-mix(in srgb, var(--cl-ok) 12%, var(--cl-surface)); }
+  .p-card__share.is-copied .is-icon  { opacity: 0; transform: scale(.6); }
+  .p-card__share.is-copied .is-check { opacity: 1; transform: scale(1); }
+  .p-card__share::after {
+    content: "Link kopiert"; position: absolute; top: -2.1rem; right: 0;
+    font-family: var(--cl-font-body); font-size: .74rem; font-weight: 600;
+    white-space: nowrap; padding: .3rem .6rem; border-radius: var(--cl-radius-sm);
+    background: var(--cl-navy-700); color: #fff;
+    opacity: 0; pointer-events: none; transform: translateY(4px);
+    transition: opacity .15s ease, transform .15s ease;
+  }
+  .p-card__share.is-copied::after { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
@@ -92,6 +119,13 @@
   </symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
+  </symbol>
+  <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/>
+    <path d="M8.3 10.7 15.7 6.3M8.3 13.3l7.4 4.4"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 13l4.5 4.5L19 7"/>
   </symbol>
 </svg>
 
@@ -145,42 +179,42 @@
       <div class="cl-grid cl-grid--cards">
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/Spielesammlung-Genduron/questboard.html">
-          <div class="p-card__top"><span class="cl-tag">Spiele</span><svg class="p-card__ico"><use href="#i-spiele"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/Spielesammlung-Genduron/questboard.html" data-title="BoardOrbit · Questboard" aria-label="Link zu BoardOrbit · Questboard teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">BoardOrbit · Questboard</h3>
           <p class="p-card__desc">Finde Mitspieler:innen für die nächste Brett- und Kartenspielrunde. Quests anbieten, nach Ort und Wochentag filtern, mit Login und Anmeldung.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/LinzSpielt/">
-          <div class="p-card__top"><span class="cl-tag">Spiele</span><svg class="p-card__ico"><use href="#i-spiele"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/LinzSpielt/" data-title="Linz Spielt" aria-label="Link zu Linz Spielt teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Linz Spielt</h3>
           <p class="p-card__desc">Digitale Spieleausleihe mit Live-Datenbank. Filtern nach Spieleranzahl, Dauer, Alter und Verfügbarkeit; Admin-Bereich mit BGG-Import.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/Spielesammlung-Genduron/">
-          <div class="p-card__top"><span class="cl-tag">Spiele</span><svg class="p-card__ico"><use href="#i-spiele"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/Spielesammlung-Genduron/" data-title="Spieledatenbank Genduron" aria-label="Link zu Spieledatenbank Genduron teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Spieledatenbank Genduron</h3>
           <p class="p-card__desc">Interaktive Spieledatenbank für den Genduron-Shop – filterbar nach Spieleranzahl und Spieldauer, mit Detailansicht zu jedem Spiel.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/PrivateSpielesammlung/">
-          <div class="p-card__top"><span class="cl-tag">Spiele</span><svg class="p-card__ico"><use href="#i-spiele"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/PrivateSpielesammlung/" data-title="Private Spielesammlung" aria-label="Link zu Private Spielesammlung teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Private Spielesammlung</h3>
           <p class="p-card__desc">Digitale Übersicht der eigenen Brett- und Kartenspiele, mit Filter nach Spieleranzahl und Spieldauer.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/projects/turnier.html">
-          <div class="p-card__top"><span class="cl-tag">Spiele</span><svg class="p-card__ico"><use href="#i-spiele"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/turnier.html" data-title="Turnier-Wertung" aria-label="Link zu Turnier-Wertung teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Turnier-Wertung</h3>
           <p class="p-card__desc">Wertungstool für Kartenspiel-Turniere: Gruppen und Platzierungen erfassen, Punkte vergeben, Finalspiel und Turniersieger automatisch ermitteln.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/projects/kalender/">
-          <div class="p-card__top"><span class="cl-tag">Spiele</span><svg class="p-card__ico"><use href="#i-spiele"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/kalender/" data-title="Brettspiel-Kalender" aria-label="Link zu Brettspiel-Kalender teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Brettspiel-Kalender</h3>
           <p class="p-card__desc">Übersicht kommender Brettspiel-Events mit Datum, Ort und Beschreibung – automatisch aus einer Datenquelle geladen.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
@@ -196,7 +230,7 @@
         <a class="p-card" data-cat="tools" href="https://codelab365.github.io/projects/IvyLee3">
           <div class="p-card__top">
             <div class="p-card__top-left"><span class="cl-tag">Werkzeug</span><span class="cl-badge cl-badge--ok">Neu</span></div>
-            <svg class="p-card__ico"><use href="#i-tools"/></svg>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/IvyLee3" data-title="Eisenhower × Ivy Lee Board" aria-label="Link zu Eisenhower × Ivy Lee Board teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
           </div>
           <h3 class="p-card__title">Eisenhower × Ivy Lee Board</h3>
           <p class="p-card__desc">Produktivitäts-Board: Aufgaben nach dem Eisenhower-Prinzip in Tun / Planen / Delegieren / Eliminieren einordnen und den Tagesfokus nach der Ivy-Lee-Methode setzen.</p>
@@ -204,21 +238,21 @@
         </a>
 
         <a class="p-card" data-cat="tools" href="https://codelab365.github.io/pizzaorder/">
-          <div class="p-card__top"><span class="cl-tag">Werkzeug</span><svg class="p-card__ico"><use href="#i-tools"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Werkzeug</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/pizzaorder/" data-title="Pizza-Sammelbestellung" aria-label="Link zu Pizza-Sammelbestellung teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Pizza-Sammelbestellung</h3>
           <p class="p-card__desc">Gemeinsame Pizza- und Pasta-Bestellung koordinieren: Wünsche erfassen, Preise addieren, Sammelbestellung ausgeben – inkl. Infos zu Schwertberger Pizzerien.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="tools" href="https://codelab365.github.io/ASKOE/">
-          <div class="p-card__top"><span class="cl-tag">Werkzeug</span><svg class="p-card__ico"><use href="#i-tools"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Werkzeug</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/ASKOE/" data-title="ASKÖ Kinderturnen" aria-label="Link zu ASKÖ Kinderturnen teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">ASKÖ Kinderturnen</h3>
           <p class="p-card__desc">Kursplan 2025/2026 fürs Kinderturnen. Alle Einheiten und Termine übersichtlich – funktioniert auch offline.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="tools" href="https://codelab365.github.io/projects/LiTEC-Stundenraster">
-          <div class="p-card__top"><span class="cl-tag">Werkzeug</span><svg class="p-card__ico"><use href="#i-tools"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Werkzeug</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/LiTEC-Stundenraster" data-title="LiTEC Stundenplan-Planer" aria-label="Link zu LiTEC Stundenplan-Planer teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">LiTEC Stundenplan-Planer</h3>
           <p class="p-card__desc">Stundenplan mit Einheiten-Ziel (22) zusammenstellen und den Fortschritt zum Zielwert jederzeit im Blick behalten.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
@@ -232,14 +266,14 @@
       <div class="cl-grid cl-grid--cards">
 
         <a class="p-card" data-cat="tech" href="https://codelab365.github.io/projects/PQSimu3">
-          <div class="p-card__top"><span class="cl-tag">Technik</span><svg class="p-card__ico"><use href="#i-tech"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Technik</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/PQSimu3" data-title="PQ-Simulator (EN 50160)" aria-label="Link zu PQ-Simulator (EN 50160) teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">PQ-Simulator (EN 50160)</h3>
           <p class="p-card__desc">Netzqualitäts-Simulator mit Live-Oszilloskop, FFT-Spektrum, THD, ITIC/CBEMA-Bewertung und typischen Schadensbildern.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="tech" href="https://codelab365.github.io/projects/raumzeit.html">
-          <div class="p-card__top"><span class="cl-tag">Wissen</span><svg class="p-card__ico"><use href="#i-tech"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Wissen</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/raumzeit.html" data-title="Geometrie der Raumzeit" aria-label="Link zu Geometrie der Raumzeit teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Geometrie der Raumzeit</h3>
           <p class="p-card__desc">Physik-Lernressource zu Raumzeit, Minkowski-Geometrie, metrischem Tensor und den Einstein'schen Feldgleichungen – mit Formeln und Erklärungen.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
@@ -253,21 +287,21 @@
       <div class="cl-grid cl-grid--cards">
 
         <a class="p-card" data-cat="ki" href="https://codelab365.github.io/projects/AIExpert.html">
-          <div class="p-card__top"><span class="cl-tag">KI &amp; Profil</span><svg class="p-card__ico"><use href="#i-ki"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">KI &amp; Profil</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/AIExpert.html" data-title="KI-Expertenprofil" aria-label="Link zu KI-Expertenprofil teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">KI-Expertenprofil</h3>
           <p class="p-card__desc">Portfolio- und Expertenseite rund um angewandte Künstliche Intelligenz und Prozessoptimierung – mit interaktiven Demos und Chatbot.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="ki" href="https://codelab365.github.io/projects/">
-          <div class="p-card__top"><span class="cl-tag">KI · Demo</span><svg class="p-card__ico"><use href="#i-ki"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">KI · Demo</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/" data-title="Ideen-Plattform (Demo)" aria-label="Link zu Ideen-Plattform (Demo) teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Ideen-Plattform (Demo)</h3>
           <p class="p-card__desc">Konzept-Demo einer Beteiligungsplattform: Ideen einreichen, KI-gestützt strukturieren und Aufgaben aus Protokollen automatisch ableiten.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
         <a class="p-card" data-cat="ki" href="https://codelab365.github.io/projects/Kerze">
-          <div class="p-card__top"><span class="cl-tag">Spielerei</span><svg class="p-card__ico"><use href="#i-ki"/></svg></div>
+          <div class="p-card__top"><span class="cl-tag">Spielerei</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/Kerze" data-title="R.I.P. PowerPoint" aria-label="Link zu R.I.P. PowerPoint teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">R.I.P. PowerPoint</h3>
           <p class="p-card__desc">Kleine interaktive Spielerei: Streichholz reiben, virtuelle Kerze anzünden – ein augenzwinkernder Abschied von der statischen Folie.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
@@ -318,6 +352,48 @@
       chip.classList.add('is-active');
       chip.setAttribute('aria-pressed', 'true');
       applyFilter(chip.dataset.filter);
+    });
+  });
+
+  // Teilen-Button: native Teilen-Funktion (v.a. mobil), sonst Link in die Zwischenablage kopieren
+  document.querySelectorAll('.p-card__share').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url   = btn.dataset.url;
+      const title = btn.dataset.title || 'codeLAB365';
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, url });
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return; // Nutzer hat abgebrochen
+          // sonst: auf Kopieren zurückfallen
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (err) {
+        // Fallback für ältere Browser ohne Clipboard-API
+        const tmp = document.createElement('textarea');
+        tmp.value = url;
+        tmp.style.position = 'fixed';
+        tmp.style.opacity = '0';
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+      }
+
+      btn.classList.add('is-copied');
+      btn.setAttribute('aria-label', 'Link kopiert');
+      clearTimeout(btn._copyTimeout);
+      btn._copyTimeout = setTimeout(() => {
+        btn.classList.remove('is-copied');
+        btn.setAttribute('aria-label', 'Link zu ' + title + ' teilen');
+      }, 1800);
     });
   });
 </script>
