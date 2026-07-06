@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>囲碁 — Go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-light:#e3c088;
+    --wood-mid:#c99a56;
+    --wood-dark:#8a5a2b;
+    --ink:#2a2420;
+    --paper:#f2e9d8;
+    --seal:#a53e35;
+    --seal-dark:#7c2e28;
+    --line:#3a2b18;
+    --muted:#a89a80;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;min-height:100%;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #2f2620 0%, transparent 60%),
+      radial-gradient(1200px 700px at 100% 110%, #241d17 0%, transparent 55%),
+      #1c1712;
+    color:var(--paper);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:32px 16px 60px;
+  }
+  header{ text-align:center; margin-bottom:18px; }
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:clamp(28px,5vw,42px);
+    letter-spacing:0.08em;
+    margin:0;
+    color:#f4e9d3;
+    display:flex; align-items:baseline; gap:14px; justify-content:center;
+  }
+  h1 .kanji{ font-size:1.15em; color:var(--seal); text-shadow:0 0 18px rgba(165,62,53,0.35); }
+  .sub{ font-size:13px; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-top:6px; }
+
+  .layout{ display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap; justify-content:center; max-width:1160px; }
+
+  .board-wrap{ position:relative; filter:drop-shadow(0 24px 40px rgba(0,0,0,0.55)); }
+  .board{
+    position:relative;
+    background:
+      repeating-linear-gradient(100deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 6px),
+      linear-gradient(160deg, var(--wood-light), var(--wood-mid) 55%, var(--wood-dark));
+    border-radius:6px; padding:28px; touch-action:none;
+  }
+  .grid{ position:relative; display:grid; }
+  .line-h, .line-v{ position:absolute; background:var(--line); opacity:0.75; }
+  .star{ position:absolute; width:9px;height:9px; background:var(--line); border-radius:50%; transform:translate(-50%,-50%); opacity:0.75; }
+  .cell{ position:absolute; transform:translate(-50%,-50%); display:flex;align-items:center;justify-content:center; cursor:pointer; }
+  .stone{ border-radius:50%; pointer-events:none; position:relative; }
+  .stone.black{ background:radial-gradient(circle at 32% 28%, #5a5a5a, #0d0d0d 70%); box-shadow:0 3px 5px rgba(0,0,0,0.6), inset 0 -3px 4px rgba(255,255,255,0.08); }
+  .stone.white{ background:radial-gradient(circle at 32% 28%, #ffffff, #d8d2c4 75%, #c4bca9 100%); box-shadow:0 3px 5px rgba(0,0,0,0.45), inset 0 -3px 4px rgba(0,0,0,0.12); }
+  .stone.ghost{ opacity:0.35; }
+  .stone.dead-stone{ opacity:0.3; }
+  .stone.dead-stone::before{
+    content:'×'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:var(--seal); font-size:1.5em; font-weight:700; text-shadow:0 0 4px rgba(0,0,0,0.6);
+  }
+  .stone.last-move::after{ content:''; position:absolute; inset:0; margin:auto; width:28%;height:28%; border-radius:50%; background:var(--seal); opacity:0.85; }
+  .territory-mark{ position:absolute; border-radius:3px; pointer-events:none; }
+  .territory-mark.t-black{ background:rgba(20,15,10,0.55); }
+  .territory-mark.t-white{ background:rgba(245,240,228,0.75); }
+
+  .panel{ width:280px; display:flex; flex-direction:column; gap:16px; }
+  .card{
+    background:linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px 18px;
+  }
+  .card h3{ margin:0 0 10px; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); font-weight:500; }
+
+  .turn-row{ display:flex; align-items:center; gap:12px; }
+  .seal-stamp{
+    width:46px;height:46px; border-radius:6px; background:var(--seal);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Shippori Mincho', serif; font-size:20px; color:#f4e9d3;
+    box-shadow:0 4px 10px rgba(165,62,53,0.4), inset 0 0 0 2px rgba(244,233,211,0.25);
+    transform:rotate(-4deg); transition:transform 0.2s ease, background 0.2s ease; flex-shrink:0;
+  }
+  .seal-stamp.white-turn{ background:#e9e2d2; color:#2a2420; transform:rotate(4deg); }
+  .turn-label{ font-size:15px; font-weight:500; }
+  .turn-label small{ display:block; font-size:11px; color:var(--muted); font-weight:400; margin-top:2px; }
+
+  .clock-row{ display:flex; justify-content:space-between; align-items:center; font-size:14px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .clock-row:last-child{ border-bottom:none; }
+  .clock-row.active{ color:#f4e9d3; font-weight:700; }
+  .clock-num{ font-variant-numeric:tabular-nums; }
+
+  .score-row{ display:flex; justify-content:space-between; font-size:14px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .score-row:last-child{ border-bottom:none; }
+  .dot{ display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle; }
+  .dot.black-dot{ background:#111;border:1px solid #555; }
+  .dot.white-dot{ background:#f2ede2;border:1px solid #999; }
+  .score-num{ font-variant-numeric:tabular-nums; font-weight:700; }
+
+  button{ font-family:inherit; border:none; border-radius:8px; padding:11px 14px; font-size:13px; letter-spacing:0.04em; cursor:pointer; transition:transform 0.12s ease, background 0.15s ease; }
+  button:active{ transform:scale(0.97); }
+  .btn-primary{ background:var(--seal); color:#f4e9d3; width:100%; }
+  .btn-primary:hover{ background:var(--seal-dark); }
+  .btn-secondary{ background:rgba(255,255,255,0.08); color:#f2ede2; width:100%; }
+  .btn-secondary:hover{ background:rgba(255,255,255,0.14); }
+  .btn-row{ display:flex; gap:8px; }
+  .btn-row button{ flex:1; }
+
+  .msg{ font-size:13px; color:#cfc3ab; line-height:1.5; min-height:20px; }
+  .msg.important{ color:var(--seal); font-weight:700; }
+
+  .result-card{ display:none; }
+  .result-card.show{ display:block; }
+  .result-block{ margin-bottom:12px; padding-bottom:12px; border-bottom:1px dashed rgba(255,255,255,0.12); }
+  .result-block:last-child{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
+  .result-block h4{ margin:0 0 8px; font-size:12px; letter-spacing:0.08em; color:var(--muted); font-weight:500; }
+  .result-winner{ font-size:14px; font-weight:700; color:#f4e9d3; margin-top:6px; }
+
+  .counting-aid{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; align-items:flex-start; }
+  .count-pile{ display:flex; flex-direction:column; gap:3px; }
+  .count-label{ font-size:11px; color:var(--muted); margin-bottom:2px; }
+  .count-row{ display:flex; gap:3px; }
+  .count-sq{ width:12px; height:12px; border-radius:2px; }
+  .count-sq.sq-black{ background:#111; border:1px solid #555; }
+  .count-sq.sq-white{ background:#f2ede2; border:1px solid #999; }
+  .count-komi{ font-size:11px; color:var(--seal); align-self:flex-end; }
+
+  .links-row{ display:flex; justify-content:center; gap:18px; font-size:12px; color:var(--muted); margin-top:6px; }
+  .links-row a{ color:var(--muted); text-decoration:underline; cursor:pointer; }
+  .links-row a:hover{ color:#f4e9d3; }
+
+  footer{ margin-top:28px; font-size:12px; color:#7a6c58; text-align:center; max-width:600px; line-height:1.6; }
+
+  /* --- Modal --- */
+  .overlay{ position:fixed; inset:0; background:rgba(10,8,6,0.7); backdrop-filter:blur(2px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:linear-gradient(160deg, #2a231b, #1e1811);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px;
+    max-width:560px; width:100%;
+    max-height:86vh; overflow-y:auto;
+    padding:26px 28px 28px;
+    position:relative;
+    box-shadow:0 30px 60px rgba(0,0,0,0.5);
+  }
+  .modal-close{
+    position:absolute; top:16px; right:16px;
+    background:rgba(255,255,255,0.08); color:#f2ede2;
+    width:32px;height:32px; border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px; padding:0;
+  }
+  .modal h2{ font-family:'Shippori Mincho', serif; font-size:22px; margin:0 0 4px; color:#f4e9d3; }
+  .modal .modal-sub{ font-size:12px; color:var(--muted); margin-bottom:20px; }
+  .field{ margin-bottom:20px; }
+  .field label{ display:block; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .choice-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .choice-btn{ background:rgba(255,255,255,0.06); color:#cfc3ab; font-size:13px; padding:9px 14px; flex:1; min-width:64px; }
+  .choice-btn.active{ background:var(--seal); color:#f4e9d3; }
+  select.styled{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.14);
+    background:#241d17; color:#f2ede2; font-family:inherit; font-size:13px;
+  }
+
+  /* Vocabulary */
+  .vocab-list{ display:flex; flex-direction:column; gap:2px; }
+  .vocab-item{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; align-items:start; }
+  .vocab-item:last-child{ border-bottom:none; }
+  .vocab-item .vlabel{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); display:block; margin-bottom:2px; }
+  .vocab-item .term-de{ font-weight:700; color:#f4e9d3; }
+  .vocab-item .term-jp{ font-family:'Shippori Mincho', serif; }
+  .vocab-item .term-cn{ font-family:'Noto Serif SC', serif; }
+  .vocab-desc{ grid-column:1 / -1; font-size:12px; color:#cfc3ab; margin-top:2px; }
+  .vocab-head{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.15); margin-bottom:4px; }
+
+  /* Help tabs */
+  .tabs{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+  .tab-btn{ background:rgba(255,255,255,0.06); color:#cfc3ab; font-size:12px; padding:8px 12px; }
+  .tab-btn.active{ background:var(--seal); color:#f4e9d3; }
+  .tab-panel{ display:none; font-size:14px; line-height:1.7; color:#e6dcc8; }
+  .tab-panel.active{ display:block; }
+  .tab-panel h4{ font-family:'Shippori Mincho', serif; font-size:16px; color:#f4e9d3; margin:16px 0 6px; }
+  .tab-panel h4:first-child{ margin-top:0; }
+  .tab-panel ul{ padding-left:20px; margin:6px 0; }
+  .tab-panel li{ margin-bottom:6px; }
+
+  /* Share modal */
+  .share-preview{ width:100%; border-radius:10px; margin-bottom:16px; display:block; }
+  .share-actions{ display:flex; gap:8px; }
+
+  @media (max-width: 720px){
+    .layout{ flex-direction:column; align-items:center; }
+    .panel{ width:100%; max-width:420px; }
+    .vocab-item{ grid-template-columns:1fr 1fr; }
+    .vocab-item .term-cn{ grid-column:2; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1><span class="kanji">碁</span>Go</h1>
+    <div class="sub">Steine setzen · Gruppen umzingeln · Gebiet erobern</div>
+  </header>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="board"><div class="grid" id="grid"></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <h3>Brettgröße</h3>
+        <div class="choice-row" id="quickSize">
+          <button class="choice-btn" data-size="9">9×9</button>
+          <button class="choice-btn active" data-size="13">13×13</button>
+          <button class="choice-btn" data-size="19">19×19</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Am Zug</h3>
+        <div class="turn-row">
+          <div class="seal-stamp" id="sealStamp">黒</div>
+          <div class="turn-label" id="turnLabel">Schwarz<small id="turnSub">Klicke auf einen Kreuzungspunkt</small></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Bedenkzeit</h3>
+        <div class="clock-row" id="clockBlackRow"><span><span class="dot black-dot"></span>Schwarz</span><span class="clock-num" id="clockBlack">–</span></div>
+        <div class="clock-row" id="clockWhiteRow"><span><span class="dot white-dot"></span>Weiß</span><span class="clock-num" id="clockWhite">–</span></div>
+        <div class="clock-row"><span>Gesamtdauer</span><span class="clock-num" id="clockTotal">00:00</span></div>
+      </div>
+
+      <div class="card">
+        <h3>Gefangene</h3>
+        <div class="score-row"><span><span class="dot black-dot"></span>Schwarz gefangen</span><span class="score-num" id="capBlack">0</span></div>
+        <div class="score-row"><span><span class="dot white-dot"></span>Weiß gefangen</span><span class="score-num" id="capWhite">0</span></div>
+      </div>
+
+      <div class="card result-card" id="resultCard">
+        <h3>Endergebnis</h3>
+        <div id="resultContent"></div>
+      </div>
+
+      <div class="card"><div class="msg" id="msg">Schwarz beginnt.</div></div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" id="passBtn">Passen</button>
+        <button class="btn-secondary" id="undoBtn">Zurück</button>
+      </div>
+      <button class="btn-primary" id="confirmScoringBtn" style="display:none;">Zählung bestätigen</button>
+      <button class="btn-secondary" id="suggestDeadBtn" style="display:none;">Tote Steine vorschlagen (Algorithmus)</button>
+      <button class="btn-primary" id="newGameBtn">Neues Spiel</button>
+      <button class="btn-secondary" id="shareBtn">Ergebnis als Bild teilen</button>
+
+      <div class="links-row">
+        <a id="vocabLink">Go-Vokabeln (JP / CN)</a>
+        <a id="helpLink">Hilfe</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Ein Zug ist ungültig, wenn er eine eigene Gruppe ohne Freiheiten zurücklässt, außer er schlägt dabei gegnerische Steine. Die Ko-Regel verhindert die sofortige Wiederherstellung der letzten Position. Zwei aufeinanderfolgende Pässe starten die Zählphase: Klickt tote Steingruppen an und bestätigt dann die Zählung.
+  </footer>
+</div>
+
+<!-- Setup Modal -->
+<div class="overlay" id="setupOverlay">
+  <div class="modal">
+    <button class="modal-close" data-close="setupOverlay">×</button>
+    <h2>Neues Spiel</h2>
+    <div class="modal-sub">Stelle Brett, Vorgabe, Zählweise und Bedenkzeit ein.</div>
+
+    <div class="field">
+      <label>Brettgröße</label>
+      <div class="choice-row" id="setupSize">
+        <button class="choice-btn" data-size="9">9×9</button>
+        <button class="choice-btn active" data-size="13">13×13</button>
+        <button class="choice-btn" data-size="19">19×19</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Handicap (Vorgabesteine für Schwarz)</label>
+      <select class="styled" id="setupHandicap"></select>
+    </div>
+
+    <div class="field">
+      <label>Zählweise</label>
+      <div class="choice-row" id="setupScoring">
+        <button class="choice-btn" data-mode="chinese">Chinesisch</button>
+        <button class="choice-btn" data-mode="japanese">Japanisch</button>
+        <button class="choice-btn active" data-mode="both">Beide zeigen</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Bedenkzeit pro Spieler</label>
+      <div class="choice-row" id="setupTime">
+        <button class="choice-btn active" data-min="0">Ohne</button>
+        <button class="choice-btn" data-min="5">5 Min</button>
+        <button class="choice-btn" data-min="10">10 Min</button>
+        <button class="choice-btn" data-min="20">20 Min</button>
+        <button class="choice-btn" data-min="30">30 Min</button>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="startGameBtn">Spiel starten</button>
+  </div>
+</div>
+
+<!-- Vocabulary Modal -->
+<div class="overlay" id="vocabOverlay">
+  <div class="modal">
+    <button class="modal-close" data-close="vocabOverlay">×</button>
+    <h2>Go-Vokabeln</h2>
+    <div class="modal-sub">Die wichtigsten Begriffe auf Japanisch und Chinesisch — zum Nachschlagen, nicht zum Auswendiglernen.</div>
+    <div class="vocab-head"><span>Begriff</span><span>Japanisch</span><span>Chinesisch</span></div>
+    <div class="vocab-list" id="vocabList"></div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="overlay" id="helpOverlay">
+  <div class="modal">
+    <button class="modal-close" data-close="helpOverlay">×</button>
+    <h2>Hilfe</h2>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">1. Go-Regeln</button>
+      <button class="tab-btn" data-tab="tab2">2. Handicap</button>
+      <button class="tab-btn" data-tab="tab3">3. Anfängertipps</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <h4>Ziel des Spiels</h4>
+      <p>Zwei Spieler, Schwarz und Weiß, setzen abwechselnd Steine auf die Schnittpunkte eines Gitters. Ziel ist es, am Ende mehr Gebiet und Steine zu kontrollieren als der Gegner.</p>
+      <h4>Freiheiten und Gefangennahme</h4>
+      <p>Jeder Stein bzw. jede zusammenhängende Gruppe gleichfarbiger Steine braucht freie, angrenzende Schnittpunkte ("Freiheiten"). Verliert eine Gruppe ihre letzte Freiheit, wird sie vom Brett genommen.</p>
+      <h4>Verbotene Züge</h4>
+      <ul>
+        <li><strong>Selbstmord:</strong> Ein Zug, der die eigene Gruppe ohne Freiheiten zurücklässt, ist nicht erlaubt — außer er schlägt dabei gegnerische Steine.</li>
+        <li><strong>Ko:</strong> Ein Zug, der sofort die vorherige Brettposition wiederherstellen würde, ist verboten. Der Gegner muss erst woanders spielen.</li>
+      </ul>
+      <h4>Spielende und Zählung</h4>
+      <p>Passen beide Spieler nacheinander, beginnt die Zählphase: Klickt auf Steingruppen, die ihr für tot haltet (z. B. eingeschlossene Steine, die nie geschlagen wurden) — sie werden markiert und bei der Zählung wie gefangene Steine behandelt. Bestätigt anschließend die Zählung. Es gibt zwei gängige Zählweisen:</p>
+      <ul>
+        <li><strong>Chinesisch (Fläche):</strong> eigene Steine auf dem Brett + umschlossenes Gebiet.</li>
+        <li><strong>Japanisch (Gebiet):</strong> nur umschlossenes Gebiet + gefangene gegnerische Steine.</li>
+      </ul>
+      <p>Weiß erhält einen Ausgleich ("Komi"), meist 6,5 Punkte, da Schwarz zuerst zieht.</p>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <h4>Warum Handicap?</h4>
+      <p>Beim Handicap-Go erhält der schwächere Spieler (immer Schwarz) mehrere Steine im Voraus auf die Sternpunkte des Bretts. Das gleicht Stärkeunterschiede aus, ohne das Spiel zu verfälschen.</p>
+      <h4>Ablauf</h4>
+      <ul>
+        <li>Die Vorgabesteine werden vor dem ersten Zug platziert.</li>
+        <li>Weiß zieht als Erster.</li>
+        <li>Das Komi entfällt weitgehend und wird meist auf 0,5 Punkte reduziert.</li>
+      </ul>
+      <h4>Wie viele Steine?</h4>
+      <p>Als Faustregel entspricht ein Stein Handicap etwa einer Rangstufe (Kyu) Unterschied. Zwei bis vier Steine gleichen kleinere Unterschiede aus, sechs bis neun Steine größere.</p>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <h4>Grundprinzipien</h4>
+      <ul>
+        <li>Ecken sind leichter zu sichern als Seiten, Seiten leichter als das Zentrum — spiele in dieser Reihenfolge.</li>
+        <li>Isolierte, schwache Steine sind ein Risiko. Verbinde Steine oder gib sie bewusst auf.</li>
+        <li>Eine Gruppe mit zwei getrennten "Augen" (umschlossenen Punkten) kann nicht mehr geschlagen werden — das ist das Ziel für jede wichtige Gruppe.</li>
+      </ul>
+      <h4>Taktik</h4>
+      <ul>
+        <li>Spiele nicht zu früh in Nahkämpfe — großräumige Züge zu Beginn sind meist wertvoller.</li>
+        <li>Reagiere nicht auf jeden gegnerischen Zug direkt daneben; frage dich, ob ein Zug woanders größer ist.</li>
+        <li>Zähle grob mit, wer vorne liegt — das beeinflusst, ob du riskant oder sicher spielen solltest.</li>
+      </ul>
+      <h4>Übung</h4>
+      <p>Kleine Bretter (9×9) eignen sich am besten für den Einstieg, da Partien kürzer sind und taktische Muster schneller sichtbar werden.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="overlay" id="shareOverlay">
+  <div class="modal">
+    <button class="modal-close" data-close="shareOverlay">×</button>
+    <h2>Ergebnis teilen</h2>
+    <div class="modal-sub">Bild speichern oder direkt teilen.</div>
+    <img class="share-preview" id="sharePreview" alt="Spielstand">
+    <div class="share-actions">
+      <a class="btn-secondary" id="downloadShare" style="text-align:center;text-decoration:none;display:block;" download="go-ergebnis.png">Herunterladen</a>
+      <button class="btn-primary" id="nativeShareBtn" style="display:none;">Teilen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const EMPTY = 0, BLACK = 1, WHITE = 2;
+  let size = 13;
+  let board, current, capturedBlack, capturedWhite, lastMove, koPoint, history, passCount, gameOver;
+  let territoryMap = null;
+  let scoringPhase = false;
+  let deadStones = new Set();
+  let lastScoring = null;
+  let endReason = null;
+  let settings = { size:13, handicap:0, scoringMode:'both', timeMinutes:0 };
+  let blackTime=null, whiteTime=null, gameElapsed=0, timerInterval=null;
+
+  const gridEl = document.getElementById('grid');
+  const sealStamp = document.getElementById('sealStamp');
+  const turnLabel = document.getElementById('turnLabel');
+  const capBlackEl = document.getElementById('capBlack');
+  const capWhiteEl = document.getElementById('capWhite');
+  const msgEl = document.getElementById('msg');
+  const resultCard = document.getElementById('resultCard');
+  const resultContent = document.getElementById('resultContent');
+  const clockBlackEl = document.getElementById('clockBlack');
+  const clockWhiteEl = document.getElementById('clockWhite');
+  const clockTotalEl = document.getElementById('clockTotal');
+  const clockBlackRow = document.getElementById('clockBlackRow');
+  const clockWhiteRow = document.getElementById('clockWhiteRow');
+
+  function idx(x,y){ return y*size+x; }
+
+  // ---------- Handicap ----------
+  function getHandicapPoints(sz){
+    if(sz===9) return [[2,6],[6,2],[6,6],[2,2],[4,4]];
+    if(sz===13) return [[3,9],[9,3],[9,9],[3,3],[6,6],[3,6],[9,6]];
+    return [[3,15],[15,3],[15,15],[3,3],[9,9],[3,9],[15,9],[9,3],[9,15]];
+  }
+  function maxHandicap(sz){ return sz===9?5:(sz===13?7:9); }
+  function populateHandicapSelect(){
+    const sel = document.getElementById('setupHandicap');
+    sel.innerHTML='';
+    const opt0 = document.createElement('option'); opt0.value=0; opt0.textContent='Kein Handicap';
+    sel.appendChild(opt0);
+    for(let i=2;i<=maxHandicap(settings.size);i++){
+      const opt = document.createElement('option'); opt.value=i; opt.textContent=i+' Steine';
+      sel.appendChild(opt);
+    }
+  }
+
+  // ---------- Game setup ----------
+  function newGame(){
+    size = settings.size;
+    board = new Array(size*size).fill(EMPTY);
+    capturedBlack = 0; capturedWhite = 0;
+    lastMove = null; koPoint = null; history = [];
+    passCount = 0; gameOver = false; territoryMap = null;
+    scoringPhase = false; deadStones = new Set(); lastScoring = null; endReason = null;
+    document.getElementById('confirmScoringBtn').style.display = 'none';
+    document.getElementById('suggestDeadBtn').style.display = 'none';
+    document.getElementById('passBtn').disabled = false;
+
+    if(settings.handicap>0){
+      const pts = getHandicapPoints(size).slice(0, settings.handicap);
+      pts.forEach(([x,y])=>{ board[idx(x,y)] = BLACK; });
+      current = WHITE;
+      msgEl.textContent = `Weiß beginnt (Schwarz hat ${settings.handicap} Vorgabesteine).`;
+    } else {
+      current = BLACK;
+      msgEl.textContent = 'Schwarz beginnt.';
+    }
+    msgEl.classList.remove('important');
+    resultCard.classList.remove('show');
+
+    if(settings.timeMinutes>0){
+      blackTime = settings.timeMinutes*60;
+      whiteTime = settings.timeMinutes*60;
+      clockBlackRow.style.display='flex';
+      clockWhiteRow.style.display='flex';
+    } else {
+      blackTime = null; whiteTime = null;
+    }
+    gameElapsed = 0;
+    if(timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 1000);
+
+    buildBoard();
+    render();
+  }
+
+  function tick(){
+    if(gameOver){ clearInterval(timerInterval); return; }
+    if(scoringPhase) return;
+    gameElapsed++;
+    if(blackTime!==null){
+      if(current===BLACK) blackTime = Math.max(0, blackTime-1);
+      else whiteTime = Math.max(0, whiteTime-1);
+      if(blackTime===0 || whiteTime===0){
+        gameOver = true;
+        endReason = 'time';
+        const loser = blackTime===0 ? 'Schwarz' : 'Weiß';
+        const winner = blackTime===0 ? 'Weiß' : 'Schwarz';
+        flashMsg(`Zeit abgelaufen für ${loser} — ${winner} gewinnt.`);
+        resultContent.innerHTML = `<div class="result-block">
+          <h4>Sieg nach Zeitüberschreitung</h4>
+          <div class="result-winner">${winner} gewinnt — ${loser} hat die Bedenkzeit überschritten.</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px;">Die Partie wurde nicht bis zur Zählung gespielt, daher gibt es keine Gebietswertung.</div>
+        </div>`;
+        resultCard.classList.add('show');
+        clearInterval(timerInterval);
+        render();
+        return;
+      }
+    }
+    render();
+  }
+
+  function fmtTime(sec){
+    if(sec===null) return '–';
+    const m = Math.floor(sec/60), s = sec%60;
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  function buildBoard(){
+    gridEl.innerHTML = '';
+    const cellPx = size <= 9 ? 46 : size <= 13 ? 36 : 26;
+    const total = cellPx*(size-1);
+    gridEl.style.width = total+'px';
+    gridEl.style.height = total+'px';
+
+    for(let i=0;i<size;i++){
+      const h = document.createElement('div');
+      h.className='line-h'; h.style.left='0px'; h.style.top=(i*cellPx)+'px';
+      h.style.width=total+'px'; h.style.height='1px'; gridEl.appendChild(h);
+      const v = document.createElement('div');
+      v.className='line-v'; v.style.top='0px'; v.style.left=(i*cellPx)+'px';
+      v.style.height=total+'px'; v.style.width='1px'; gridEl.appendChild(v);
+    }
+    let starPts = [];
+    if(size===9) starPts=[2,4,6];
+    if(size===13) starPts=[3,6,9];
+    if(size===19) starPts=[3,9,15];
+    starPts.forEach(sx=>starPts.forEach(sy=>{
+      const s=document.createElement('div'); s.className='star';
+      s.style.left=(sx*cellPx)+'px'; s.style.top=(sy*cellPx)+'px'; gridEl.appendChild(s);
+    }));
+
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        const c = document.createElement('div');
+        c.className='cell';
+        const stonePx = cellPx*0.92;
+        c.style.left=(x*cellPx)+'px'; c.style.top=(y*cellPx)+'px';
+        c.style.width=cellPx+'px'; c.style.height=cellPx+'px';
+        c.dataset.x=x; c.dataset.y=y;
+        c.addEventListener('click', onCellClick);
+        c.addEventListener('pointerenter', (e)=>{ if(e.pointerType==='mouse') showGhost(x,y,true); });
+        c.addEventListener('pointerleave', (e)=>{ if(e.pointerType==='mouse') showGhost(x,y,false); });
+        const stone = document.createElement('div');
+        stone.className='stone';
+        stone.style.width=stonePx+'px'; stone.style.height=stonePx+'px';
+        c.appendChild(stone);
+        const mark = document.createElement('div');
+        mark.className='territory-mark-holder';
+        c.appendChild(mark);
+        gridEl.appendChild(c);
+      }
+    }
+  }
+
+  function showGhost(x,y,show){
+    if(gameOver || scoringPhase) return;
+    if(board[idx(x,y)]!==EMPTY) return;
+    const cell = gridEl.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+    const stone = cell.querySelector('.stone');
+    if(board[idx(x,y)]!==EMPTY) return;
+    stone.className = show ? ('stone ghost ' + (current===BLACK?'black':'white')) : 'stone';
+  }
+
+  function neighbors(x,y){
+    const n=[];
+    if(x>0) n.push([x-1,y]);
+    if(x<size-1) n.push([x+1,y]);
+    if(y>0) n.push([x,y-1]);
+    if(y<size-1) n.push([x,y+1]);
+    return n;
+  }
+
+  function getGroup(x,y,b){
+    const color = b[idx(x,y)];
+    const visited = new Set();
+    const stack = [[x,y]];
+    const group = [];
+    while(stack.length){
+      const [cx,cy]=stack.pop();
+      const key = cx+','+cy;
+      if(visited.has(key)) continue;
+      visited.add(key);
+      group.push([cx,cy]);
+      neighbors(cx,cy).forEach(([nx,ny])=>{
+        if(b[idx(nx,ny)]===color && !visited.has(nx+','+ny)) stack.push([nx,ny]);
+      });
+    }
+    return group;
+  }
+
+  function groupLiberties(group,b){
+    const libs = new Set();
+    group.forEach(([x,y])=>{
+      neighbors(x,y).forEach(([nx,ny])=>{
+        if(b[idx(nx,ny)]===EMPTY) libs.add(nx+','+ny);
+      });
+    });
+    return libs.size;
+  }
+
+  function cloneBoard(b){ return b.slice(); }
+
+  function tryMove(x,y,color){
+    if(board[idx(x,y)]!==EMPTY) return {ok:false};
+    const testBoard = cloneBoard(board);
+    testBoard[idx(x,y)] = color;
+    const opponent = color===BLACK?WHITE:BLACK;
+    let capturedStones = [];
+
+    neighbors(x,y).forEach(([nx,ny])=>{
+      if(testBoard[idx(nx,ny)]===opponent){
+        const grp = getGroup(nx,ny,testBoard);
+        if(groupLiberties(grp,testBoard)===0){
+          grp.forEach(([gx,gy])=>{ testBoard[idx(gx,gy)]=EMPTY; });
+          capturedStones = capturedStones.concat(grp);
+        }
+      }
+    });
+
+    const ownGroup = getGroup(x,y,testBoard);
+    const ownLibs = groupLiberties(ownGroup,testBoard);
+    if(ownLibs===0) return {ok:false, reason:'suicide'};
+
+    if(koPoint && capturedStones.length===1){
+      const [kx,ky] = koPoint;
+      if(kx===capturedStones[0][0] && ky===capturedStones[0][1] && ownGroup.length===1){
+        return {ok:false, reason:'ko'};
+      }
+    }
+    return {ok:true, board:testBoard, captured:capturedStones};
+  }
+
+  function onCellClick(e){
+    if(gameOver) return;
+    const x = parseInt(e.currentTarget.dataset.x);
+    const y = parseInt(e.currentTarget.dataset.y);
+    showGhost(x,y,false);
+
+    if(scoringPhase){ toggleDeadGroup(x,y); return; }
+
+    const result = tryMove(x,y,current);
+    if(!result.ok){
+      if(result.reason==='suicide') flashMsg('Ungültiger Zug: würde die eigene Gruppe ohne Freiheiten zurücklassen.');
+      else if(result.reason==='ko') flashMsg('Ungültiger Zug: Ko-Regel — die letzte Position darf nicht sofort wiederhergestellt werden.');
+      else flashMsg('Dort liegt schon ein Stein.');
+      return;
+    }
+
+    history.push({ board: board.slice(), current, capturedBlack, capturedWhite, lastMove, koPoint, passCount });
+
+    koPoint = (result.captured.length===1) ? [x,y] : null;
+    board = result.board;
+    if(current===BLACK) capturedWhite += result.captured.length;
+    else capturedBlack += result.captured.length;
+
+    lastMove = [x,y];
+    passCount = 0;
+    current = current===BLACK?WHITE:BLACK;
+    msgEl.classList.remove('important');
+    msgEl.textContent = result.captured.length>0
+      ? `${result.captured.length} Stein${result.captured.length>1?'e':''} geschlagen.`
+      : 'Zug gesetzt.';
+    render();
+  }
+
+  function flashMsg(text){ msgEl.textContent = text; msgEl.classList.add('important'); }
+
+  function passTurn(){
+    if(gameOver || scoringPhase) return;
+    history.push({ board: board.slice(), current, capturedBlack, capturedWhite, lastMove, koPoint, passCount });
+    passCount++;
+    koPoint = null;
+    if(passCount>=2){ enterScoringPhase(); return; }
+    current = current===BLACK?WHITE:BLACK;
+    msgEl.textContent = 'Gepasst.';
+    msgEl.classList.remove('important');
+    render();
+  }
+
+  function enterScoringPhase(){
+    scoringPhase = true;
+    deadStones = new Set();
+    document.getElementById('confirmScoringBtn').style.display = 'block';
+    document.getElementById('suggestDeadBtn').style.display = 'block';
+    document.getElementById('passBtn').disabled = true;
+    msgEl.textContent = 'Beide haben gepasst. Klicke tote Steingruppen an, um sie zu markieren — oder lass sie vorschlagen — dann bestätige die Zählung.';
+    msgEl.classList.remove('important');
+    render();
+  }
+
+  function exitScoringPhase(){
+    scoringPhase = false;
+    deadStones = new Set();
+    document.getElementById('confirmScoringBtn').style.display = 'none';
+    document.getElementById('suggestDeadBtn').style.display = 'none';
+    document.getElementById('passBtn').disabled = false;
+  }
+
+  // ---------- Benson's algorithm: unconditional life ----------
+  // Identifies chains that are PROVABLY safe (two secure eyes). Anything not
+  // proven alive is NOT automatically dead — official Go rules require
+  // agreement, so we only flag a chain as a dead-candidate when it has no
+  // adjacent region of its own color at all (i.e. it sits with zero eye-space
+  // inside territory that touches the opponent). Ambiguous shapes are left
+  // for the players to decide, exactly as the real rules require.
+  function computeBensonAlive(colorTarget, boardArg){
+    const b = boardArg;
+    const opp = colorTarget===BLACK?WHITE:BLACK;
+    const chainOf = new Array(size*size).fill(-1);
+    const chains = [];
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+      if(b[idx(x,y)]===colorTarget && chainOf[idx(x,y)]===-1){
+        const grp = getGroup(x,y,b);
+        const cid = chains.length;
+        grp.forEach(([gx,gy])=>{ chainOf[idx(gx,gy)] = cid; });
+        chains.push({ id:cid, points:grp, pointSet:new Set(grp.map(([gx,gy])=>gx+','+gy)) });
+      }
+    }
+    if(chains.length===0) return { aliveChainIds:new Set(), chains:[], regions:[] };
+
+    const regionOf = new Array(size*size).fill(-1);
+    const regions = [];
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        if(b[idx(x,y)]===EMPTY && regionOf[idx(x,y)]===-1){
+          const stack=[[x,y]]; const pts=[]; const borderChainIds=new Set(); let touchesOpp=false;
+          const localVisited = new Set();
+          while(stack.length){
+            const [cx,cy]=stack.pop(); const k=cx+','+cy;
+            if(localVisited.has(k)) continue;
+            localVisited.add(k); pts.push([cx,cy]);
+            neighbors(cx,cy).forEach(([nx,ny])=>{
+              const val = b[idx(nx,ny)];
+              if(val===EMPTY){ if(!localVisited.has(nx+','+ny)) stack.push([nx,ny]); }
+              else if(val===colorTarget){ borderChainIds.add(chainOf[idx(nx,ny)]); }
+              else if(val===opp){ touchesOpp = true; }
+            });
+          }
+          const rid = regions.length;
+          pts.forEach(([px,py])=>{ regionOf[idx(px,py)] = rid; });
+          regions.push({ id:rid, points:pts, borderChainIds, touchesOpp });
+        }
+      }
+    }
+
+    let X = new Set(chains.map(c=>c.id));
+    while(true){
+      const currentR = regions.filter(r => !r.touchesOpp && [...r.borderChainIds].every(cid=>X.has(cid)) && r.borderChainIds.size>0);
+      const vitalCount = new Map();
+      X.forEach(cid=>vitalCount.set(cid,0));
+      currentR.forEach(r=>{
+        r.borderChainIds.forEach(cid=>{
+          if(!X.has(cid)) return;
+          const chain = chains[cid];
+          const isVital = r.points.every(([rx,ry])=>
+            neighbors(rx,ry).some(([nx,ny])=> chain.pointSet.has(nx+','+ny))
+          );
+          if(isVital) vitalCount.set(cid, (vitalCount.get(cid)||0)+1);
+        });
+      });
+      const newX = new Set([...X].filter(cid => (vitalCount.get(cid)||0) >= 2));
+      if(newX.size === X.size) { X = newX; break; }
+      X = newX;
+      if(X.size===0) break;
+    }
+    return { aliveChainIds:X, chains, regions };
+  }
+
+  function suggestDeadStones(){
+    const suggestion = new Set();
+    [BLACK, WHITE].forEach(color=>{
+      const { aliveChainIds, chains, regions } = computeBensonAlive(color, board);
+      chains.forEach(chain=>{
+        if(aliveChainIds.has(chain.id)) return;
+        const borderingRegions = regions.filter(r => r.borderChainIds.has(chain.id));
+        if(borderingRegions.length===0) return;
+        const allTouchOpponent = borderingRegions.every(r => r.touchesOpp);
+        if(allTouchOpponent){
+          chain.points.forEach(([x,y])=> suggestion.add(x+','+y));
+        }
+      });
+    });
+    deadStones = suggestion;
+    if(suggestion.size===0){
+      msgEl.textContent = 'Der Algorithmus findet keine eindeutig toten Steine. Bitte markiere manuell, falls nötig.';
+    } else {
+      msgEl.textContent = `Vorschlag: ${suggestion.size} Stein(e) als tot markiert. Bitte prüfen und ggf. anpassen, dann Zählung bestätigen.`;
+    }
+    msgEl.classList.remove('important');
+    render();
+  }
+
+  function toggleDeadGroup(x,y){
+    if(board[idx(x,y)]===EMPTY) return;
+    const group = getGroup(x,y,board);
+    const alreadyDead = deadStones.has(group[0][0]+','+group[0][1]);
+    group.forEach(([gx,gy])=>{
+      const key = gx+','+gy;
+      if(alreadyDead) deadStones.delete(key); else deadStones.add(key);
+    });
+    render();
+  }
+
+  function undo(){
+    if(history.length===0 || gameOver) return;
+    if(scoringPhase) exitScoringPhase();
+    const prev = history.pop();
+    board = prev.board; current = prev.current;
+    capturedBlack = prev.capturedBlack; capturedWhite = prev.capturedWhite;
+    lastMove = prev.lastMove; koPoint = prev.koPoint; passCount = prev.passCount;
+    msgEl.textContent = 'Letzter Zug zurückgenommen.';
+    msgEl.classList.remove('important');
+    render();
+  }
+
+  // ---------- Scoring ----------
+  function computeScoring(boardArg, capBlackArg, capWhiteArg){
+    const b = boardArg || board;
+    const capBlack = capBlackArg !== undefined ? capBlackArg : capturedBlack;
+    const capWhite = capWhiteArg !== undefined ? capWhiteArg : capturedWhite;
+    const map = new Array(size*size).fill(0);
+    const visited = new Set();
+    let blackStones=0, whiteStones=0;
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+      if(b[idx(x,y)]===BLACK) blackStones++;
+      else if(b[idx(x,y)]===WHITE) whiteStones++;
+    }
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        const key=x+','+y;
+        if(b[idx(x,y)]!==EMPTY || visited.has(key)) continue;
+        const stack=[[x,y]]; const region=[]; const bordering=new Set();
+        while(stack.length){
+          const [cx,cy]=stack.pop(); const k=cx+','+cy;
+          if(visited.has(k)) continue;
+          visited.add(k); region.push([cx,cy]);
+          neighbors(cx,cy).forEach(([nx,ny])=>{
+            const val = b[idx(nx,ny)];
+            if(val===EMPTY && !visited.has(nx+','+ny)) stack.push([nx,ny]);
+            else if(val!==EMPTY) bordering.add(val);
+          });
+        }
+        if(bordering.size===1){
+          const owner = bordering.has(BLACK) ? BLACK : WHITE;
+          region.forEach(([rx,ry])=>{ map[idx(rx,ry)] = owner; });
+        }
+      }
+    }
+    let blackTerritory=0, whiteTerritory=0;
+    map.forEach(v=>{ if(v===BLACK) blackTerritory++; else if(v===WHITE) whiteTerritory++; });
+
+    const komi = settings.handicap>0 ? 0.5 : 6.5;
+    return {
+      map, blackStones, whiteStones, blackTerritory, whiteTerritory, komi,
+      capBlack, capWhite,
+      areaBlack: blackStones+blackTerritory,
+      areaWhite: whiteStones+whiteTerritory+komi,
+      territoryBlack: blackTerritory+capWhite,
+      territoryWhite: whiteTerritory+capBlack+komi,
+      pileBlack: Math.max(0, blackTerritory-capBlack),
+      pileWhite: Math.max(0, whiteTerritory-capWhite)
+    };
+  }
+
+  function renderCountingAid(s){
+    function pile(count, colorClass, label){
+      const rows = [];
+      let remaining = Math.max(0, count);
+      while(remaining>0){
+        const rowCount = Math.min(5, remaining);
+        let row = '<div class="count-row">';
+        for(let i=0;i<rowCount;i++) row += `<div class="count-sq ${colorClass}"></div>`;
+        row += '</div>';
+        rows.push(row);
+        remaining -= rowCount;
+      }
+      if(rows.length===0) rows.push('<div class="count-row"><span style="font-size:11px;color:var(--muted);">— keins übrig —</span></div>');
+      return `<div class="count-pile"><div class="count-label">${label}: ${Math.max(0,count)}</div>${rows.join('')}</div>`;
+    }
+    let html = '<div class="counting-aid">';
+    html += pile(s.pileBlack, 'sq-black', 'Schwarz übrig');
+    html += pile(Math.round(s.pileWhite - s.komi), 'sq-white', 'Weiß übrig (vor Komi)');
+    html += `<div class="count-komi">+ ${s.komi} Komi für Weiß</div>`;
+    html += '</div>';
+    return html;
+  }
+
+  function getDeadAdjusted(){
+    const adjBoard = board.slice();
+    let deadBlack=0, deadWhite=0;
+    deadStones.forEach(key=>{
+      const [x,y] = key.split(',').map(Number);
+      const val = board[idx(x,y)];
+      if(val===BLACK) deadBlack++;
+      else if(val===WHITE) deadWhite++;
+      adjBoard[idx(x,y)] = EMPTY;
+    });
+    return { adjBoard, deadBlack, deadWhite };
+  }
+
+  function finalizeScoring(){
+    const { adjBoard, deadBlack, deadWhite } = getDeadAdjusted();
+    const s = computeScoring(adjBoard, capturedBlack+deadBlack, capturedWhite+deadWhite);
+    lastScoring = s;
+    territoryMap = s.map;
+    gameOver = true;
+    endReason = 'score';
+    scoringPhase = false;
+    if(timerInterval) clearInterval(timerInterval);
+    document.getElementById('confirmScoringBtn').style.display = 'none';
+    document.getElementById('suggestDeadBtn').style.display = 'none';
+    document.getElementById('passBtn').disabled = false;
+    let html = '';
+    if(deadBlack>0 || deadWhite>0){
+      html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Tote Steine entfernt — Schwarz: ${deadBlack}, Weiß: ${deadWhite}</div>`;
+    }
+    if(settings.scoringMode==='chinese' || settings.scoringMode==='both'){
+      const winner = s.areaBlack>s.areaWhite ? 'Schwarz' : 'Weiß';
+      html += `<div class="result-block"><h4>Chinesische Zählung (Fläche)</h4>
+        <div class="score-row"><span>Schwarz (Steine+Gebiet)</span><span class="score-num">${s.areaBlack}</span></div>
+        <div class="score-row"><span>Weiß (Steine+Gebiet+${s.komi} Komi)</span><span class="score-num">${s.areaWhite}</span></div>
+        <div class="result-winner">${winner} gewinnt</div></div>`;
+    }
+    if(settings.scoringMode==='japanese' || settings.scoringMode==='both'){
+      const winner = s.territoryBlack>s.territoryWhite ? 'Schwarz' : 'Weiß';
+      html += `<div class="result-block"><h4>Japanische Zählung (Gebiet)</h4>
+        <div class="score-row"><span>Schwarz (Gebiet+Gefangene)</span><span class="score-num">${s.territoryBlack}</span></div>
+        <div class="score-row"><span>Weiß (Gebiet+Gefangene+${s.komi} Komi)</span><span class="score-num">${s.territoryWhite}</span></div>
+        <div class="result-winner">${winner} gewinnt</div>
+        <div style="font-size:11px;color:var(--muted);margin:10px 0 6px;">Traditionelle Zählhilfe: Gefangene Steine werden ins gegnerische Gebiet gelegt, übrig bleiben einfache Fünferreihen zum Abzählen.</div>
+        ${renderCountingAid(s)}
+        </div>`;
+    }
+    resultContent.innerHTML = html;
+    resultCard.classList.add('show');
+    flashMsg('Partie beendet — Ergebnis siehe unten.');
+    render();
+  }
+
+  // ---------- Render ----------
+  function render(){
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        const cell = gridEl.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+        const stone = cell.querySelector('.stone');
+        const val = board[idx(x,y)];
+        let cls = 'stone';
+        if(val===BLACK) cls += ' black';
+        else if(val===WHITE) cls += ' white';
+        if(lastMove && lastMove[0]===x && lastMove[1]===y && val!==EMPTY) cls += ' last-move';
+        if((scoringPhase || gameOver) && val!==EMPTY && deadStones.has(x+','+y)) cls += ' dead-stone';
+        stone.className = cls;
+
+        const holder = cell.querySelector('.territory-mark-holder');
+        holder.innerHTML = '';
+        if(gameOver && territoryMap && val===EMPTY){
+          const owner = territoryMap[idx(x,y)];
+          if(owner){
+            const mark = document.createElement('div');
+            mark.className = 'territory-mark ' + (owner===BLACK?'t-black':'t-white');
+            const s = parseInt(cell.style.width)*0.28;
+            mark.style.width = s+'px'; mark.style.height = s+'px';
+            mark.style.left = (parseInt(cell.style.width)-s)/2+'px';
+            mark.style.top = (parseInt(cell.style.height)-s)/2+'px';
+            holder.appendChild(mark);
+          }
+        }
+      }
+    }
+    capBlackEl.textContent = capturedBlack;
+    capWhiteEl.textContent = capturedWhite;
+    clockBlackEl.textContent = fmtTime(blackTime);
+    clockWhiteEl.textContent = fmtTime(whiteTime);
+    clockTotalEl.textContent = fmtTime(gameElapsed);
+    clockBlackRow.classList.toggle('active', current===BLACK && !gameOver);
+    clockWhiteRow.classList.toggle('active', current===WHITE && !gameOver);
+
+    if(current===BLACK){
+      sealStamp.textContent = '黒'; sealStamp.classList.remove('white-turn');
+      turnLabel.innerHTML = 'Schwarz<small>Klicke auf einen Kreuzungspunkt</small>';
+    } else {
+      sealStamp.textContent = '白'; sealStamp.classList.add('white-turn');
+      turnLabel.innerHTML = 'Weiß<small>Klicke auf einen Kreuzungspunkt</small>';
+    }
+  }
+
+  // ---------- Controls ----------
+  document.getElementById('passBtn').addEventListener('click', passTurn);
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('newGameBtn').addEventListener('click', ()=>openModal('setupOverlay'));
+  document.getElementById('confirmScoringBtn').addEventListener('click', finalizeScoring);
+  document.getElementById('suggestDeadBtn').addEventListener('click', suggestDeadStones);
+
+  document.querySelectorAll('#quickSize .choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#quickSize .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.size = parseInt(btn.dataset.size);
+      document.querySelectorAll('#setupSize .choice-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.size===btn.dataset.size);
+      });
+      newGame();
+    });
+  });
+
+  document.querySelectorAll('#setupSize .choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#setupSize .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.size = parseInt(btn.dataset.size);
+      document.querySelectorAll('#quickSize .choice-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.size===btn.dataset.size);
+      });
+      populateHandicapSelect();
+    });
+  });
+  document.querySelectorAll('#setupScoring .choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#setupScoring .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.scoringMode = btn.dataset.mode;
+    });
+  });
+  document.querySelectorAll('#setupTime .choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#setupTime .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.timeMinutes = parseInt(btn.dataset.min);
+    });
+  });
+  document.getElementById('startGameBtn').addEventListener('click', ()=>{
+    settings.handicap = parseInt(document.getElementById('setupHandicap').value);
+    closeModal('setupOverlay');
+    newGame();
+  });
+
+  // ---------- Modals ----------
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=>closeModal(btn.dataset.close));
+  });
+  document.querySelectorAll('.overlay').forEach(ov=>{
+    ov.addEventListener('click', (e)=>{ if(e.target===ov) closeModal(ov.id); });
+  });
+  document.getElementById('vocabLink').addEventListener('click', ()=>openModal('vocabOverlay'));
+  document.getElementById('helpLink').addEventListener('click', ()=>openModal('helpOverlay'));
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- Vocabulary data ----------
+  const vocab = [
+    ['Das Spiel', '碁 (Go) / 囲碁 (Igo)', '围棋 (Wéiqí)', 'Der traditionelle Name des Brettspiels.'],
+    ['Spielstein', '石 (Ishi)', '棋子 (Qízǐ)', 'Ein gesetzter schwarzer oder weißer Stein.'],
+    ['Spielbrett', '碁盤 (Goban)', '棋盘 (Qípán)', 'Das Gitter mit den Schnittpunkten.'],
+    ['Freiheit', 'ダメ (Dame)', '气 (Qì)', 'Ein freier Nachbarpunkt einer Gruppe.'],
+    ['Gebiet', '地 (Ji)', '目 (Mù)', 'Von einer Farbe umschlossene leere Fläche.'],
+    ['Schlagen', '取る (Toru)', '提子 (Tízǐ)', 'Eine gegnerische Gruppe ohne Freiheiten vom Brett nehmen.'],
+    ['Atari', '当たり (Atari)', '打吃 (Dǎchī)', 'Eine Gruppe mit nur noch einer Freiheit.'],
+    ['Ko', 'コウ (Kō)', '劫 (Jié)', 'Wiederholungssituation, deren sofortige Wiederherstellung verboten ist.'],
+    ['Sente', '先手 (Sente)', '先手 (Xiānshǒu)', 'Ein Zug, der die Initiative behält.'],
+    ['Gote', '後手 (Gote)', '后手 (Hòushǒu)', 'Ein Zug, der die Initiative an den Gegner abgibt.'],
+    ['Komi', 'コミ (Komi)', '贴目 (Tiēmù)', 'Ausgleichspunkte für Weiß, da Schwarz zuerst zieht.'],
+    ['Vorgabestein', '置き石 (Okiishi)', '让子 (Ràngzǐ)', 'Handicap-Stein, den Schwarz vor Spielbeginn erhält.'],
+    ['Seki', 'セキ (Seki)', '双活 (Shuānghuó)', 'Beiderseitig lebendige Gruppen ohne Wertung als Gebiet.'],
+    ['Leben und Tod', '死活 (Shikatsu)', '死活 (Sǐhuó)', 'Die Frage, ob eine Gruppe dauerhaft überlebt.'],
+    ['Auge', '眼 (Me)', '眼 (Yǎn)', 'Ein umschlossener Punkt, der eine Gruppe unschlagbar macht.'],
+    ['Rang', '段 / 級 (Dan / Kyū)', '段 / 级 (Duàn / Jí)', 'Stufen zur Einordnung der Spielstärke.'],
+    ['Eröffnung', '布石 (Fuseki)', '布局 (Bùjú)', 'Die frühe Phase, in der grobe Rahmen gesteckt werden.'],
+    ['Eckstandard', '定石 (Jōseki)', '定式 (Dìngshì)', 'Bekannte, ausgeglichene Zugfolge in einer Ecke.'],
+    ['Tesuji', '手筋 (Tesuji)', '手筋 (Shǒujīn)', 'Ein besonders wirkungsvoller taktischer Zug.'],
+    ['Hane', 'ハネ (Hane)', '扳 (Bān)', 'Ein Zug, der um einen gegnerischen Stein herumgreift.'],
+    ['Sternpunkt', '星 (Hoshi)', '星位 (Xīngwèi)', 'Markierte Punkte auf dem Brett, u. a. für Handicap-Steine.'],
+    ['Farblosung', '握り (Nigiri)', '猜先 (Cāixiān)', 'Auslosen, wer zu Beginn Schwarz spielt.'],
+    ['Sekundenzählung', '秒読み (Byōyomi)', '读秒 (Dúmiǎo)', 'Zeitregel: feste Sekunden pro Zug nach Verbrauch der Bedenkzeit.']
+  ];
+  const vocabListEl = document.getElementById('vocabList');
+  vocab.forEach(([de,jp,cn,desc])=>{
+    const item = document.createElement('div');
+    item.className='vocab-item';
+    item.innerHTML = `
+      <div><span class="vlabel">Deutsch</span><span class="term-de">${de}</span></div>
+      <div><span class="vlabel">Japanisch</span><span class="term-jp">${jp}</span></div>
+      <div><span class="vlabel">Chinesisch</span><span class="term-cn">${cn}</span></div>
+      <div class="vocab-desc">${desc}</div>`;
+    vocabListEl.appendChild(item);
+  });
+
+  // ---------- Share image ----------
+  document.getElementById('shareBtn').addEventListener('click', generateShareImage);
+
+  async function generateShareImage(){
+    await document.fonts.load('700 40px "Shippori Mincho"');
+    await document.fonts.load('500 20px "Zen Kaku Gothic New"');
+    await document.fonts.ready;
+
+    const W = 1080, H = 1350;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const bg = ctx.createLinearGradient(0,0,W,H);
+    bg.addColorStop(0,'#2f2620'); bg.addColorStop(1,'#1c1712');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+    ctx.textAlign='center';
+    ctx.fillStyle = '#a53e35';
+    ctx.font = '700 64px "Shippori Mincho", serif';
+    ctx.fillText('碁', W/2-90, 110);
+    ctx.fillStyle = '#f4e9d3';
+    ctx.font = '700 64px "Shippori Mincho", serif';
+    ctx.fillText('GO', W/2+50, 110);
+    ctx.font = '500 22px "Zen Kaku Gothic New", sans-serif';
+    ctx.fillStyle = '#a89a80';
+    ctx.fillText(`${size}×${size} Brett` + (settings.handicap>0 ? ` · Handicap ${settings.handicap}` : ''), W/2, 150);
+
+    const boardSize = 880;
+    const boardX = (W-boardSize)/2, boardY = 190;
+    const woodGrad = ctx.createLinearGradient(boardX,boardY,boardX+boardSize,boardY+boardSize);
+    woodGrad.addColorStop(0,'#e3c088'); woodGrad.addColorStop(0.55,'#c99a56'); woodGrad.addColorStop(1,'#8a5a2b');
+    ctx.fillStyle = woodGrad;
+    roundRect(ctx, boardX, boardY, boardSize, boardSize, 14); ctx.fill();
+
+    const pad = 44;
+    const inner = boardSize - pad*2;
+    const cell = inner/(size-1);
+    ctx.strokeStyle = 'rgba(58,43,24,0.8)';
+    ctx.lineWidth = 2;
+    for(let i=0;i<size;i++){
+      ctx.beginPath();
+      ctx.moveTo(boardX+pad, boardY+pad+i*cell);
+      ctx.lineTo(boardX+pad+inner, boardY+pad+i*cell);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(boardX+pad+i*cell, boardY+pad);
+      ctx.lineTo(boardX+pad+i*cell, boardY+pad+inner);
+      ctx.stroke();
+    }
+
+    const s = gameOver && lastScoring ? lastScoring : computeScoring();
+    const finalTerritory = territoryMap || s.map;
+
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        const px = boardX+pad+x*cell, py = boardY+pad+y*cell;
+        const val = board[idx(x,y)];
+        const isDead = gameOver && deadStones.has(x+','+y);
+        if(val===EMPTY && gameOver && endReason==='score' && finalTerritory[idx(x,y)]){
+          ctx.fillStyle = finalTerritory[idx(x,y)]===BLACK ? 'rgba(20,15,10,0.5)' : 'rgba(245,240,228,0.75)';
+          ctx.beginPath(); ctx.arc(px,py,cell*0.12,0,Math.PI*2); ctx.fill();
+          continue;
+        }
+        if(val===EMPTY) continue;
+        const r = cell*0.46;
+        const grad = ctx.createRadialGradient(px-r*0.3,py-r*0.35,r*0.1,px,py,r);
+        if(val===BLACK){ grad.addColorStop(0,'#5a5a5a'); grad.addColorStop(1,'#0d0d0d'); }
+        else { grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#c4bca9'); }
+        ctx.globalAlpha = isDead ? 0.3 : 1;
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+        if(isDead){
+          ctx.strokeStyle = '#a53e35'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.moveTo(px-r*0.5,py-r*0.5); ctx.lineTo(px+r*0.5,py+r*0.5); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(px+r*0.5,py-r*0.5); ctx.lineTo(px-r*0.5,py+r*0.5); ctx.stroke();
+        }
+      }
+    }
+
+    let ty = boardY+boardSize+70;
+    ctx.textAlign='left';
+    ctx.fillStyle = '#f4e9d3';
+    ctx.font = '700 32px "Zen Kaku Gothic New", sans-serif';
+    ctx.fillText(gameOver ? 'Endergebnis' : 'Zwischenstand', boardX, ty);
+    ty += 44;
+    ctx.font = '500 24px "Zen Kaku Gothic New", sans-serif';
+    ctx.fillStyle = '#cfc3ab';
+
+    function line(text){ ctx.fillText(text, boardX, ty); ty += 36; }
+
+    if(gameOver && endReason==='time'){
+      const loser = blackTime===0 ? 'Schwarz' : 'Weiß';
+      const winner = blackTime===0 ? 'Weiß' : 'Schwarz';
+      line(`Sieg nach Zeitüberschreitung`);
+      line(`${winner} gewinnt — ${loser} hat die Bedenkzeit überschritten.`);
+    } else {
+      if(settings.scoringMode!=='japanese'){
+        line(`Chinesisch — Schwarz ${s.areaBlack}  ·  Weiß ${s.areaWhite.toFixed(1)} (inkl. ${s.komi} Komi)`);
+      }
+      if(settings.scoringMode!=='chinese'){
+        line(`Japanisch — Schwarz ${s.territoryBlack}  ·  Weiß ${s.territoryWhite.toFixed(1)} (inkl. ${s.komi} Komi)`);
+      }
+      line(`Gefangene — Schwarz: ${capturedBlack}   Weiß: ${capturedWhite}`);
+    }
+    line(`Gesamtspieldauer: ${fmtTime(gameElapsed)}`);
+
+    ctx.fillStyle = '#7a6c58';
+    ctx.font = '400 18px "Zen Kaku Gothic New", sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('Gespielt im Go-Simulator', W/2, H-40);
+
+    const seal = ctx.createLinearGradient(W-140,H-140,W-40,H-40);
+    ctx.fillStyle = '#a53e35';
+    roundRect(ctx, W-130, H-150, 90, 90, 10); ctx.fill();
+    ctx.fillStyle = '#f4e9d3';
+    ctx.font = '700 40px "Shippori Mincho", serif';
+    ctx.textAlign='center';
+    ctx.fillText('碁', W-85, H-90);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    document.getElementById('sharePreview').src = dataUrl;
+    document.getElementById('downloadShare').href = dataUrl;
+
+    const nativeBtn = document.getElementById('nativeShareBtn');
+    if(navigator.share && navigator.canShare){
+      canvas.toBlob(blob=>{
+        const file = new File([blob], 'go-ergebnis.png', {type:'image/png'});
+        if(navigator.canShare({files:[file]})){
+          nativeBtn.style.display='block';
+          nativeBtn.onclick = ()=>navigator.share({files:[file], title:'Go-Ergebnis'});
+        } else { nativeBtn.style.display='none'; }
+      });
+    } else { nativeBtn.style.display='none'; }
+
+    openModal('shareOverlay');
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  // ---------- Init ----------
+  populateHandicapSelect();
+  newGame();
+})();
+</script>
+</body>
+</html>
