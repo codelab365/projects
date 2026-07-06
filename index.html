@@ -43,7 +43,51 @@
 
   /* Filterleiste */
   .filters { display: flex; flex-wrap: wrap; gap: var(--cl-space-2); align-items: center; padding-block: var(--cl-space-3); position: sticky; top: 64px; background: color-mix(in srgb, var(--cl-bg) 88%, transparent); backdrop-filter: blur(8px); z-index: 20; }
-  .filters__count { margin-left: auto; font-family: var(--cl-font-mono); font-size: .78rem; color: var(--cl-muted); letter-spacing: .05em; }
+  .filters__count { margin-left: auto; font-family: var(--cl-font-mono); font-size: .78rem; color: var(--cl-muted); letter-spacing: .05em; white-space: nowrap; }
+  .filters__chips { display: flex; flex-wrap: wrap; gap: var(--cl-space-2); }
+
+  /* Suchfeld */
+  .search-box {
+    position: relative;
+    flex: 1 1 220px; max-width: 340px;
+    order: -1;
+  }
+  .search-box svg.search-ico {
+    position: absolute; left: .8rem; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--cl-muted); pointer-events: none;
+  }
+  .search-box input {
+    width: 100%; font: inherit; color: var(--cl-text);
+    background: var(--cl-surface); border: 1.5px solid var(--cl-line);
+    border-radius: var(--cl-radius-pill); padding: .6rem 2.4rem .6rem 2.3rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .search-box input::placeholder { color: var(--cl-muted); }
+  .search-box input:focus { border-color: var(--cl-signal); box-shadow: var(--cl-ring); outline: none; }
+  .search-box__clear {
+    position: absolute; right: .4rem; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; display: none; align-items: center; justify-content: center;
+    border: none; background: transparent; color: var(--cl-muted); cursor: pointer; border-radius: 50%;
+  }
+  .search-box__clear svg { width: 14px; height: 14px; }
+  .search-box__clear:hover { background: var(--cl-surface-2); color: var(--cl-text); }
+  .search-box.has-value .search-box__clear { display: inline-flex; }
+
+  @media (max-width: 640px) {
+    .search-box { order: 0; flex-basis: 100%; max-width: none; }
+    .filters__count { margin-left: 0; }
+  }
+
+  /* Kein Treffer */
+  .empty-state {
+    display: none;
+    text-align: center;
+    padding: var(--cl-space-5) var(--cl-space-3);
+    color: var(--cl-muted);
+  }
+  .empty-state.is-visible { display: block; }
+  .empty-state svg { width: 34px; height: 34px; margin: 0 auto var(--cl-space-2); color: var(--cl-line); }
+  .empty-state p { margin: 0 0 var(--cl-space-2); }
 
   /* Kategorie-Zwischentitel */
   .cat-heading { display: flex; align-items: center; gap: .6rem; margin: var(--cl-space-5) 0 var(--cl-space-2); }
@@ -127,6 +171,12 @@
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M5 13l4.5 4.5L19 7"/>
   </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/>
+  </symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 6l12 12M18 6L6 18"/>
+  </symbol>
 </svg>
 
 <!-- Kopfzeile -->
@@ -147,7 +197,7 @@
     <h1>Meine KI-Projekte an <em>einem Ort.</em></h1>
     <p class="cl-lead">Willkommen im codeLAB365. Hier sammle ich meine mit KI gebauten Werkzeuge, Spiele und Experimente – von der Spieleausleihe bis zum Netzqualitäts-Simulator. Such dir eine Kachel aus und leg los.</p>
     <div class="hero__meta">
-      <span class="cl-badge">18 Projekte</span>
+      <span class="cl-badge">19 Projekte</span>
       <span class="cl-badge">4 Kategorien</span>
       <span class="cl-badge">laufend erweitert</span>
     </div>
@@ -162,12 +212,21 @@
   <!-- Filter -->
   <div class="cl-container">
     <div class="filters" role="group" aria-label="Projekte filtern">
-      <button class="cl-chip is-active" data-filter="alle"  aria-pressed="true">Alle</button>
-      <button class="cl-chip"           data-filter="spiele" aria-pressed="false">Spiele &amp; Community</button>
-      <button class="cl-chip"           data-filter="tools"  aria-pressed="false">Werkzeuge</button>
-      <button class="cl-chip"           data-filter="tech"   aria-pressed="false">Technik &amp; Wissen</button>
-      <button class="cl-chip"           data-filter="ki"     aria-pressed="false">KI &amp; Demos</button>
-      <span class="filters__count" id="count">18 von 18</span>
+      <div class="search-box" id="searchBox">
+        <svg class="search-ico"><use href="#i-search"/></svg>
+        <input type="search" id="searchInput" placeholder="Projekt suchen…" aria-label="Projekte durchsuchen" autocomplete="off">
+        <button class="search-box__clear" id="searchClear" type="button" aria-label="Suche löschen">
+          <svg><use href="#i-close"/></svg>
+        </button>
+      </div>
+      <div class="filters__chips">
+        <button class="cl-chip is-active" data-filter="alle"  aria-pressed="true">Alle</button>
+        <button class="cl-chip"           data-filter="spiele" aria-pressed="false">Spiele &amp; Community</button>
+        <button class="cl-chip"           data-filter="tools"  aria-pressed="false">Werkzeuge</button>
+        <button class="cl-chip"           data-filter="tech"   aria-pressed="false">Technik &amp; Wissen</button>
+        <button class="cl-chip"           data-filter="ki"     aria-pressed="false">KI &amp; Demos</button>
+      </div>
+      <span class="filters__count" id="count">19 von 19</span>
     </div>
   </div>
 
@@ -177,6 +236,16 @@
     <div class="cat-block" data-cat-block="spiele">
       <div class="cat-heading"><svg><use href="#i-spiele"/></svg><h2>Spiele &amp; Community</h2><span class="cat-heading__line"></span></div>
       <div class="cl-grid cl-grid--cards">
+
+        <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/projects/go" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <div class="p-card__top-left"><span class="cl-tag">Spiele</span><span class="cl-badge cl-badge--ok">Neu</span></div>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/go" data-title="Go (囲碁)" aria-label="Link zu Go (囲碁) teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">Go (囲碁)</h3>
+          <p class="p-card__desc">Das klassische Brettspiel Go für zwei Spieler: Steine setzen, Gruppen und Freiheiten beachten, Ko-Regel, einstellbares Handicap &amp; Komi, automatische Zählung (japanisch/chinesisch) sowie ein integriertes Regelwerk mit Vokabeln.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/Spielesammlung-Genduron/questboard.html" target="_blank" rel="noopener noreferrer">
           <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/Spielesammlung-Genduron/questboard.html" data-title="BoardOrbit · Questboard" aria-label="Link zu BoardOrbit · Questboard teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
@@ -334,6 +403,12 @@
       </div>
     </div>
 
+    <div class="empty-state" id="emptyState">
+      <svg><use href="#i-search"/></svg>
+      <p>Keine Projekte gefunden.</p>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="emptyReset" type="button">Suche &amp; Filter zurücksetzen</button>
+    </div>
+
   </section>
 </main>
 
@@ -349,25 +424,50 @@
   // Jahr
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // Filterlogik (inkl. Kategorie-Blöcke, damit leere Zwischentitel verschwinden)
-  const chips     = document.querySelectorAll('.cl-chip');
-  const cards     = document.querySelectorAll('.p-card');
-  const catBlocks = document.querySelectorAll('.cat-block');
-  const count     = document.getElementById('count');
-  const total     = cards.length;
+  // Filter- & Suchlogik (inkl. Kategorie-Blöcke, damit leere Zwischentitel verschwinden)
+  const chips      = document.querySelectorAll('.cl-chip');
+  const cards      = document.querySelectorAll('.p-card');
+  const catBlocks  = document.querySelectorAll('.cat-block');
+  const count      = document.getElementById('count');
+  const total      = cards.length;
+  const searchBox  = document.getElementById('searchBox');
+  const searchInput= document.getElementById('searchInput');
+  const searchClear= document.getElementById('searchClear');
+  const emptyState = document.getElementById('emptyState');
+  const emptyReset = document.getElementById('emptyReset');
 
-  function applyFilter(filter) {
+  let currentFilter = 'alle';
+
+  // Suchtext je Karte einmalig vorbereiten (Titel + Beschreibung + Tag)
+  cards.forEach(card => {
+    const title = card.querySelector('.p-card__title')?.textContent || '';
+    const desc  = card.querySelector('.p-card__desc')?.textContent || '';
+    const tag   = card.querySelector('.cl-tag')?.textContent || '';
+    card.dataset.search = (title + ' ' + desc + ' ' + tag).toLowerCase();
+  });
+
+  function applyFilter() {
+    const query = searchInput.value.trim().toLowerCase();
+    searchBox.classList.toggle('has-value', query.length > 0);
+
     let shown = 0;
     cards.forEach(card => {
-      const match = filter === 'alle' || card.dataset.cat === filter;
+      const matchCat    = currentFilter === 'alle' || card.dataset.cat === currentFilter;
+      const matchSearch = query === '' || card.dataset.search.includes(query);
+      const match = matchCat && matchSearch;
       card.classList.toggle('is-hidden', !match);
       if (match) shown++;
     });
+
     catBlocks.forEach(block => {
       const blockCat = block.dataset.catBlock;
-      block.classList.toggle('is-hidden', filter !== 'alle' && filter !== blockCat);
+      const catOk = currentFilter === 'alle' || currentFilter === blockCat;
+      const hasVisibleCard = block.querySelector('.p-card:not(.is-hidden)') !== null;
+      block.classList.toggle('is-hidden', !catOk || !hasVisibleCard);
     });
+
     count.textContent = shown + ' von ' + total;
+    emptyState.classList.toggle('is-visible', shown === 0);
   }
 
   chips.forEach(chip => {
@@ -375,8 +475,24 @@
       chips.forEach(c => { c.classList.remove('is-active'); c.setAttribute('aria-pressed', 'false'); });
       chip.classList.add('is-active');
       chip.setAttribute('aria-pressed', 'true');
-      applyFilter(chip.dataset.filter);
+      currentFilter = chip.dataset.filter;
+      applyFilter();
     });
+  });
+
+  searchInput.addEventListener('input', applyFilter);
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchInput.focus();
+    applyFilter();
+  });
+  emptyReset.addEventListener('click', () => {
+    searchInput.value = '';
+    chips.forEach(c => { c.classList.remove('is-active'); c.setAttribute('aria-pressed', 'false'); });
+    document.querySelector('.cl-chip[data-filter="alle"]').classList.add('is-active');
+    document.querySelector('.cl-chip[data-filter="alle"]').setAttribute('aria-pressed', 'true');
+    currentFilter = 'alle';
+    applyFilter();
   });
 
   // Teilen-Button: native Teilen-Funktion (v.a. mobil), sonst Link in die Zwischenablage kopieren
