@@ -218,13 +218,52 @@
     totalEl.classList.toggle('lt-goal-reached', total >= GOAL);
   }
 
+  // html2canvas kann die moderne CSS-Funktion color(), die Browser beim
+  // Berechnen von color-mix() intern verwenden, nicht parsen. Wir lösen
+  // betroffene Farben daher vorab über einen Canvas-Kontext in ein von
+  // html2canvas unterstütztes Format (rgb/rgba) auf.
+  function normalizeColor(colorStr) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillStyle = colorStr;
+    return ctx.fillStyle;
+  }
+
+  function probeBg(classNames) {
+    const el = document.createElement('td');
+    el.className = classNames;
+    el.style.position = 'absolute';
+    el.style.visibility = 'hidden';
+    document.body.appendChild(el);
+    const bg = getComputedStyle(el).backgroundColor;
+    document.body.removeChild(el);
+    return normalizeColor(bg);
+  }
+
   function saveAsImage() {
     const btn = document.getElementById('save-btn');
     const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Erstelle Bild…';
+
+    // Farben, die über color-mix() erzeugt werden, vorab auflösen …
+    const abendBg  = probeBg('cell lt-cell lt-cell--abend');
+    const activeBg = probeBg('cell lt-cell is-active');
+    const pageBg   = normalizeColor(getComputedStyle(document.body).backgroundColor || '#ffffff');
+
+    // … und per Override-Stylesheet vor dem Rendern einsetzen.
+    const override = document.createElement('style');
+    override.id = 'lt-capture-override';
+    override.textContent = `
+      #lt-snapshot .lt-cell--abend { background-color: ${abendBg} !important; }
+      #lt-snapshot .lt-cell.is-active { background-color: ${activeBg} !important; }
+    `;
+    document.head.appendChild(override);
+
     html2canvas(document.getElementById('lt-snapshot'), {
-      backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff',
+      backgroundColor: pageBg,
       scale: 2
     }).then(canvas => {
       const link = document.createElement('a');
@@ -234,6 +273,7 @@
     }).catch(err => {
       alert('Bild konnte nicht erstellt werden: ' + err);
     }).finally(() => {
+      override.remove();
       btn.disabled = false;
       btn.textContent = originalLabel;
     });
