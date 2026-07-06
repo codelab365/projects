@@ -1,289 +1,289 @@
-/* =========================================================================
-   codeLAB365 · Design System
-   Ein gemeinsames Stylesheet für alle Projektseiten.
-   Einbinden mit:  <link rel="stylesheet" href="codelab365.css">
-   Alle Klassen sind mit  cl-  präfixiert und lassen sich gefahrlos
-   in bestehende Seiten einfügen.
-   ========================================================================= */
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiTEC Stundenplan-Planer</title>
+<link rel="stylesheet" href="codelab365.css">
+<style>
+  /* Seitenspezifische Ergänzungen – bewusst NICHT cl- präfixiert,
+     da es sich um Werkzeug-eigene Bausteine handelt, die auf den
+     cl- Tokens aufbauen. */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  .lt-wrap { max-width: 980px; }
 
-/* ---------- 1. Design-Tokens ---------------------------------------------- */
-:root {
-  color-scheme: light dark;
-
-  /* Marke */
-  --cl-navy:      #002E59;   /* Logo-Blau           */
-  --cl-navy-600:  #003F78;   /* Hover / heller      */
-  --cl-navy-700:  #001F42;   /* dunkler             */
-  --cl-signal:    #0BA9CC;   /* „Schaltkreis"-Cyan  */
-  --cl-signal-600:#0894B4;
-
-  /* Neutrale Flächen (hell) */
-  --cl-bg:        #F5F8FC;
-  --cl-surface:   #FFFFFF;
-  --cl-surface-2: #EEF3F9;
-  --cl-line:      #DCE4EE;
-  --cl-text:      #0E2136;
-  --cl-muted:     #5A6B80;
-
-  /* Semantisch */
-  --cl-primary:      var(--cl-navy);
-  --cl-primary-hover:var(--cl-navy-600);
-  --cl-on-primary:   #FFFFFF;
-  --cl-accent:       var(--cl-signal);
-  --cl-link:         var(--cl-navy-600);
-  --cl-focus:        var(--cl-signal);
-
-  /* Status */
-  --cl-ok:   #1F9D6B;
-  --cl-warn: #C9840E;
-  --cl-err:  #C43D3D;
-
-  /* Typografie */
-  --cl-font-display: 'Space Grotesk', system-ui, sans-serif;
-  --cl-font-body:    'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  --cl-font-mono:    'Space Mono', ui-monospace, 'JetBrains Mono', monospace;
-
-  /* Radius / Schatten / Layout */
-  --cl-radius:    14px;
-  --cl-radius-sm: 10px;
-  --cl-radius-pill: 999px;
-  --cl-shadow:    0 1px 2px rgba(0,35,66,.06), 0 10px 30px -16px rgba(0,46,89,.28);
-  --cl-shadow-lg: 0 4px 10px rgba(0,35,66,.08), 0 24px 48px -20px rgba(0,46,89,.35);
-  --cl-ring:      0 0 0 3px color-mix(in srgb, var(--cl-focus) 45%, transparent);
-  --cl-maxw:      1160px;
-
-  /* Abstände */
-  --cl-space-1: .375rem;
-  --cl-space-2: .75rem;
-  --cl-space-3: 1.25rem;
-  --cl-space-4: 2rem;
-  --cl-space-5: 3.25rem;
-  --cl-space-6: 5rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --cl-bg:        #0A1622;
-    --cl-surface:   #0F1E2E;
-    --cl-surface-2: #13273A;
-    --cl-line:      #21374D;
-    --cl-text:      #E7EEF6;
-    --cl-muted:     #96A9BF;
-
-    --cl-primary:      #1C4B7A;
-    --cl-primary-hover:#245F97;
-    --cl-on-primary:   #F2F8FF;
-    --cl-link:         #6FC7E2;
-    --cl-signal:       #34C0DF;
-    --cl-shadow:    0 1px 2px rgba(0,0,0,.4), 0 12px 34px -18px rgba(0,0,0,.7);
-    --cl-shadow-lg: 0 4px 12px rgba(0,0,0,.45), 0 26px 54px -22px rgba(0,0,0,.75);
+  .lt-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--cl-space-3); flex-wrap: wrap; margin-bottom: var(--cl-space-3);
   }
-}
 
-/* Manuelles Umschalten möglich:  <html data-theme="dark">  */
-[data-theme="dark"] {
-  --cl-bg:#0A1622; --cl-surface:#0F1E2E; --cl-surface-2:#13273A;
-  --cl-line:#21374D; --cl-text:#E7EEF6; --cl-muted:#96A9BF;
-  --cl-primary:#1C4B7A; --cl-primary-hover:#245F97; --cl-on-primary:#F2F8FF;
-  --cl-link:#6FC7E2; --cl-signal:#34C0DF;
-}
-[data-theme="light"] {
-  --cl-bg:#F5F8FC; --cl-surface:#FFFFFF; --cl-surface-2:#EEF3F9;
-  --cl-line:#DCE4EE; --cl-text:#0E2136; --cl-muted:#5A6B80;
-  --cl-primary:#002E59; --cl-primary-hover:#003F78; --cl-on-primary:#FFFFFF;
-  --cl-link:#003F78; --cl-signal:#0BA9CC;
-}
+  .lt-legend { display: flex; gap: var(--cl-space-3); flex-wrap: wrap; font-size: .85rem; color: var(--cl-muted); }
+  .lt-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .lt-swatch { width: 13px; height: 13px; border-radius: 4px; display: inline-block; border: 1px solid var(--cl-line); }
+  .lt-swatch--tag   { background: var(--cl-surface); }
+  .lt-swatch--abend { background: color-mix(in srgb, var(--cl-signal) 22%, var(--cl-surface)); }
+  .lt-swatch--active{ background: var(--cl-warn); }
 
-/* ---------- 2. Reset & Grundlagen ---------------------------------------- */
-*, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  #grid-container { overflow-x: auto; }
 
-body {
-  margin: 0;
-  font-family: var(--cl-font-body);
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--cl-text);
-  background: var(--cl-bg);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
+  .lt-table th, .lt-table td { text-align: center; }
+  .lt-table td.lt-col-ue, .lt-table td.lt-col-zeit,
+  .lt-table th.lt-col-ue, .lt-table th.lt-col-zeit { text-align: left; }
+  .lt-table td.lt-col-zeit { font-family: var(--cl-font-mono); font-size: .85rem; color: var(--cl-muted); white-space: nowrap; }
 
-img, svg, video { max-width: 100%; height: auto; display: block; }
+  .lt-daytag { display: block; }
+  .lt-daytag small {
+    display: block; font-family: var(--cl-font-mono); font-weight: 400;
+    font-size: .62rem; letter-spacing: .04em; text-transform: none;
+    color: var(--cl-muted); margin-top: .15rem;
+  }
 
-h1, h2, h3, h4 {
-  font-family: var(--cl-font-display);
-  color: var(--cl-text);
-  line-height: 1.15;
-  margin: 0 0 .5em;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-h1 { font-size: clamp(2rem, 1.4rem + 2.6vw, 3.15rem); font-weight: 700; letter-spacing: -0.02em; }
-h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1.05rem; }
-p  { margin: 0 0 1rem; }
+  .lt-cell {
+    cursor: pointer; user-select: none; min-width: 64px;
+    transition: background .12s ease;
+  }
+  .lt-cell:hover { background: var(--cl-surface-2); }
+  .lt-cell--abend { background: color-mix(in srgb, var(--cl-signal) 12%, var(--cl-surface)); }
+  .lt-cell--abend:hover { background: color-mix(in srgb, var(--cl-signal) 22%, var(--cl-surface)); }
+  .lt-cell.is-active,
+  .lt-cell--abend.is-active {
+    background: color-mix(in srgb, var(--cl-warn) 55%, var(--cl-surface)) !important;
+    font-weight: 700;
+  }
 
-a { color: var(--cl-link); text-decoration-color: color-mix(in srgb, var(--cl-link) 40%, transparent); text-underline-offset: 3px; }
-a:hover { text-decoration-color: currentColor; }
+  .lt-mark { font-size: 1rem; line-height: 1; }
+  .lt-sub  {
+    display: block; font-family: var(--cl-font-mono); font-size: .62rem;
+    color: var(--cl-muted); margin-top: .1rem; letter-spacing: .02em;
+  }
+  .lt-cell.is-active .lt-sub { color: var(--cl-text); }
 
-hr { border: none; border-top: 1px solid var(--cl-line); margin: var(--cl-space-4) 0; }
+  .lt-daysum td { font-weight: 600; background: var(--cl-surface-2); font-size: .85rem; }
+  .lt-daysum .lt-sum-total { font-size: 1rem; }
+  .lt-daysum .lt-sum-split { display: block; font-weight: 400; font-size: .68rem; color: var(--cl-muted); }
 
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: none;
-  box-shadow: var(--cl-ring);
-  border-radius: var(--cl-radius-sm);
-}
+  .lt-summary {
+    margin-top: var(--cl-space-3); display: flex; align-items: baseline;
+    gap: var(--cl-space-2); flex-wrap: wrap;
+  }
+  .lt-summary .lt-total-num { font-family: var(--cl-font-display); font-size: 1.6rem; font-weight: 700; color: var(--cl-text); }
+  .lt-summary .lt-total-num.lt-goal-reached { color: var(--cl-ok); }
 
-::selection { background: color-mix(in srgb, var(--cl-signal) 30%, transparent); }
+  #lt-snapshot { background: var(--cl-surface); padding: var(--cl-space-3); border-radius: var(--cl-radius); }
 
-/* ---------- 3. Layout ----------------------------------------------------- */
-.cl-container { width: 100%; max-width: var(--cl-maxw); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
-.cl-section   { padding-block: var(--cl-space-5); }
-.cl-stack > * + * { margin-top: var(--cl-space-3); }
+  @media (max-width: 620px) {
+    .lt-table { font-size: .82rem; }
+    .lt-cell { min-width: 46px; }
+  }
+</style>
+</head>
+<body>
 
-.cl-grid { display: grid; gap: var(--cl-space-3); }
-.cl-grid--cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+<header class="cl-header">
+  <div class="cl-container cl-header__inner">
+    <a class="cl-brand" href="#">
+      <span class="cl-brand__name">LiTEC <b>Stundenplan</b></span>
+    </a>
+    <span class="cl-header__spacer"></span>
+    <span class="cl-badge" id="goal-badge">Ziel: 22 Einheiten</span>
+  </div>
+</header>
 
-/* ---------- 4. Kopf- & Fußzeile ------------------------------------------ */
-.cl-header {
-  position: sticky; top: 0; z-index: 40;
-  background: color-mix(in srgb, var(--cl-surface) 85%, transparent);
-  backdrop-filter: saturate(1.4) blur(10px);
-  border-bottom: 1px solid var(--cl-line);
-}
-.cl-header__inner {
-  display: flex; align-items: center; gap: var(--cl-space-3);
-  min-height: 64px;
-}
-.cl-brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--cl-text); font-weight: 600; }
-.cl-brand svg, .cl-brand img { width: 34px; height: 34px; }
-.cl-brand__name { font-family: var(--cl-font-display); font-size: 1.15rem; letter-spacing: -0.01em; }
-.cl-brand__name b { color: var(--cl-navy-600); }
-@media (prefers-color-scheme: dark){ .cl-brand__name b { color: var(--cl-signal); } }
-.cl-header__spacer { margin-left: auto; }
+<main class="cl-container cl-section lt-wrap">
 
-.cl-footer {
-  border-top: 1px solid var(--cl-line);
-  color: var(--cl-muted);
-  font-size: .9rem;
-  padding-block: var(--cl-space-4);
-  margin-top: var(--cl-space-5);
-}
-.cl-footer a { color: inherit; }
+  <p class="cl-eyebrow">Planer · Schuljahr</p>
+  <h2>Stundenplan-Planer</h2>
+  <p class="cl-lead">Klicke die gewünschten Einheiten an. Tagschule und Abendschule sind separat markiert –
+    an Montag bis Donnerstag beginnt die Abendschule eine Stunde später als am Freitag.</p>
 
-/* ---------- 5. Eyebrow / Labels ------------------------------------------ */
-.cl-eyebrow {
-  font-family: var(--cl-font-mono);
-  font-size: .74rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--cl-muted);
-  display: inline-flex; align-items: center; gap: .55rem;
-}
-.cl-eyebrow::before {
-  content: ""; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--cl-signal);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cl-signal) 22%, transparent);
-}
-.cl-muted { color: var(--cl-muted); }
-.cl-lead  { font-size: 1.12rem; color: var(--cl-muted); max-width: 60ch; }
+  <div class="lt-toolbar">
+    <div class="lt-legend">
+      <span><span class="lt-swatch lt-swatch--tag"></span> Tagschule</span>
+      <span><span class="lt-swatch lt-swatch--abend"></span> Abendschule</span>
+      <span><span class="lt-swatch lt-swatch--active"></span> Ausgewählt</span>
+    </div>
+    <div class="cl-flex">
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="reset-btn" type="button">Zurücksetzen</button>
+      <button class="cl-btn cl-btn--signal cl-btn--sm" id="save-btn" type="button">Als Bild speichern</button>
+    </div>
+  </div>
 
-/* ---------- 6. Buttons ---------------------------------------------------- */
-.cl-btn {
-  --_bg: var(--cl-primary); --_fg: var(--cl-on-primary); --_bd: transparent;
-  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  font-family: var(--cl-font-body); font-weight: 600; font-size: .95rem; line-height: 1;
-  padding: .72rem 1.15rem; border-radius: var(--cl-radius-pill);
-  background: var(--_bg); color: var(--_fg); border: 1.5px solid var(--_bd);
-  text-decoration: none; cursor: pointer;
-  transition: transform .12s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-.cl-btn:hover { background: var(--cl-primary-hover); transform: translateY(-1px); }
-.cl-btn:active { transform: translateY(0); }
-.cl-btn--ghost  { --_bg: transparent; --_fg: var(--cl-text); --_bd: var(--cl-line); }
-.cl-btn--ghost:hover { --_bg: var(--cl-surface-2); background: var(--cl-surface-2); border-color: var(--cl-navy-600); }
-.cl-btn--signal { --_bg: var(--cl-signal); --_fg: #04222B; }
-.cl-btn--signal:hover { background: var(--cl-signal-600); }
-.cl-btn--sm { padding: .48rem .85rem; font-size: .85rem; }
+  <div class="cl-card cl-card--pad" id="lt-snapshot">
+    <div id="grid-container"></div>
 
-/* ---------- 7. Chips / Tags / Badges ------------------------------------- */
-.cl-chip {
-  font-family: var(--cl-font-body); font-size: .85rem; font-weight: 500;
-  padding: .42rem .9rem; border-radius: var(--cl-radius-pill);
-  border: 1.5px solid var(--cl-line); background: var(--cl-surface);
-  color: var(--cl-muted); cursor: pointer;
-  transition: all .16s ease;
-}
-.cl-chip:hover { border-color: var(--cl-navy-600); color: var(--cl-text); }
-.cl-chip[aria-pressed="true"], .cl-chip.is-active {
-  background: var(--cl-primary); color: var(--cl-on-primary); border-color: var(--cl-primary);
-}
+    <div class="lt-summary">
+      <span class="lt-total-num" id="total-count">0</span>
+      <span class="cl-muted">/ 22 Einheiten gesamt · <span id="total-split">0 Tag · 0 Abend</span></span>
+    </div>
+  </div>
 
-.cl-tag {
-  font-family: var(--cl-font-mono); font-size: .68rem; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--cl-navy-600);
-  background: color-mix(in srgb, var(--cl-signal) 12%, var(--cl-surface));
-  border: 1px solid color-mix(in srgb, var(--cl-signal) 30%, transparent);
-  padding: .2rem .5rem; border-radius: 6px; display: inline-block;
-}
-@media (prefers-color-scheme: dark){ .cl-tag { color: var(--cl-signal); } }
+</main>
 
-.cl-badge {
-  font-size: .75rem; font-weight: 600; padding: .15rem .55rem; border-radius: var(--cl-radius-pill);
-  background: var(--cl-surface-2); color: var(--cl-muted);
-}
-.cl-badge--ok   { background: color-mix(in srgb, var(--cl-ok) 15%, transparent);   color: var(--cl-ok); }
-.cl-badge--warn { background: color-mix(in srgb, var(--cl-warn) 15%, transparent); color: var(--cl-warn); }
-.cl-badge--err  { background: color-mix(in srgb, var(--cl-err) 15%, transparent);  color: var(--cl-err); }
+<footer class="cl-footer">
+  <div class="cl-container">codeLAB365 · LiTEC Stundenplan-Planer</div>
+</footer>
 
-/* ---------- 8. Karten ---------------------------------------------------- */
-.cl-card {
-  background: var(--cl-surface);
-  border: 1px solid var(--cl-line);
-  border-radius: var(--cl-radius);
-  padding: var(--cl-space-3);
-  box-shadow: var(--cl-shadow);
-}
-.cl-card--pad { padding: var(--cl-space-4); }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const GOAL = 22;
 
-/* ---------- 9. Formulare ------------------------------------------------- */
-.cl-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; color: var(--cl-text); }
-.cl-input, .cl-select, .cl-textarea {
-  width: 100%; font: inherit; color: var(--cl-text);
-  background: var(--cl-surface); border: 1.5px solid var(--cl-line);
-  border-radius: var(--cl-radius-sm); padding: .6rem .8rem;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-.cl-input:focus, .cl-select:focus, .cl-textarea:focus {
-  border-color: var(--cl-signal); box-shadow: var(--cl-ring); outline: none;
-}
-.cl-textarea { min-height: 120px; resize: vertical; }
+  const times = [
+    { ue: 1,  zeit: '08:15-09:05' },
+    { ue: 2,  zeit: '09:05-09:55' },
+    { ue: 3,  zeit: '10:10-11:00' },
+    { ue: 4,  zeit: '11:05-11:55' },
+    { ue: 5,  zeit: '12:00-12:50' },
+    { ue: 6,  zeit: '12:55-13:45' },
+    { ue: 7,  zeit: '13:45-14:35' },
+    { ue: 8,  zeit: '14:40-15:30' },
+    { ue: 9,  zeit: '15:35-16:25' },
+    { ue: 10, zeit: '16:40-17:25' },
+    { ue: 11, zeit: '17:25-18:10' },
+    { ue: 12, zeit: '18:15-19:00' },
+    { ue: 13, zeit: '19:15-20:00' },
+    { ue: 14, zeit: '20:05-20:50' },
+    { ue: 15, zeit: '20:55-21:40' },
+  ];
 
-/* ---------- 10. Tabellen ------------------------------------------------- */
-.cl-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
-.cl-table th, .cl-table td { text-align: left; padding: .7rem .85rem; border-bottom: 1px solid var(--cl-line); }
-.cl-table thead th {
-  font-family: var(--cl-font-mono); font-size: .74rem; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--cl-muted); font-weight: 700;
-}
-.cl-table tbody tr:hover { background: var(--cl-surface-2); }
+  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
 
-/* ---------- 11. Utilities ------------------------------------------------- */
-.cl-center     { text-align: center; }
-.cl-flex       { display: flex; gap: var(--cl-space-2); align-items: center; }
-.cl-flex-wrap  { flex-wrap: wrap; }
-.cl-hidden     { display: none !important; }
-.cl-mono       { font-family: var(--cl-font-mono); }
-.cl-visually-hidden {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-}
+  // An Freitag beginnt die Abendschule ab UE 10 (Zeilenindex 9).
+  // An Mo–Do beginnt sie eine Stunde später, ab UE 11 (Zeilenindex 10).
+  function abendStartRow(dayIndex) {
+    return dayIndex === 4 ? 9 : 10;
+  }
 
-/* ---------- 12. Bewegung reduzieren -------------------------------------- */
-@media (prefers-reduced-motion: reduce) {
-  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
-}
+  function createGrid() {
+    let html = '<table class="cl-table lt-table"><thead><tr>';
+    html += '<th class="lt-col-ue">UE</th><th class="lt-col-zeit">Zeit</th>';
+    days.forEach((d, di) => {
+      const startUe = times[abendStartRow(di)].ue;
+      html += `<th><span class="lt-daytag">${d}<small>Abend ab UE ${startUe}</small></span></th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    times.forEach((t, rowIndex) => {
+      html += `<tr><td class="lt-col-ue">${t.ue}</td><td class="lt-col-zeit">${t.zeit}</td>`;
+      days.forEach((d, di) => {
+        const isAbend = rowIndex >= abendStartRow(di);
+        const abendNr = isAbend ? (rowIndex - abendStartRow(di)) : null;
+        const sub = isAbend ? `<span class="lt-sub">Abend ${abendNr}</span>` : '';
+        html += `<td class="cell lt-cell ${isAbend ? 'lt-cell--abend' : ''} day-${di}"
+                     data-day="${di}" data-row="${rowIndex}" data-abend="${isAbend ? '1' : '0'}"
+                     onclick="toggleCell(this)">
+                     <span class="lt-mark">–</span>${sub}
+                   </td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '<tr class="lt-daysum"><td>Summe</td><td>–</td>';
+    days.forEach((d, di) => {
+      html += `<td id="sum-${di}"><span class="lt-sum-total">0</span><span class="lt-sum-split" id="sum-split-${di}">0 Tag · 0 Abend</span></td>`;
+    });
+    html += '</tr></tbody></table>';
+
+    document.getElementById('grid-container').innerHTML = html;
+  }
+
+  function toggleCell(el) {
+    el.classList.toggle('is-active');
+    const mark = el.querySelector('.lt-mark');
+    mark.textContent = el.classList.contains('is-active') ? '✓' : '–';
+    updateSums();
+  }
+
+  function resetAll() {
+    document.querySelectorAll('.lt-cell.is-active').forEach(el => {
+      el.classList.remove('is-active');
+      el.querySelector('.lt-mark').textContent = '–';
+    });
+    updateSums();
+  }
+
+  function updateSums() {
+    let total = 0, totalTag = 0, totalAbend = 0;
+    days.forEach((d, di) => {
+      const activeCells = document.querySelectorAll(`.day-${di}.is-active`);
+      let tag = 0, abend = 0;
+      activeCells.forEach(c => c.dataset.abend === '1' ? abend++ : tag++);
+      const count = tag + abend;
+      document.querySelector(`#sum-${di} .lt-sum-total`).textContent = count;
+      document.getElementById(`sum-split-${di}`).textContent = `${tag} Tag · ${abend} Abend`;
+      total += count; totalTag += tag; totalAbend += abend;
+    });
+    document.getElementById('total-count').textContent = total;
+    document.getElementById('total-split').textContent = `${totalTag} Tag · ${totalAbend} Abend`;
+    const totalEl = document.getElementById('total-count');
+    totalEl.classList.toggle('lt-goal-reached', total >= GOAL);
+  }
+
+  // html2canvas kann die moderne CSS-Funktion color(), die Browser beim
+  // Berechnen von color-mix() intern verwenden, nicht parsen. Wir lösen
+  // betroffene Farben daher vorab über einen Canvas-Kontext in ein von
+  // html2canvas unterstütztes Format (rgb/rgba) auf.
+  function normalizeColor(colorStr) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillStyle = colorStr;
+    return ctx.fillStyle;
+  }
+
+  function probeBg(classNames) {
+    const el = document.createElement('td');
+    el.className = classNames;
+    el.style.position = 'absolute';
+    el.style.visibility = 'hidden';
+    document.body.appendChild(el);
+    const bg = getComputedStyle(el).backgroundColor;
+    document.body.removeChild(el);
+    return normalizeColor(bg);
+  }
+
+  function saveAsImage() {
+    const btn = document.getElementById('save-btn');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Erstelle Bild…';
+
+    // Farben, die über color-mix() erzeugt werden, vorab auflösen …
+    const abendBg  = probeBg('cell lt-cell lt-cell--abend');
+    const activeBg = probeBg('cell lt-cell is-active');
+    const pageBg   = normalizeColor(getComputedStyle(document.body).backgroundColor || '#ffffff');
+
+    // … und per Override-Stylesheet vor dem Rendern einsetzen.
+    const override = document.createElement('style');
+    override.id = 'lt-capture-override';
+    override.textContent = `
+      #lt-snapshot .lt-cell--abend { background-color: ${abendBg} !important; }
+      #lt-snapshot .lt-cell.is-active { background-color: ${activeBg} !important; }
+    `;
+    document.head.appendChild(override);
+
+    html2canvas(document.getElementById('lt-snapshot'), {
+      backgroundColor: pageBg,
+      scale: 2
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'LiTEC-Stundenplan.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }).catch(err => {
+      alert('Bild konnte nicht erstellt werden: ' + err);
+    }).finally(() => {
+      override.remove();
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    });
+  }
+
+  document.getElementById('reset-btn').addEventListener('click', resetAll);
+  document.getElementById('save-btn').addEventListener('click', saveAsImage);
+
+  createGrid();
+  updateSums();
+</script>
+</body>
+</html>
