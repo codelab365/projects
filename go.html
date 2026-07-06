@@ -47,6 +47,12 @@
   .stone.black{ background:radial-gradient(circle at 32% 28%, #5a5a5a, #0d0d0d 70%); box-shadow:0 3px 5px rgba(0,0,0,0.6), inset 0 -3px 4px rgba(255,255,255,0.08); }
   .stone.white{ background:radial-gradient(circle at 32% 28%, #ffffff, #d8d2c4 75%, #c4bca9 100%); box-shadow:0 3px 5px rgba(0,0,0,0.45), inset 0 -3px 4px rgba(0,0,0,0.12); }
   .stone.ghost{ opacity:0.35; }
+  .ghost-stone{
+    position:absolute; transform:translate(-50%,-50%); border-radius:50%;
+    pointer-events:none; opacity:0.35; display:none; z-index:5;
+  }
+  .ghost-stone.black{ background:radial-gradient(circle at 32% 28%, #5a5a5a, #0d0d0d 70%); }
+  .ghost-stone.white{ background:radial-gradient(circle at 32% 28%, #ffffff, #d8d2c4 75%, #c4bca9 100%); }
   .stone.dead-stone{ opacity:0.3; }
   .stone.dead-stone::before{
     content:'×'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -227,7 +233,7 @@
 
   <div class="layout">
     <div class="board-wrap">
-      <div class="board"><div class="grid" id="grid"></div></div>
+      <div class="board"><div class="grid" id="grid"></div><div class="ghost-stone" id="ghostStone"></div></div>
     </div>
 
     <div class="panel">
@@ -460,6 +466,8 @@
   let blackTime=null, whiteTime=null, gameElapsed=0, timerInterval=null;
 
   const gridEl = document.getElementById('grid');
+  const ghostStoneEl = document.getElementById('ghostStone');
+  let currentCellPx = 36;
   const sealStamp = document.getElementById('sealStamp');
   const turnLabel = document.getElementById('turnLabel');
   const capBlackEl = document.getElementById('capBlack');
@@ -544,6 +552,7 @@
       if(blackTime===0 || whiteTime===0){
         gameOver = true;
         endReason = 'time';
+        ghostStoneEl.style.display = 'none';
         const loser = blackTime===0 ? 'Schwarz' : 'Weiß';
         const winner = blackTime===0 ? 'Weiß' : 'Schwarz';
         flashMsg(`Zeit abgelaufen für ${loser} — ${winner} gewinnt.`);
@@ -612,15 +621,22 @@
         gridEl.appendChild(c);
       }
     }
+
+    currentCellPx = cellPx;
+    ghostStoneEl.style.width = (cellPx*0.92)+'px';
+    ghostStoneEl.style.height = (cellPx*0.92)+'px';
+    ghostStoneEl.style.display = 'none';
+    gridEl.appendChild(ghostStoneEl);
   }
 
   function showGhost(x,y,show){
     if(gameOver || scoringPhase) return;
-    if(board[idx(x,y)]!==EMPTY) return;
-    const cell = gridEl.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
-    const stone = cell.querySelector('.stone');
-    if(board[idx(x,y)]!==EMPTY) return;
-    stone.className = show ? ('stone ghost ' + (current===BLACK?'black':'white')) : 'stone';
+    if(!show){ ghostStoneEl.style.display = 'none'; return; }
+    if(board[idx(x,y)]!==EMPTY){ ghostStoneEl.style.display = 'none'; return; }
+    ghostStoneEl.style.left = (x*currentCellPx)+'px';
+    ghostStoneEl.style.top = (y*currentCellPx)+'px';
+    ghostStoneEl.className = 'ghost-stone ' + (current===BLACK?'black':'white');
+    ghostStoneEl.style.display = 'block';
   }
 
   function neighbors(x,y){
@@ -724,6 +740,7 @@
     if(settings.captureWinRule && captureCount>0){
       gameOver = true;
       endReason = 'capture';
+      ghostStoneEl.style.display = 'none';
       if(timerInterval) clearInterval(timerInterval);
       const winnerName = mover===BLACK ? 'Schwarz' : 'Weiß';
       flashMsg(`${winnerName} gewinnt durch den ersten Fang!`);
@@ -762,6 +779,7 @@
   function enterScoringPhase(){
     scoringPhase = true;
     deadStones = new Set();
+    ghostStoneEl.style.display = 'none';
     document.getElementById('confirmScoringBtn').style.display = 'block';
     document.getElementById('suggestDeadBtn').style.display = 'block';
     document.getElementById('passBtn').disabled = true;
