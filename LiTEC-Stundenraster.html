@@ -123,7 +123,6 @@
   <div class="cl-container">codeLAB365 · LiTEC Stundenplan-Planer</div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
   const GOAL = 22;
 
@@ -218,65 +217,197 @@
     totalEl.classList.toggle('lt-goal-reached', total >= GOAL);
   }
 
-  // html2canvas kann die moderne CSS-Funktion color(), die Browser beim
-  // Berechnen von color-mix() intern verwenden, nicht parsen. Wir lösen
-  // betroffene Farben daher vorab über einen Canvas-Kontext in ein von
-  // html2canvas unterstütztes Format (rgb/rgba) auf.
-  function normalizeColor(colorStr) {
-    const c = document.createElement('canvas');
-    c.width = c.height = 1;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#000';
-    ctx.fillStyle = colorStr;
-    return ctx.fillStyle;
+  // Statt die fertige HTML-Tabelle per html2canvas "abzufotografieren"
+  // (das scheitert an modernen CSS-Farbfunktionen wie color-mix()),
+  // zeichnen wir das Bild direkt und unabhängig vom DOM/CSS auf ein
+  // <canvas> – mit fest definierten, einfachen Farben.
+  const PNG = {
+    bg:          '#FFFFFF',
+    headerBg:    '#EEF3F9',
+    line:        '#DCE4EE',
+    text:        '#0E2136',
+    muted:       '#5A6B80',
+    abendTint:   '#E3F5FA',
+    activeTint:  '#F2C57E',
+    navy:        '#002E59',
+    signal:      '#0894B4',
+    ok:          '#1F9D6B'
+  };
+
+  function collectState() {
+    const grid = [];
+    times.forEach((t, rowIndex) => {
+      const row = { ue: t.ue, zeit: t.zeit, cells: [] };
+      days.forEach((d, di) => {
+        const el = document.querySelector(`.lt-cell[data-day="${di}"][data-row="${rowIndex}"]`);
+        row.cells.push({
+          active: el.classList.contains('is-active'),
+          abend: el.dataset.abend === '1'
+        });
+      });
+      grid.push(row);
+    });
+    const perDay = days.map((d, di) => ({
+      total: parseInt(document.querySelector(`#sum-${di} .lt-sum-total`).textContent, 10),
+      split: document.getElementById(`sum-split-${di}`).textContent
+    }));
+    return {
+      grid,
+      perDay,
+      total: document.getElementById('total-count').textContent,
+      totalSplit: document.getElementById('total-split').textContent
+    };
   }
 
-  function probeBg(classNames) {
-    const el = document.createElement('td');
-    el.className = classNames;
-    el.style.position = 'absolute';
-    el.style.visibility = 'hidden';
-    document.body.appendChild(el);
-    const bg = getComputedStyle(el).backgroundColor;
-    document.body.removeChild(el);
-    return normalizeColor(bg);
-  }
-
-  function saveAsImage() {
+  async function saveAsImage() {
     const btn = document.getElementById('save-btn');
     const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Erstelle Bild…';
 
-    // Farben, die über color-mix() erzeugt werden, vorab auflösen …
-    const abendBg  = probeBg('cell lt-cell lt-cell--abend');
-    const activeBg = probeBg('cell lt-cell is-active');
-    const pageBg   = normalizeColor(getComputedStyle(document.body).backgroundColor || '#ffffff');
+    try {
+      if (document.fonts && document.fonts.ready) { await document.fonts.ready; }
 
-    // … und per Override-Stylesheet vor dem Rendern einsetzen.
-    const override = document.createElement('style');
-    override.id = 'lt-capture-override';
-    override.textContent = `
-      #lt-snapshot .lt-cell--abend { background-color: ${abendBg} !important; }
-      #lt-snapshot .lt-cell.is-active { background-color: ${activeBg} !important; }
-    `;
-    document.head.appendChild(override);
+      const state = collectState();
+      const scale = 2; // scharfe Auflösung
+      const colUe = 56, colZeit = 108, colDay = 118;
+      const dayCols = days.length;
+      const tableW = colUe + colZeit + dayCols * colDay;
+      const rowH = 30, headerH = 46, sumH = 44;
+      const padding = 24, titleH = 54, footerH = 44;
 
-    html2canvas(document.getElementById('lt-snapshot'), {
-      backgroundColor: pageBg,
-      scale: 2
-    }).then(canvas => {
+      const width = tableW + padding * 2;
+      const height = titleH + headerH + times.length * rowH + sumH + footerH + padding * 2;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+
+      // Hintergrund
+      ctx.fillStyle = PNG.bg;
+      ctx.fillRect(0, 0, width, height);
+
+      // Titel
+      ctx.fillStyle = PNG.navy;
+      ctx.font = '700 20px "Space Grotesk", sans-serif';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('LiTEC Stundenplan-Planer', padding, padding + 20);
+      ctx.fillStyle = PNG.muted;
+      ctx.font = '400 12px "Space Mono", monospace';
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('de-AT') + ' ' + now.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+      ctx.fillText('Erstellt am ' + dateStr, padding, padding + 38);
+
+      let y = padding + titleH;
+      const colX = [padding, padding + colUe, padding + colUe + colZeit];
+      for (let i = 1; i < dayCols; i++) colX.push(colX[2] + i * colDay);
+
+      // Kopfzeile
+      ctx.fillStyle = PNG.headerBg;
+      ctx.fillRect(padding, y, tableW, headerH);
+      ctx.strokeStyle = PNG.line;
+      ctx.strokeRect(padding, y, tableW, headerH);
+
+      ctx.fillStyle = PNG.text;
+      ctx.font = '700 12px "Inter", sans-serif';
+      ctx.fillText('UE', colX[0] + 8, y + 20);
+      ctx.fillText('Zeit', colX[1] + 8, y + 20);
+      days.forEach((d, di) => {
+        const startUe = times[abendStartRow(di)].ue;
+        ctx.fillStyle = PNG.text;
+        ctx.font = '700 13px "Space Grotesk", sans-serif';
+        ctx.fillText(d, colX[2 + di] + 8, y + 19);
+        ctx.fillStyle = PNG.muted;
+        ctx.font = '400 10px "Space Mono", monospace';
+        ctx.fillText('Abend ab UE ' + startUe, colX[2 + di] + 8, y + 34);
+      });
+      y += headerH;
+
+      // Datenzeilen
+      state.grid.forEach((row, rowIndex) => {
+        days.forEach((d, di) => {
+          const cell = row.cells[di];
+          let fill = PNG.bg;
+          if (cell.active) fill = PNG.activeTint;
+          else if (cell.abend) fill = PNG.abendTint;
+          ctx.fillStyle = fill;
+          ctx.fillRect(colX[2 + di], y, colDay, rowH);
+        });
+
+        ctx.strokeStyle = PNG.line;
+        ctx.strokeRect(padding, y, tableW, rowH);
+        for (let i = 1; i < colX.length; i++) {
+          ctx.beginPath();
+          ctx.moveTo(colX[i], y);
+          ctx.lineTo(colX[i], y + rowH);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = PNG.text;
+        ctx.font = '400 12px "Inter", sans-serif';
+        ctx.fillText(String(row.ue), colX[0] + 8, y + rowH / 2 + 4);
+        ctx.fillStyle = PNG.muted;
+        ctx.font = '400 11px "Space Mono", monospace';
+        ctx.fillText(row.zeit, colX[1] + 8, y + rowH / 2 + 4);
+
+        days.forEach((d, di) => {
+          const cell = row.cells[di];
+          ctx.textAlign = 'center';
+          ctx.fillStyle = cell.active ? PNG.text : PNG.muted;
+          ctx.font = cell.active ? '700 13px "Inter", sans-serif' : '400 13px "Inter", sans-serif';
+          ctx.fillText(cell.active ? '✓' : '–', colX[2 + di] + colDay / 2, y + rowH / 2 + 4);
+          ctx.textAlign = 'left';
+        });
+
+        y += rowH;
+      });
+
+      // Summenzeile
+      ctx.fillStyle = PNG.headerBg;
+      ctx.fillRect(padding, y, tableW, sumH);
+      ctx.strokeStyle = PNG.line;
+      ctx.strokeRect(padding, y, tableW, sumH);
+      ctx.fillStyle = PNG.text;
+      ctx.font = '700 12px "Inter", sans-serif';
+      ctx.fillText('Summe', colX[0] + 8, y + 20);
+
+      state.perDay.forEach((d, di) => {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = PNG.text;
+        ctx.font = '700 14px "Inter", sans-serif';
+        ctx.fillText(String(d.total), colX[2 + di] + colDay / 2, y + 19);
+        ctx.fillStyle = PNG.muted;
+        ctx.font = '400 10px "Inter", sans-serif';
+        ctx.fillText(d.split, colX[2 + di] + colDay / 2, y + 34);
+        ctx.textAlign = 'left';
+      });
+      y += sumH;
+
+      // Gesamtsumme
+      const totalNum = parseInt(state.total, 10);
+      ctx.fillStyle = totalNum >= GOAL ? PNG.ok : PNG.navy;
+      ctx.font = '700 20px "Space Grotesk", sans-serif';
+      ctx.fillText(state.total, padding, y + 30);
+      ctx.fillStyle = PNG.muted;
+      ctx.font = '400 13px "Inter", sans-serif';
+      const totalNumWidth = ctx.measureText(state.total).width;
+      ctx.font = '700 20px "Space Grotesk", sans-serif';
+      const numWidth2 = ctx.measureText(state.total).width;
+      ctx.font = '400 13px "Inter", sans-serif';
+      ctx.fillText(`/ ${GOAL} Einheiten gesamt · ${state.totalSplit}`, padding + numWidth2 + 8, y + 30);
+
       const link = document.createElement('a');
       link.download = 'LiTEC-Stundenplan.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
-    }).catch(err => {
+    } catch (err) {
       alert('Bild konnte nicht erstellt werden: ' + err);
-    }).finally(() => {
-      override.remove();
+    } finally {
       btn.disabled = false;
       btn.textContent = originalLabel;
-    });
+    }
   }
 
   document.getElementById('reset-btn').addEventListener('click', resetAll);
