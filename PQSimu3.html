@@ -1,200 +1,259 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Netzqualitäts-Simulator: Industrie-Standard (EN 50160)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Netzqualitäts-Simulator · codeLAB365</title>
+    <link rel="stylesheet" href="https://codelab365.github.io/projects/codelab365.css">
     <style>
-        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { border-radius: 0.5rem; border: 1px solid #334155; cursor: crosshair; touch-action: none; }
-        .slider-accent { accent-color: #3b82f6; }
-        .event-slider { accent-color: #f59e0b; }
-        .event-cb { accent-color: #ef4444; width: 1.25rem; height: 1.25rem; }
-        .cause-list li { margin-bottom: 0.25rem; position: relative; padding-left: 1.25rem; }
-        .cause-list li::before { content: "•"; color: #3b82f6; position: absolute; left: 0; font-weight: bold; }
-        .damage-list li::before { content: "⚠️"; position: absolute; left: -0.25rem; font-size: 0.8rem; top: 0.1rem; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        .btn { @apply text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2; }
+        /* App-spezifisches Layout auf Basis der codeLAB365-Tokens */
+        body { margin: 0; }
+        .app { max-width: 1440px; margin-inline: auto; padding: clamp(1rem, 3vw, 2rem); }
+        .app-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+        .app-header h1 { margin: .35rem 0 .2rem; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+        .layout { display: grid; grid-template-columns: 1fr; gap: 1.25rem; align-items: start; }
+        @media (min-width: 1180px){ .layout { grid-template-columns: minmax(0,1fr) 460px; } }
+        .col-main { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+
+        .panel-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem 1rem; flex-wrap: wrap; margin-bottom: .7rem; }
+        .panel-head h2 { margin: 0; font-size: 1.05rem; }
+        .panel-tools { display: flex; align-items: center; gap: .35rem .9rem; flex-wrap: wrap; font-size: .82rem; color: var(--cl-muted); }
+        .panel-tools label { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
+
+        .canvas-wrap { position: relative; width: 100%; }
+        .wrap-scope { height: clamp(280px, 40vh, 520px); }
+        .wrap-spec  { height: clamp(240px, 32vh, 440px); }
+        canvas { width: 100%; height: 100%; display: block; border: 1px solid var(--cl-line);
+                 border-radius: var(--cl-radius-sm); background: var(--cl-surface); touch-action: none; cursor: crosshair; }
+
+        .readout { margin-top: .6rem; font-family: var(--cl-font-mono); font-size: .74rem; display: flex; flex-wrap: wrap; gap: .35rem 1.5rem; }
+        .hint { margin-top: .4rem; color: var(--cl-muted); font-family: var(--cl-font-mono); font-size: .7rem; letter-spacing: .02em; }
+
+        .thd-pill { font-family: var(--cl-font-mono); font-size: .82rem; color: var(--cl-accent);
+                    background: color-mix(in srgb, var(--cl-signal) 12%, var(--cl-surface));
+                    border: 1px solid color-mix(in srgb, var(--cl-signal) 30%, transparent);
+                    padding: .28rem .7rem; border-radius: var(--cl-radius-pill); }
+
+        /* Bedienpanel */
+        .controls { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 1.25rem; max-height: calc(100vh - 108px); overflow: auto; }
+        .field-label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .5rem; color: var(--cl-text); }
+        .radio-row { display: flex; gap: 1.25rem; }
+        .radio-row label { display: inline-flex; align-items: center; gap: .45rem; cursor: pointer; font-size: .92rem; }
+        .group { border: 1px solid var(--cl-line); border-radius: var(--cl-radius-sm); padding: 1rem 1.1rem; background: var(--cl-surface-2); }
+        .group h3 { margin: 0 0 .9rem; font-size: .95rem; font-family: var(--cl-font-display); }
+        .group.danger { border-color: color-mix(in srgb, var(--cl-err) 40%, var(--cl-line)); background: color-mix(in srgb, var(--cl-err) 6%, var(--cl-surface-2)); }
+        .group.danger h3 { color: var(--cl-err); }
+
+        .srow { margin-bottom: .95rem; }
+        .srow:last-child { margin-bottom: 0; }
+        .srow-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .3rem; }
+        .srow-head .lbl { font-size: .84rem; color: var(--cl-text); }
+        .srow-head .val { font-family: var(--cl-font-mono); font-size: .8rem; color: var(--cl-accent); }
+        input[type=range] { width: 100%; accent-color: var(--cl-signal); cursor: pointer; }
+        input[type=checkbox], input[type=radio] { accent-color: var(--cl-primary); width: 1.05rem; height: 1.05rem; }
+        .check { display: flex; gap: .6rem; align-items: flex-start; cursor: pointer; padding: .15rem 0; }
+        .check span { font-size: .88rem; font-weight: 500; }
+
+        .harmonics-grid { display: grid; gap: .5rem; max-height: 17rem; overflow: auto; padding-right: .3rem; margin-top: .3rem; }
+        .harm-row { display: flex; align-items: center; gap: .55rem; }
+        .harm-row .hn { width: 2.3rem; font-family: var(--cl-font-mono); font-size: .72rem; color: var(--cl-muted); flex: none; }
+        .harm-row .hv { width: 2.7rem; text-align: right; font-family: var(--cl-font-mono); font-size: .72rem; color: var(--cl-accent); flex: none; }
+        .harm-row input { accent-color: var(--cl-primary); }
+        .collapse-btn { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: none;
+                        color: var(--cl-primary); font-family: var(--cl-font-display); font-weight: 600; font-size: .95rem; cursor: pointer; padding: 0; }
+
+        /* Diagnose + ITIC */
+        .two-col { display: grid; gap: 1.25rem; }
+        @media (min-width: 680px){ .two-col { grid-template-columns: 2fr 1fr; } }
+        .diag-scroll { max-height: 340px; overflow: auto; }
+        .diag-item { border: 1px solid var(--cl-line); border-radius: var(--cl-radius-sm); padding: .7rem .85rem; background: var(--cl-surface-2); margin-bottom: .6rem; }
+        .diag-item:last-child { margin-bottom: 0; }
+        .diag-item h4 { margin: 0 0 .35rem; font-size: .9rem; font-family: var(--cl-font-body); color: var(--cl-link); }
+        .diag-item.dmg h4 { color: var(--cl-err); }
+        .diag-item ul { margin: 0; padding-left: 1.15rem; color: var(--cl-muted); font-size: .84rem; }
+        .diag-item li { margin-bottom: .2rem; }
+        .diag-ok { color: var(--cl-ok); font-weight: 600; }
+
+        .itic-box { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 150px; flex: 1;
+                    border: 1px solid var(--cl-line); border-radius: var(--cl-radius-sm); background: var(--cl-surface-2);
+                    transition: border-color .25s ease; }
+        .itic-box .ic { font-size: 2.4rem; display: block; margin-bottom: .4rem; }
+        .itic-box .st { font-weight: 700; font-size: 1.05rem; display: block; }
+        .itic-box .sub { font-size: .78rem; color: var(--cl-muted); display: block; margin-top: .25rem; max-width: 22ch; }
     </style>
 </head>
-<body class="p-6 min-h-screen flex flex-col">
+<body>
+<div class="app">
 
-    <header class="mb-4 flex flex-wrap justify-between items-end gap-3 shrink-0">
+    <header class="app-header">
         <div>
-            <h1 class="text-3xl font-bold text-white mb-1">PQ-Simulator: Industrielle Netzrückwirkungen</h1>
-            <p class="text-slate-400">Zeitsignal &amp; Frequenzspektrum (FFT), THD, ITIC-Bewertung und konkrete Schadensbilder.</p>
+            <span class="cl-eyebrow">Power Quality · EN 50160 / ITIC</span>
+            <h1>Netzqualitäts-Simulator</h1>
+            <p class="cl-lead" style="margin:0">Zeitsignal &amp; FFT-Spektrum industrieller Netzrückwirkungen – mit Messcursorn, Zoom und Doku-Export.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <button id="btn-theme"      class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded text-sm transition">🌓 Hell/Dunkel</button>
-            <button id="btn-save-json"  class="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2">💾 Zustand speichern</button>
-            <button id="btn-load-json"  class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2">📂 Zustand laden</button>
-            <button id="btn-export-png" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded font-bold text-sm transition shadow-lg flex items-center gap-2">📸 Bild exportieren</button>
-            <button id="btn-export-md"  class="bg-purple-600 hover:bg-purple-500 text-white py-2 px-4 rounded font-semibold text-sm transition shadow flex items-center gap-2">📄 Ursachen exportieren</button>
-            <input type="file" id="file-load" accept="application/json,.json" class="hidden">
+        <div class="toolbar">
+            <button id="btn-theme"      class="cl-btn cl-btn--ghost cl-btn--sm">◑ Hell/Dunkel</button>
+            <button id="btn-save-json"  class="cl-btn cl-btn--sm">💾 Speichern</button>
+            <button id="btn-load-json"  class="cl-btn cl-btn--ghost cl-btn--sm">📂 Laden</button>
+            <button id="btn-export-png" class="cl-btn cl-btn--signal cl-btn--sm">📸 Bild</button>
+            <button id="btn-export-md"  class="cl-btn cl-btn--ghost cl-btn--sm">📄 Ursachen</button>
+            <input type="file" id="file-load" accept="application/json,.json" class="cl-hidden">
         </div>
     </header>
 
-    <div class="flex flex-col xl:flex-row gap-6 flex-1 min-h-0">
-
-        <div class="flex-1 flex flex-col gap-6 min-h-0">
+    <div class="layout">
+        <div class="col-main">
 
             <!-- SCOPE -->
-            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl flex flex-col min-h-[320px]">
-                <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
-                    <h2 class="text-lg font-semibold text-white">Zeitsignal · Live-Oszilloskop (50 Hz)</h2>
-                    <div class="flex flex-wrap gap-4 items-center">
-                        <div class="flex items-center gap-2 text-sm"><span class="text-slate-400">Zeit-Zoom</span>
-                            <input type="range" id="zoom-x" min="1" max="5" step="0.5" value="1" class="w-20 slider-accent"></div>
-                        <div class="flex items-center gap-2 text-sm"><span class="text-slate-400">Position</span>
-                            <input type="range" id="pan-x" min="0" max="0" step="1" value="0" class="w-24 slider-accent"></div>
-                        <div class="flex items-center gap-2 text-sm"><span class="text-slate-400">Spg-Zoom</span>
-                            <input type="range" id="zoom-y" min="0.5" max="3" step="0.1" value="1" class="w-20 slider-accent"></div>
-                        <label class="flex items-center gap-1 text-sm text-slate-400 cursor-pointer"><input type="checkbox" id="cur-scope" checked class="slider-accent"> Cursor</label>
-                        <div class="text-sm bg-slate-700 px-3 py-1 rounded text-blue-300 font-mono">THD: <span id="thd-display">0.0</span> %</div>
+            <section class="cl-card cl-card--pad">
+                <div class="panel-head">
+                    <h2>Zeitsignal · Oszilloskop (50 Hz)</h2>
+                    <div class="panel-tools">
+                        <label><input type="checkbox" id="cur-scope" checked> Cursor</label>
+                        <button id="btn-reset-scope" class="cl-btn cl-btn--ghost cl-btn--sm">⤢ Ansicht</button>
+                        <span class="thd-pill">THD <span id="thd-display">0.0</span> %</span>
                     </div>
                 </div>
-                <div class="flex-1 relative w-full" style="min-height:240px"><canvas id="scopeCanvas"></canvas></div>
-                <div id="scope-readout" class="mt-2 text-xs font-mono flex flex-wrap gap-x-6 gap-y-1"></div>
-            </div>
+                <div class="canvas-wrap wrap-scope"><canvas id="scopeCanvas"></canvas></div>
+                <div id="scope-readout" class="readout"></div>
+                <div class="hint">Maus: Rad zoomt Zeit · Shift+Rad zoomt Spannung · Ziehen verschiebt · Doppelklick setzt zurück<br>Touch: 1 Finger verschiebt · 2 Finger zoomen (Pinch) · Doppeltippen setzt zurück</div>
+            </section>
 
             <!-- SPECTRUM -->
-            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl flex flex-col min-h-[280px]">
-                <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
-                    <h2 class="text-lg font-semibold text-white">Frequenzspektrum · FFT (Amplitude v. Grundschwingung)</h2>
-                    <div class="flex flex-wrap gap-4 items-center text-sm">
-                        <div class="flex items-center gap-2"><span class="text-slate-400">Bereich</span>
-                            <select id="spec-range" class="bg-slate-700 text-slate-100 rounded px-2 py-1 text-sm border border-slate-600">
-                                <option value="1000">bis 1 kHz (H1–H20)</option>
-                                <option value="2500" selected>bis 2,5 kHz (H1–H50)</option>
-                                <option value="10000">bis 10 kHz</option>
-                                <option value="20480">bis Nyquist (20 kHz)</option>
-                            </select></div>
-                        <div class="flex items-center gap-2"><span class="text-slate-400">Achse</span>
-                            <select id="spec-scale" class="bg-slate-700 text-slate-100 rounded px-2 py-1 text-sm border border-slate-600">
+            <section class="cl-card cl-card--pad">
+                <div class="panel-head">
+                    <h2>Frequenzspektrum · FFT</h2>
+                    <div class="panel-tools">
+                        <label>Bereich
+                            <select id="spec-range" class="cl-select" style="width:auto;padding:.3rem .5rem">
+                                <option value="1000">1 kHz</option>
+                                <option value="2500" selected>2,5 kHz</option>
+                                <option value="10000">10 kHz</option>
+                                <option value="20480">Nyquist</option>
+                            </select>
+                        </label>
+                        <label>Achse
+                            <select id="spec-scale" class="cl-select" style="width:auto;padding:.3rem .5rem">
                                 <option value="pct" selected>% linear</option>
                                 <option value="log">dB (log)</option>
-                            </select></div>
-                        <label class="flex items-center gap-1 text-slate-400 cursor-pointer"><input type="checkbox" id="cur-spec" checked class="slider-accent"> Cursor</label>
+                            </select>
+                        </label>
+                        <label><input type="checkbox" id="cur-spec" checked> Cursor</label>
+                        <button id="btn-reset-spec" class="cl-btn cl-btn--ghost cl-btn--sm">⤢ Ansicht</button>
                     </div>
                 </div>
-                <div class="flex-1 relative w-full" style="min-height:200px"><canvas id="specCanvas"></canvas></div>
-                <div id="spec-readout" class="mt-2 text-xs font-mono flex flex-wrap gap-x-6 gap-y-1"></div>
-            </div>
+                <div class="canvas-wrap wrap-spec"><canvas id="specCanvas"></canvas></div>
+                <div id="spec-readout" class="readout"></div>
+                <div class="hint">Maus: Rad zoomt Frequenz · Ziehen verschiebt · Doppelklick setzt auf gewählten Bereich zurück<br>Touch: 1 Finger verschiebt · 2 Finger zoomen (Pinch) · Doppeltippen setzt zurück</div>
+            </section>
 
-            <!-- DIAGNOSIS + ITIC -->
-            <div class="min-h-[220px] flex flex-col md:flex-row gap-4">
-                <div class="flex-[2] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl overflow-y-auto max-h-[340px]">
-                    <h2 class="text-lg font-semibold text-white mb-3">Diagnose &amp; praktische Ursachen</h2>
-                    <div id="diagnosis-content" class="text-slate-300 text-sm">
-                        <p class="text-emerald-400 font-medium">Ideales Netz: keine Störungen aktiv.</p>
-                    </div>
-                </div>
-                <div class="flex-[1] bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl flex flex-col">
-                    <h2 class="text-lg font-semibold text-white mb-2">ITIC / CBEMA</h2>
-                    <div class="flex-1 flex items-center justify-center rounded bg-slate-900 border border-slate-700 p-4 transition-colors duration-300" id="itic-container">
-                        <div id="itic-status" class="text-center">
-                            <span class="block text-4xl mb-2" id="itic-icon">✅</span>
-                            <span class="block font-bold text-lg" id="itic-text">Kein Ereignis</span>
-                            <span class="block text-xs text-slate-400 mt-1" id="itic-subtext">Spannung im Nennbereich.</span>
+            <!-- DIAGNOSE + ITIC -->
+            <div class="two-col">
+                <section class="cl-card cl-card--pad">
+                    <h2 style="margin-top:0">Diagnose &amp; praktische Ursachen</h2>
+                    <div id="diagnosis-content" class="diag-scroll"><p class="diag-ok">Ideales Netz: keine Störungen aktiv.</p></div>
+                </section>
+                <section class="cl-card cl-card--pad" style="display:flex;flex-direction:column">
+                    <h2 style="margin-top:0">ITIC / CBEMA</h2>
+                    <div class="itic-box" id="itic-container">
+                        <div>
+                            <span class="ic" id="itic-icon">✅</span>
+                            <span class="st" id="itic-text" style="color:var(--cl-ok)">Kein Ereignis</span>
+                            <span class="sub" id="itic-subtext">Spannung im Nennbereich.</span>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
 
-        <!-- CONTROLS -->
-        <div class="w-full xl:w-[480px] bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl overflow-y-auto flex flex-col gap-6 shrink-0">
-
+        <!-- BEDIENUNG -->
+        <aside class="cl-card cl-card--pad controls">
             <div>
-                <label class="block text-sm font-medium mb-2 text-slate-300">Spannungsebene</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="voltage" value="230" class="text-blue-500 focus:ring-blue-500"><span>230V L-N</span></label>
-                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="voltage" value="400" checked class="text-blue-500 focus:ring-blue-500"><span>400V L-L (Industrie)</span></label>
+                <label class="field-label">Spannungsebene</label>
+                <div class="radio-row">
+                    <label><input type="radio" name="voltage" value="230"> 230 V L-N</label>
+                    <label><input type="radio" name="voltage" value="400" checked> 400 V L-L</label>
                 </div>
             </div>
 
-            <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-                <h3 class="text-md font-bold text-amber-400 mb-4">RMS-Netzereignisse (Dips/Swells)</h3>
-                <div class="mb-4">
-                    <div class="flex justify-between mb-1"><label class="text-sm font-medium text-slate-300">Spannungsniveau (Event)</label><span id="val-event-depth" class="text-sm text-amber-400 font-mono">100%</span></div>
-                    <input type="range" id="slider-event-depth" min="0" max="150" value="100" class="w-full event-slider">
+            <div class="group">
+                <h3 style="color:var(--cl-warn)">RMS-Netzereignisse (Dips/Swells)</h3>
+                <div class="srow">
+                    <div class="srow-head"><span class="lbl">Spannungsniveau (Event)</span><span class="val" id="val-event-depth">100%</span></div>
+                    <input type="range" id="slider-event-depth" min="0" max="150" value="100" style="accent-color:var(--cl-warn)">
                 </div>
-                <div>
-                    <div class="flex justify-between mb-1"><label class="text-sm font-medium text-slate-300">Ereignisdauer</label><span id="val-event-duration" class="text-sm text-amber-400 font-mono">0 ms</span></div>
-                    <input type="range" id="slider-event-duration" min="0" max="1000" step="5" value="0" class="w-full event-slider">
-                </div>
-            </div>
-
-            <div class="bg-red-900/20 p-4 rounded-lg border border-red-900/50">
-                <h3 class="text-md font-bold text-red-400 mb-3 flex items-center gap-2"><span>⚡ Transiente Schadensbilder</span></h3>
-                <div class="space-y-3">
-                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-igbt" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">IGBT-Zerstörung (Resonanz)</span></div></label>
-                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-triac" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Unsauberer Nulldurchgang (TRIAC)</span></div></label>
-                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-transient" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Transientes Ringing (Schalthandlung)</span></div></label>
-                    <label class="flex items-start gap-3 cursor-pointer group"><input type="checkbox" id="evt-spike" class="event-cb mt-1"><div><span class="block text-sm font-semibold text-slate-200 group-hover:text-white">Massiver Überspannungs-Spike</span></div></label>
+                <div class="srow">
+                    <div class="srow-head"><span class="lbl">Ereignisdauer</span><span class="val" id="val-event-duration">0 ms</span></div>
+                    <input type="range" id="slider-event-duration" min="0" max="1000" step="5" value="0" style="accent-color:var(--cl-warn)">
                 </div>
             </div>
 
-            <div class="space-y-4 pb-4">
-                <h3 class="text-md font-bold text-blue-400 mb-2">Kontinuierliche Netzrückwirkungen</h3>
-                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Kommutierungseinbrüche</label><span id="val-notches" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-notches" min="0" max="25" value="0" class="w-full slider-accent"></div>
-                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Ungerade Oberwellen (3.–15. Ordnung)</label><span id="val-odd" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-odd" min="0" max="30" value="0" class="w-full slider-accent"></div>
-                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Gerade Oberwellen (2.–8. Ordnung)</label><span id="val-even" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-even" min="0" max="15" value="0" class="w-full slider-accent"></div>
-                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Supraharmonische (HF, ~8,5 kHz)</label><span id="val-supra" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-supra" min="0" max="30" value="0" class="w-full slider-accent"></div>
-                <div><div class="flex justify-between mb-1"><label class="text-sm text-slate-300">Flicker-Intensität</label><span id="val-flicker" class="text-sm text-blue-400">0%</span></div><input type="range" id="slider-flicker" min="0" max="15" value="0" class="w-full slider-accent"></div>
+            <div class="group danger">
+                <h3>⚡ Transiente Schadensbilder</h3>
+                <label class="check"><input type="checkbox" id="evt-igbt"><span>IGBT-Zerstörung (Resonanz)</span></label>
+                <label class="check"><input type="checkbox" id="evt-triac"><span>Unsauberer Nulldurchgang (TRIAC)</span></label>
+                <label class="check"><input type="checkbox" id="evt-transient"><span>Transientes Ringing (Schalthandlung)</span></label>
+                <label class="check"><input type="checkbox" id="evt-spike"><span>Massiver Überspannungs-Spike</span></label>
             </div>
 
-            <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-                <button id="btn-toggle-harmonics" type="button" class="w-full flex justify-between items-center text-md font-bold text-purple-400 mb-2"><span>🎛️ Einzel-Oberwellen (Ordnung 2–20)</span><span id="harmonics-toggle-icon">▾</span></button>
-                <p class="text-xs text-slate-400 mb-3">Direkter, unabhängiger Zugriff auf jede Oberwellenordnung (Amplitude relativ zur Grundschwingung).</p>
-                <div id="harmonics-grid" class="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto pr-1"></div>
+            <div class="group">
+                <h3 style="color:var(--cl-link)">Kontinuierliche Netzrückwirkungen</h3>
+                <div class="srow"><div class="srow-head"><span class="lbl">Kommutierungseinbrüche</span><span class="val" id="val-notches">0%</span></div><input type="range" id="slider-notches" min="0" max="25" value="0"></div>
+                <div class="srow"><div class="srow-head"><span class="lbl">Ungerade Oberwellen (3.–15.)</span><span class="val" id="val-odd">0%</span></div><input type="range" id="slider-odd" min="0" max="30" value="0"></div>
+                <div class="srow"><div class="srow-head"><span class="lbl">Gerade Oberwellen (2.–8.)</span><span class="val" id="val-even">0%</span></div><input type="range" id="slider-even" min="0" max="15" value="0"></div>
+                <div class="srow"><div class="srow-head"><span class="lbl">Supraharmonische (~8,5 kHz)</span><span class="val" id="val-supra">0%</span></div><input type="range" id="slider-supra" min="0" max="30" value="0"></div>
+                <div class="srow"><div class="srow-head"><span class="lbl">Flicker-Intensität</span><span class="val" id="val-flicker">0%</span></div><input type="range" id="slider-flicker" min="0" max="15" value="0"></div>
             </div>
 
-            <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded text-sm transition">↺ Alles zurücksetzen (ideales Netz)</button>
-        </div>
+            <div class="group">
+                <button id="btn-toggle-harmonics" type="button" class="collapse-btn"><span>🎛️ Einzel-Oberwellen (2–20)</span><span id="harmonics-toggle-icon">▾</span></button>
+                <p class="cl-muted" style="font-size:.78rem;margin:.5rem 0 0">Amplitude jeder Ordnung relativ zur Grundschwingung.</p>
+                <div id="harmonics-grid" class="harmonics-grid"></div>
+            </div>
+
+            <button id="btn-reset" class="cl-btn cl-btn--ghost">↺ Alles zurücksetzen (ideales Netz)</button>
+        </aside>
     </div>
 
-    <script>
+    <footer class="cl-footer" style="margin-top:2rem">
+        codeLAB365 · PQ-Simulator — didaktisches Werkzeug, qualitative Modelle (keine normativen Grenzwerte).
+    </footer>
+</div>
+
+<script>
     /* =======================================================================
-       Signal- & Analyse-Kern
+       Signal- & Analyse-Kern (numerisch verifiziert)
        ======================================================================= */
-    const FUND = 50;                 // Grundfrequenz [Hz]
-    const FFT_CYCLES = 10;           // Analysefenster = 10 Perioden = 200 ms
-    const NFFT = 8192;               // FFT-Länge (Zweierpotenz)
-    const WIN_S = FFT_CYCLES / FUND; // 0.2 s
-    const FS = NFFT / WIN_S;         // Abtastrate = 40960 Hz
-    const BIN_HZ = FS / NFFT;        // 5 Hz je Bin -> Harmonische liegen exakt auf Bins
-    const K_FUND = Math.round(FUND / BIN_HZ); // Bin der Grundschwingung (=10)
-
-    const ODD_ORDERS  = [3, 5, 7, 9, 11, 13, 15];
-    const ODD_WEIGHTS = [1, 0.5, 0.3, 0.15, 0.1, 0.08, 0.05];
-    const EVEN_ORDERS  = [2, 4, 6, 8];
-    const EVEN_WEIGHTS = [1, 0.5, 0.2, 0.1];
+    const FUND = 50, FFT_CYCLES = 10, NFFT = 8192, WIN_S = FFT_CYCLES / FUND;
+    const FS = NFFT / WIN_S, BIN_HZ = FS / NFFT, K_FUND = Math.round(FUND / BIN_HZ), NYQ = FS / 2;
+    const FULL_MS = FFT_CYCLES * 1000 / FUND; // 200 ms
+    const ODD_ORDERS = [3,5,7,9,11,13,15], ODD_WEIGHTS = [1,0.5,0.3,0.15,0.1,0.08,0.05];
+    const EVEN_ORDERS = [2,4,6,8], EVEN_WEIGHTS = [1,0.5,0.2,0.1];
     const EVENT_START_MS = 40;
+    const CUR_A = '#E8952E', CUR_B = '#9B6BE3';
 
+    function defaultView(voltage){
+        const uPeak = voltage * Math.SQRT2;
+        const half = Math.ceil(uPeak * 1.3 / 200) * 200;
+        return { t0: 0, t1: FULL_MS, v0: -half, v1: half };
+    }
     const defaultParams = () => ({
         voltageRMS: 400,
         notches: 0, odd: 0, even: 0, supra: 0, flicker: 0,
-        harmonics: new Array(21).fill(0),   // Index 2..20
+        harmonics: new Array(21).fill(0),
         eventDepth: 1.0, eventDurationMs: 0,
-        zoomX: 1, zoomY: 1, panMs: 0, lightMode: false,
         evtIgbt: false, evtTriac: false, evtTransient: false, evtSpike: false,
-        specRangeHz: 2500, specScale: 'pct'
+        specPreset: 2500, specScale: 'pct', theme: 'light',
+        scopeView: defaultView(400), specView: { f0: 0, f1: 2500 }
     });
     let params = defaultParams();
 
-    // deterministisches HF-Rauschen (zeit-/indexbasiert, reproduzierbar)
     function hashNoise(i){ const x = Math.sin(i * 127.1 + 31.7) * 43758.5453; return (x - Math.floor(x)) - 0.5; }
 
-    // Ein einziger Signalgenerator, den Oszilloskop UND FFT verwenden -> garantiert konsistent.
     function computeSample(t){
-        const tMs = t * 1000;
-        const uPeak = params.voltageRMS * Math.SQRT2;
-        const omega = 2 * Math.PI * FUND;
+        const tMs = t * 1000, uPeak = params.voltageRMS * Math.SQRT2, omega = 2 * Math.PI * FUND;
         const eventEndMs = EVENT_START_MS + params.eventDurationMs;
         const cFactor = (params.eventDurationMs > 0 && tMs >= EVENT_START_MS && tMs <= eventEndMs) ? params.eventDepth : 1.0;
 
@@ -202,449 +261,404 @@
         if (params.flicker > 0) u *= (1 + params.flicker * Math.sin(2 * Math.PI * 8 * t));
         u *= cFactor;
 
-        if (params.odd > 0){
-            let s = 0; for (let i = 0; i < ODD_ORDERS.length; i++) s += ODD_WEIGHTS[i] * Math.sin(ODD_ORDERS[i] * omega * t);
-            u += uPeak * cFactor * params.odd * s;
-        }
-        if (params.even > 0){
-            let s = 0; for (let i = 0; i < EVEN_ORDERS.length; i++) s += EVEN_WEIGHTS[i] * Math.sin(EVEN_ORDERS[i] * omega * t);
-            u += uPeak * cFactor * params.even * s;
-        }
-        let indiv = 0;
-        for (let n = 2; n <= 20; n++){ const a = params.harmonics[n]; if (a > 0) indiv += a * Math.sin(n * omega * t); }
+        if (params.odd > 0){ let s = 0; for (let i = 0; i < ODD_ORDERS.length; i++) s += ODD_WEIGHTS[i] * Math.sin(ODD_ORDERS[i] * omega * t); u += uPeak * cFactor * params.odd * s; }
+        if (params.even > 0){ let s = 0; for (let i = 0; i < EVEN_ORDERS.length; i++) s += EVEN_WEIGHTS[i] * Math.sin(EVEN_ORDERS[i] * omega * t); u += uPeak * cFactor * params.even * s; }
+        let indiv = 0; for (let n = 2; n <= 20; n++){ const a = params.harmonics[n]; if (a > 0) indiv += a * Math.sin(n * omega * t); }
         if (indiv !== 0) u += uPeak * cFactor * indiv;
+        if (params.supra > 0){ u += uPeak * cFactor * params.supra * (0.7 * Math.sin(2 * Math.PI * 8500 * t) + 0.3 * hashNoise(Math.floor(t * FS))); }
 
-        if (params.supra > 0){
-            const carrier = Math.sin(2 * Math.PI * 8500 * t);
-            const noise = hashNoise(Math.floor(t * FS));
-            u += uPeak * cFactor * params.supra * (0.7 * carrier + 0.3 * noise);
-        }
-
-        // 6 Kommutierungseinbrüche pro Periode (6-Puls-Gleichrichter), Einschnitt Richtung Null
         if (params.notches > 0){
-            const theta = ((omega * t) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            const theta = (((omega * t) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             const wN = 0.05, depth = uPeak * cFactor * params.notches * 2.0, sgn = Math.sign(Math.sin(omega * t)) || 1;
-            for (let k = 0; k < 6; k++){
-                const center = Math.PI / 6 + k * Math.PI / 3; // 30°,90°,...,330°
-                const d = Math.abs(theta - center);
-                if (d < wN) u -= sgn * depth * (1 - d / wN);
-            }
+            for (let k = 0; k < 6; k++){ const c = Math.PI / 6 + k * Math.PI / 3; const d = Math.abs(theta - c); if (d < wN) u -= sgn * depth * (1 - d / wN); }
         }
-
-        // Transiente Einzelereignisse (im 0..200 ms Fenster -> immer im FFT-Fenster enthalten)
         if (params.evtIgbt      && tMs > 82  && tMs < 92 ) u -= uPeak * 0.9 * Math.sin(2 * Math.PI * 100  * (t - 0.082)) * Math.exp(-(tMs - 82) / 5);
         if (params.evtTriac     && tMs > 97  && tMs < 103) u += uPeak * 0.3 * Math.sin(2 * Math.PI * 250  * (t - 0.097));
         if (params.evtTransient && tMs > 104 && tMs < 112) u -= uPeak * 0.7 * Math.exp(-(tMs - 104) * 0.8) * Math.cos(2 * Math.PI * 1200 * t);
         if (params.evtSpike     && tMs > 120 && tMs < 125) u += uPeak * 1.8 * Math.exp(-(tMs - 120) * 1.5) * Math.sin(2 * Math.PI * 3000 * (t - 0.120));
-
         return u;
     }
 
-    // Iterative Radix-2 FFT (in-place)
     function fft(re, im){
         const n = re.length;
-        for (let i = 1, j = 0; i < n; i++){
-            let bit = n >> 1;
-            for (; j & bit; bit >>= 1) j ^= bit;
-            j ^= bit;
-            if (i < j){ let tr = re[i]; re[i] = re[j]; re[j] = tr; let ti = im[i]; im[i] = im[j]; im[j] = ti; }
-        }
+        for (let i = 1, j = 0; i < n; i++){ let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j){ let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
         for (let len = 2; len <= n; len <<= 1){
             const ang = -2 * Math.PI / len, wRe = Math.cos(ang), wIm = Math.sin(ang);
-            for (let i = 0; i < n; i += len){
-                let curRe = 1, curIm = 0;
-                for (let k = 0; k < len / 2; k++){
-                    const a = i + k, b = i + k + len / 2;
-                    const vRe = re[b] * curRe - im[b] * curIm;
-                    const vIm = re[b] * curIm + im[b] * curRe;
-                    re[b] = re[a] - vRe; im[b] = im[a] - vIm;
-                    re[a] = re[a] + vRe; im[a] = im[a] + vIm;
-                    const nRe = curRe * wRe - curIm * wIm;
-                    curIm = curRe * wIm + curIm * wRe; curRe = nRe;
-                }
-            }
+            for (let i = 0; i < n; i += len){ let cRe = 1, cIm = 0;
+                for (let k = 0; k < len / 2; k++){ const a = i + k, b = i + k + len / 2;
+                    const vRe = re[b] * cRe - im[b] * cIm, vIm = re[b] * cIm + im[b] * cRe;
+                    re[b] = re[a] - vRe; im[b] = im[a] - vIm; re[a] += vRe; im[a] += vIm;
+                    const nRe = cRe * wRe - cIm * wIm; cIm = cRe * wIm + cIm * wRe; cRe = nRe; } }
         }
     }
 
-    let lastMag = new Float64Array(NFFT / 2); // einseitige Amplitude je Bin
-    let lastThd = 0;
-
+    let lastMag = new Float64Array(NFFT / 2), lastThd = 0;
     function computeSpectrum(){
         const re = new Float64Array(NFFT), im = new Float64Array(NFFT);
         for (let i = 0; i < NFFT; i++) re[i] = computeSample(i / FS);
         fft(re, im);
         const half = NFFT / 2;
-        for (let k = 0; k < half; k++){
-            const m = Math.hypot(re[k], im[k]);
-            lastMag[k] = (k === 0) ? m / NFFT : (2 * m / NFFT); // Amplitude in Volt
-        }
-        // THD-F aus den Bins (Harmonische 2..50, bezogen auf Grundschwingung)
-        const h1 = lastMag[K_FUND];
-        let sumSq = 0;
-        for (let n = 2; n <= 50; n++){ const k = n * K_FUND; if (k < half) sumSq += lastMag[k] * lastMag[k]; }
-        lastThd = h1 > 0 ? Math.sqrt(sumSq) / h1 * 100 : 0;
+        for (let k = 0; k < half; k++){ const m = Math.hypot(re[k], im[k]); lastMag[k] = (k === 0) ? m / NFFT : (2 * m / NFFT); }
+        const h1 = lastMag[K_FUND]; let s = 0;
+        for (let n = 2; n <= 50; n++){ const k = n * K_FUND; if (k < half) s += lastMag[k] * lastMag[k]; }
+        lastThd = h1 > 0 ? Math.sqrt(s) / h1 * 100 : 0;
         document.getElementById('thd-display').innerText = lastThd.toFixed(1);
     }
 
     /* =======================================================================
-       Rendering
+       Farb-Auflösung aus codeLAB365-Tokens (themenabhängig)
        ======================================================================= */
-    const scopeCanvas = document.getElementById('scopeCanvas');
-    const scopeCtx = scopeCanvas.getContext('2d');
-    const specCanvas = document.getElementById('specCanvas');
-    const specCtx = specCanvas.getContext('2d');
-
-    // Spektrum-Ränder (müssen zu Rendering UND Cursor-Trefferprüfung passen)
-    const SPEC_ML = 46, SPEC_MR = 12, SPEC_MT = 10, SPEC_MB = 24;
-
-    // Cursor-Zustand (Positionen normiert 0..1, bleiben bei Zoom/Bereichswechsel gültig)
-    const cursors = {
-        scope: { on: true, a: 0.33, b: 0.66, drag: null },
-        spec:  { on: true, a: 0.20, b: 0.50, drag: null }
-    };
-    const CUR_A = '#f59e0b', CUR_B = '#22d3ee';
-
-    function theme(){
-        const light = params.lightMode;
+    const _probe = document.createElement('span');
+    _probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(_probe);
+    function rc(cssColor){ _probe.style.color = '#000'; _probe.style.color = cssColor; return getComputedStyle(_probe).color || '#000'; }
+    function T(){
         return {
-            bg:   light ? '#ffffff' : '#1e293b',
-            grid: light ? '#e2e8f0' : '#334155',
-            text: light ? '#475569' : '#94a3b8',
-            zero: light ? '#94a3b8' : '#64748b',
-            accent: light ? '#0284c7' : '#38bdf8',
-            error:  light ? '#dc2626' : '#ef4444',
-            fund:   light ? '#7c3aed' : '#a855f7',
-            evt:    light ? 'rgba(245,158,11,0.20)' : 'rgba(245,158,11,0.15)'
+            surface: rc('var(--cl-surface)'), grid: rc('var(--cl-line)'), text: rc('var(--cl-muted)'),
+            accent: rc('var(--cl-signal)'), error: rc('var(--cl-err)'), fund: rc('var(--cl-primary)'),
+            strong: rc('var(--cl-text)'), page: rc('var(--cl-bg)'),
+            warnFill: rc('color-mix(in srgb, var(--cl-warn) 22%, transparent)'),
+            accentFill: rc('color-mix(in srgb, var(--cl-signal) 24%, transparent)'),
+            supraFill: rc('color-mix(in srgb, var(--cl-signal) 8%, transparent)')
         };
     }
 
+    /* =======================================================================
+       Achsen-Helfer
+       ======================================================================= */
+    function niceStep(range, target){
+        const raw = range / target, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+        let s = 10; if (n < 1.5) s = 1; else if (n < 3) s = 2; else if (n < 7) s = 5;
+        return s * mag;
+    }
+    const fmtHz = f => f >= 1000 ? (f / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + 'k' : String(Math.round(f));
+
+    /* =======================================================================
+       Rendering: Oszilloskop
+       ======================================================================= */
+    const scopeCanvas = document.getElementById('scopeCanvas'), scopeCtx = scopeCanvas.getContext('2d');
+    const specCanvas  = document.getElementById('specCanvas'),  specCtx  = specCanvas.getContext('2d');
+    const SPEC_ML = 48, SPEC_MR = 12, SPEC_MT = 10, SPEC_MB = 24;
+    const cursors = { scope: { on: true, a: 0.33, b: 0.66 }, spec: { on: true, a: 0.20, b: 0.50 } };
+
     function renderScope(ctx, W, H, opts = {}){
-        const T = theme(), centerY = H / 2;
-        const hasError = params.evtIgbt || params.evtTriac || params.evtTransient || params.evtSpike;
-        const lineCol = hasError ? T.error : T.accent;
+        const c = T(), v = params.scopeView;
+        const t0 = v.t0, t1 = v.t1, v0 = v.v0, v1 = v.v1, spanT = t1 - t0, spanV = v1 - v0;
+        const xOf = ms => ((ms - t0) / spanT) * W;
+        const yOf = volt => ((v1 - volt) / spanV) * H;
 
-        ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
-
-        const uPeak = params.voltageRMS * Math.SQRT2;
-        const durationMs = 200 / params.zoomX;
-        const startMs = Math.min(params.panMs, Math.max(0, 200 - durationMs));
-        const endMs = startMs + durationMs;
-        const scaleY = (H / 2) / (1000 / params.zoomY);
+        ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
 
         // Raster
-        ctx.strokeStyle = T.grid; ctx.lineWidth = 1; ctx.beginPath();
-        ctx.fillStyle = T.text; ctx.font = '11px sans-serif';
-        const gridStepMs = durationMs <= 60 ? 5 : 10;
-        for (let ms = Math.ceil(startMs / gridStepMs) * gridStepMs; ms <= endMs; ms += gridStepMs){
-            const x = ((ms - startMs) / durationMs) * W; ctx.moveTo(x, 0); ctx.lineTo(x, H);
-            if (ms % (gridStepMs * 2) === 0) ctx.fillText(`${ms}ms`, x + 3, H - 5);
-        }
-        for (let v = 0; v <= (1000 / params.zoomY); v += 200){
-            const yP = centerY - v * scaleY, yN = centerY + v * scaleY;
-            ctx.moveTo(0, yP); ctx.lineTo(W, yP); ctx.moveTo(0, yN); ctx.lineTo(W, yN);
-            if (v > 0){ ctx.fillText(`+${v}V`, 5, yP - 4); ctx.fillText(`-${v}V`, 5, yN - 4); }
-        }
+        ctx.strokeStyle = c.grid; ctx.lineWidth = 1; ctx.fillStyle = c.text; ctx.font = '11px var(--cl-font-mono), monospace';
+        ctx.beginPath();
+        const tStep = niceStep(spanT, 8);
+        for (let ms = Math.ceil(t0 / tStep) * tStep; ms <= t1 + 1e-6; ms += tStep){ const x = xOf(ms); ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+        const vStep = niceStep(spanV, 6);
+        for (let volt = Math.ceil(v0 / vStep) * vStep; volt <= v1 + 1e-6; volt += vStep){ const y = yOf(volt); ctx.moveTo(0, y); ctx.lineTo(W, y); }
         ctx.stroke();
+        // Achsbeschriftung
+        ctx.textAlign = 'left';
+        for (let ms = Math.ceil(t0 / tStep) * tStep; ms <= t1 + 1e-6; ms += tStep){ const x = xOf(ms); if (x > 14 && x < W - 4) ctx.fillText((tStep < 1 ? ms.toFixed(1) : Math.round(ms)) + ' ms', x + 3, H - 5); }
+        for (let volt = Math.ceil(v0 / vStep) * vStep; volt <= v1 + 1e-6; volt += vStep){ const y = yOf(volt); if (Math.abs(volt) > 1e-6 && y > 10 && y < H - 10) ctx.fillText((volt > 0 ? '+' : '') + Math.round(volt) + ' V', 4, y - 3); }
 
-        ctx.strokeStyle = T.zero; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(W, centerY); ctx.stroke();
+        // Nulllinie
+        if (v0 < 0 && v1 > 0){ ctx.strokeStyle = c.text; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, yOf(0)); ctx.lineTo(W, yOf(0)); ctx.stroke(); }
 
-        // RMS-Event-Markierung
+        // RMS-Event
         if (params.eventDurationMs > 0){
             const eS = EVENT_START_MS, eE = EVENT_START_MS + params.eventDurationMs;
-            if (eE > startMs && eS < endMs){
-                const sX = Math.max(0, ((eS - startMs) / durationMs) * W);
-                const eX = Math.min(W, ((eE - startMs) / durationMs) * W);
-                ctx.fillStyle = T.evt; ctx.fillRect(sX, 0, eX - sX, H);
-            }
+            if (eE > t0 && eS < t1){ const sX = Math.max(0, xOf(eS)), eX = Math.min(W, xOf(eE)); ctx.fillStyle = c.warnFill; ctx.fillRect(sX, 0, eX - sX, H); }
         }
 
         // Signal
-        ctx.beginPath(); ctx.strokeStyle = lineCol; ctx.lineWidth = params.lightMode ? 2.5 : 2; ctx.lineJoin = 'round';
-        for (let x = 0; x <= W; x++){
-            const tMs = startMs + (x / W) * durationMs;
-            const u = computeSample(tMs / 1000);
-            let y = centerY - u * scaleY; y = Math.max(-10, Math.min(H + 10, y));
-            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
+        const hasError = params.evtIgbt || params.evtTriac || params.evtTransient || params.evtSpike;
+        ctx.beginPath(); ctx.strokeStyle = hasError ? c.error : c.accent; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+        for (let x = 0; x <= W; x++){ const ms = t0 + (x / W) * spanT; let y = yOf(computeSample(ms / 1000)); y = Math.max(-20, Math.min(H + 20, y)); if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
         ctx.stroke();
 
-        // Messcursor A/B
+        // Cursor
         if (opts.cursors){
             [['a', CUR_A, 'A'], ['b', CUR_B, 'B']].forEach(([key, col, lab]) => {
-                const nx = cursors.scope[key], x = nx * W;
-                const u = computeSample((startMs + nx * durationMs) / 1000);
-                let y = centerY - u * scaleY; y = Math.max(6, Math.min(H - 6, y));
-                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]);
+                const nx = cursors.scope[key], x = nx * W, ms = t0 + nx * spanT;
+                let y = yOf(computeSample(ms / 1000)); y = Math.max(6, Math.min(H - 6, y));
+                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]);
                 ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
-                ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-                ctx.fillText(lab, Math.max(8, Math.min(W - 8, x)), 12); ctx.textAlign = 'left';
+                ctx.font = 'bold 11px var(--cl-font-mono), monospace'; ctx.textAlign = 'center'; ctx.fillText(lab, Math.max(8, Math.min(W - 8, x)), 12); ctx.textAlign = 'left';
             });
         }
     }
 
+    /* =======================================================================
+       Rendering: Spektrum
+       ======================================================================= */
     function renderSpectrum(ctx, W, H, opts = {}){
-        const T = theme();
+        const c = T(), view = params.specView;
+        const f0 = view.f0, f1 = view.f1, spanF = f1 - f0;
         const mL = SPEC_ML, mR = SPEC_MR, mT = SPEC_MT, mB = SPEC_MB;
         const plotW = W - mL - mR, plotH = H - mT - mB;
-        const maxHz = params.specRangeHz;
-        const isLog = params.specScale === 'log';
-        const h1 = lastMag[K_FUND] || 1e-9;
+        const isLog = params.specScale === 'log', h1 = lastMag[K_FUND] || 1e-9;
+        const xOf = f => mL + ((f - f0) / spanF) * plotW;
 
-        ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
 
-        const xOf = f => mL + (f / maxHz) * plotW;
-        // y-Mapping
-        const LOG_FLOOR = -60; // dBc
+        // y-Skala
+        const LOG_FLOOR = -60;
         let pctMax = 2;
-        if (!isLog){
-            const kMax = Math.min(lastMag.length - 1, Math.floor(maxHz / BIN_HZ));
-            for (let k = 2; k <= kMax; k++){
-                if (Math.abs(k - K_FUND) <= 1) continue; // Grundschwingung ausklammern
-                const p = lastMag[k] / h1 * 100; if (p > pctMax) pctMax = p;
-            }
-            pctMax = pctMax * 1.15;
-        }
-        const yOf = valPct => {
-            if (isLog){
-                const db = valPct > 0 ? 20 * Math.log10(valPct / 100) : LOG_FLOOR;
-                const c = Math.max(LOG_FLOOR, Math.min(0, db));
-                return mT + (1 - (c - LOG_FLOOR) / (0 - LOG_FLOOR)) * plotH;
-            }
-            const c = Math.min(pctMax, valPct);
-            return mT + (1 - c / pctMax) * plotH;
+        const kA = Math.max(0, Math.ceil(f0 / BIN_HZ)), kB = Math.min(lastMag.length - 1, Math.floor(f1 / BIN_HZ));
+        if (!isLog){ for (let k = kA; k <= kB; k++){ if (Math.abs(k - K_FUND) <= 1) continue; const p = lastMag[k] / h1 * 100; if (p > pctMax) pctMax = p; } pctMax *= 1.15; }
+        const yOf = pct => {
+            if (isLog){ const db = pct > 0 ? 20 * Math.log10(pct / 100) : LOG_FLOOR; const cl = Math.max(LOG_FLOOR, Math.min(0, db)); return mT + (1 - (cl - LOG_FLOOR) / -LOG_FLOOR) * plotH; }
+            return mT + (1 - Math.min(pctMax, pct) / pctMax) * plotH;
         };
 
-        // Raster + y-Beschriftung
-        ctx.strokeStyle = T.grid; ctx.lineWidth = 1; ctx.fillStyle = T.text; ctx.font = '10px sans-serif';
-        ctx.textAlign = 'right';
-        if (isLog){
-            for (let db = 0; db >= LOG_FLOOR; db -= 10){
-                const y = mT + (1 - (db - LOG_FLOOR) / (0 - LOG_FLOOR)) * plotH;
-                ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
-                ctx.fillText(`${db}`, mL - 4, y + 3);
-            }
-            ctx.save(); ctx.textAlign = 'center'; ctx.translate(12, mT + plotH / 2); ctx.rotate(-Math.PI / 2);
-            ctx.fillText('dBc', 0, 0); ctx.restore();
-        } else {
-            const steps = 4;
-            for (let s = 0; s <= steps; s++){
-                const p = pctMax * s / steps, y = mT + (1 - s / steps) * plotH;
-                ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
-                ctx.fillText(`${p.toFixed(p < 10 ? 1 : 0)}%`, mL - 4, y + 3);
-            }
-        }
+        // Raster + y-Labels
+        ctx.strokeStyle = c.grid; ctx.lineWidth = 1; ctx.fillStyle = c.text; ctx.font = '10px var(--cl-font-mono), monospace'; ctx.textAlign = 'right';
+        if (isLog){ for (let db = 0; db >= LOG_FLOOR; db -= 10){ const y = mT + (1 - (db - LOG_FLOOR) / -LOG_FLOOR) * plotH; ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke(); ctx.fillText(db + '', mL - 4, y + 3); } }
+        else { for (let s = 0; s <= 4; s++){ const p = pctMax * s / 4, y = mT + (1 - s / 4) * plotH; ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke(); ctx.fillText(p.toFixed(p < 10 ? 1 : 0) + '%', mL - 4, y + 3); } }
 
-        // x-Raster (Frequenz) + Harmonischen-Marker
+        // x-Raster
         ctx.textAlign = 'center';
-        const fStep = maxHz <= 1000 ? 100 : (maxHz <= 2500 ? 250 : (maxHz <= 10000 ? 1000 : 2000));
-        for (let f = 0; f <= maxHz + 1; f += fStep){
-            const x = xOf(f);
-            ctx.strokeStyle = T.grid; ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, mT + plotH); ctx.stroke();
-            ctx.fillStyle = T.text; ctx.fillText(f >= 1000 ? `${(f/1000)}k` : `${f}`, x, H - 8);
-        }
-        ctx.fillStyle = T.text; ctx.fillText('Hz', W - mR - 6, H - 8);
+        const fStep = niceStep(spanF, 8);
+        for (let f = Math.ceil(f0 / fStep) * fStep; f <= f1 + 1e-6; f += fStep){ const x = xOf(f); if (x < mL - 1 || x > W - mR + 1) continue; ctx.strokeStyle = c.grid; ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, mT + plotH); ctx.stroke(); ctx.fillStyle = c.text; ctx.fillText(fmtHz(f), x, H - 8); }
+        ctx.fillText('Hz', W - mR - 4, H - 8);
 
-        // Supraharmonischer Bereich (>2 kHz) dezent markieren
-        if (maxHz > 2000){
-            const sx = xOf(2000);
-            ctx.fillStyle = params.lightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)';
-            ctx.fillRect(sx, mT, (W - mR) - sx, plotH);
-        }
+        // Supra-Bereich (>2 kHz)
+        if (f1 > 2000){ const sx = Math.max(mL, xOf(2000)); ctx.fillStyle = c.supraFill; ctx.fillRect(sx, mT, (W - mR) - sx, plotH); }
 
-        // Spektrum als Fläche
-        const kMaxDraw = Math.min(lastMag.length - 1, Math.floor(maxHz / BIN_HZ));
-        const baseY = mT + plotH;
-        ctx.beginPath(); ctx.moveTo(mL, baseY);
-        for (let k = 0; k <= kMaxDraw; k++){
-            const f = k * BIN_HZ; const p = lastMag[k] / h1 * 100;
-            ctx.lineTo(xOf(f), yOf(p));
-        }
-        ctx.lineTo(xOf(kMaxDraw * BIN_HZ), baseY); ctx.closePath();
-        ctx.fillStyle = params.lightMode ? 'rgba(2,132,199,0.25)' : 'rgba(56,189,248,0.22)';
-        ctx.fill();
+        // Spektrumfläche
+        ctx.beginPath(); ctx.moveTo(xOf(kA * BIN_HZ), mT + plotH);
+        for (let k = kA; k <= kB; k++) ctx.lineTo(xOf(k * BIN_HZ), yOf(lastMag[k] / h1 * 100));
+        ctx.lineTo(xOf(kB * BIN_HZ), mT + plotH); ctx.closePath(); ctx.fillStyle = c.accentFill; ctx.fill();
         ctx.beginPath();
-        for (let k = 0; k <= kMaxDraw; k++){
-            const f = k * BIN_HZ; const p = lastMag[k] / h1 * 100;
-            const x = xOf(f), y = yOf(p);
-            if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = T.accent; ctx.lineWidth = 1.5; ctx.stroke();
+        for (let k = kA; k <= kB; k++){ const x = xOf(k * BIN_HZ), y = yOf(lastMag[k] / h1 * 100); if (k === kA) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+        ctx.strokeStyle = c.accent; ctx.lineWidth = 1.5; ctx.stroke();
 
-        // Grundschwingung + Ordnungs-Labels an markanten Harmonischen
-        const xF = xOf(FUND);
-        ctx.strokeStyle = T.fund; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
-        ctx.beginPath(); ctx.moveTo(xF, mT); ctx.lineTo(xF, mT + plotH); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = T.fund; ctx.textAlign = 'left'; ctx.font = 'bold 10px sans-serif';
-        ctx.fillText('H1', xF + 3, mT + 11);
+        // Grundschwingung + Ordnungslabels
+        if (FUND >= f0 && FUND <= f1){ const xF = xOf(FUND); ctx.strokeStyle = c.fund; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(xF, mT); ctx.lineTo(xF, mT + plotH); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = c.fund; ctx.font = 'bold 10px var(--cl-font-mono), monospace'; ctx.textAlign = 'left'; ctx.fillText('H1', xF + 3, mT + 11); }
+        ctx.fillStyle = c.text; ctx.font = '9px var(--cl-font-mono), monospace'; ctx.textAlign = 'center';
+        for (let n = 2; n * FUND <= f1; n++){ if (n * FUND < f0) continue; const k = n * K_FUND; if (k >= lastMag.length) break; const p = lastMag[k] / h1 * 100; if (p > 1.5){ const x = xOf(n * FUND); ctx.fillText('H' + n, x, Math.max(mT + 9, yOf(p) - 4)); } }
 
-        ctx.fillStyle = T.text; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
-        const nMax = Math.floor(maxHz / FUND);
-        for (let n = 2; n <= nMax; n++){
-            const k = n * K_FUND; if (k >= lastMag.length) break;
-            const p = lastMag[k] / h1 * 100;
-            if (p > 1.5){ const x = xOf(n * FUND); ctx.fillText(`H${n}`, x, Math.max(mT + 9, yOf(p) - 4)); }
-        }
-
-        // Messcursor A/B
+        // Cursor
         if (opts.cursors){
             [['a', CUR_A, 'A'], ['b', CUR_B, 'B']].forEach(([key, col, lab]) => {
-                const nx = cursors.spec[key], x = mL + nx * plotW, f = nx * maxHz;
-                const k = Math.min(lastMag.length - 1, Math.round(f / BIN_HZ));
-                const p = lastMag[k] / h1 * 100; let y = yOf(p); y = Math.max(mT + 4, Math.min(mT + plotH - 2, y));
-                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-                ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, mT + plotH); ctx.stroke(); ctx.setLineDash([]);
+                const nx = cursors.spec[key], x = mL + nx * plotW, f = f0 + nx * spanF;
+                const k = Math.min(lastMag.length - 1, Math.max(0, Math.round(f / BIN_HZ)));
+                let y = yOf(lastMag[k] / h1 * 100); y = Math.max(mT + 4, Math.min(mT + plotH - 2, y));
+                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, mT + plotH); ctx.stroke(); ctx.setLineDash([]);
                 ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
-                ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-                ctx.fillText(lab, Math.max(mL + 8, Math.min(W - 8, x)), mT + 11);
+                ctx.font = 'bold 11px var(--cl-font-mono), monospace'; ctx.textAlign = 'center'; ctx.fillText(lab, Math.max(mL + 8, Math.min(W - 8, x)), mT + 11);
             });
         }
         ctx.textAlign = 'left';
     }
 
-    // On-Screen-Wrapper mit korrektem DPR
-    function paint(canvas, ctx, renderFn){
-        const rect = canvas.parentElement.getBoundingClientRect();
-        const W = Math.max(50, rect.width), H = Math.max(50, rect.height);
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = W * dpr; canvas.height = H * dpr;
-        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        renderFn(ctx, W, H);
+    /* =======================================================================
+       Zeichen-Scheduler
+       ======================================================================= */
+    function paint(canvas, ctx, fn){
+        const rect = canvas.getBoundingClientRect(), W = Math.max(50, rect.width), H = Math.max(50, rect.height), dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); fn(ctx, W, H);
     }
-
     let needSpec = false, scheduled = false;
     function drawFrame(){
         if (needSpec){ needSpec = false; computeSpectrum(); }
         paint(scopeCanvas, scopeCtx, (c, W, H) => renderScope(c, W, H, { cursors: cursors.scope.on }));
-        paint(specCanvas, specCtx, (c, W, H) => renderSpectrum(c, W, H, { cursors: cursors.spec.on }));
+        paint(specCanvas,  specCtx,  (c, W, H) => renderSpectrum(c, W, H, { cursors: cursors.spec.on }));
         updateReadouts();
     }
     function schedule(){ if (scheduled) return; scheduled = true; requestAnimationFrame(() => { scheduled = false; drawFrame(); }); }
-    function refresh(){ needSpec = true; schedule(); } // Signal geändert -> FFT neu berechnen
-    function render(){ schedule(); }                   // nur neu zeichnen (z.B. Cursor bewegt)
-
+    function refresh(){ needSpec = true; schedule(); }
+    function render(){ schedule(); }
     window.addEventListener('resize', render);
 
-    // ---- Cursor: Wertanzeige ----
-    function scopeWindow(){
-        const durationMs = 200 / params.zoomX;
-        const startMs = Math.min(params.panMs, Math.max(0, 200 - durationMs));
-        return { startMs, durationMs };
-    }
+    /* =======================================================================
+       Cursor-Wertanzeige
+       ======================================================================= */
     function updateReadouts(){
+        const v = params.scopeView, spanT = v.t1 - v.t0;
         const sr = document.getElementById('scope-readout');
         if (cursors.scope.on){
-            const { startMs, durationMs } = scopeWindow();
-            const tA = startMs + cursors.scope.a * durationMs, tB = startMs + cursors.scope.b * durationMs;
+            const tA = v.t0 + cursors.scope.a * spanT, tB = v.t0 + cursors.scope.b * spanT;
             const uA = computeSample(tA / 1000), uB = computeSample(tB / 1000);
             const dt = Math.abs(tB - tA), du = uB - uA, fq = dt > 0 ? 1000 / dt : 0;
             sr.innerHTML =
                 `<span style="color:${CUR_A}">A: t=${tA.toFixed(2)} ms · U=${uA.toFixed(1)} V</span>` +
                 `<span style="color:${CUR_B}">B: t=${tB.toFixed(2)} ms · U=${uB.toFixed(1)} V</span>` +
-                `<span class="text-slate-100">Δt=${dt.toFixed(2)} ms${dt > 0 ? ` (≙ ${fq.toFixed(1)} Hz)` : ''} · ΔU=${du.toFixed(1)} V</span>`;
+                `<span style="color:var(--cl-text)">Δt=${dt.toFixed(2)} ms${dt > 0 ? ` (≙ ${fq.toFixed(1)} Hz)` : ''} · ΔU=${du.toFixed(1)} V</span>`;
         } else sr.innerHTML = '';
 
+        const view = params.specView, spanF = view.f1 - view.f0, h1 = lastMag[K_FUND] || 1e-9;
         const pr = document.getElementById('spec-readout');
         if (cursors.spec.on){
-            const maxHz = params.specRangeHz, h1 = lastMag[K_FUND] || 1e-9;
-            const fA = cursors.spec.a * maxHz, fB = cursors.spec.b * maxHz;
+            const fA = view.f0 + cursors.spec.a * spanF, fB = view.f0 + cursors.spec.b * spanF;
             const kA = Math.min(lastMag.length - 1, Math.round(fA / BIN_HZ)), kB = Math.min(lastMag.length - 1, Math.round(fB / BIN_HZ));
-            const pA = lastMag[kA] / h1 * 100, pB = lastMag[kB] / h1 * 100;
-            const df = Math.abs(fB - fA), dp = pB - pA;
+            const pA = lastMag[kA] / h1 * 100, pB = lastMag[kB] / h1 * 100, df = Math.abs(fB - fA), dp = pB - pA;
             pr.innerHTML =
                 `<span style="color:${CUR_A}">A: f=${fA.toFixed(0)} Hz (H${(fA / FUND).toFixed(1)}) · ${pA.toFixed(2)} %</span>` +
                 `<span style="color:${CUR_B}">B: f=${fB.toFixed(0)} Hz (H${(fB / FUND).toFixed(1)}) · ${pB.toFixed(2)} %</span>` +
-                `<span class="text-slate-100">Δf=${df.toFixed(0)} Hz · ΔAmp=${dp.toFixed(2)} %</span>`;
+                `<span style="color:var(--cl-text)">Δf=${df.toFixed(0)} Hz · ΔAmp=${dp.toFixed(2)} %</span>`;
         } else pr.innerHTML = '';
     }
 
-    // ---- Cursor: Ziehen (Maus/Touch/Pen über Pointer-Events) ----
-    function nxScope(e){ const r = scopeCanvas.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); }
-    function nxSpec(e){ const r = specCanvas.getBoundingClientRect(); const pw = r.width - SPEC_ML - SPEC_MR; return Math.min(1, Math.max(0, ((e.clientX - r.left) - SPEC_ML) / pw)); }
-    function attachCursor(canvas, state, nxFn){
-        canvas.addEventListener('pointerdown', e => {
-            if (!state.on) return;
-            const nx = nxFn(e);
-            state.drag = Math.abs(nx - state.a) <= Math.abs(nx - state.b) ? 'a' : 'b';
-            state[state.drag] = nx; canvas.setPointerCapture(e.pointerId); render();
-        });
-        canvas.addEventListener('pointermove', e => { if (state.drag){ state[state.drag] = nxFn(e); render(); } });
-        const end = () => { state.drag = null; };
-        canvas.addEventListener('pointerup', end);
-        canvas.addEventListener('pointercancel', end);
+    /* =======================================================================
+       Interaktion: Zoom (Rad) · Pan (Ziehen) · Cursor · Doppelklick-Reset
+       ======================================================================= */
+    function resetScopeView(){ params.scopeView = defaultView(params.voltageRMS); }
+    function resetSpecView(){ params.specView = { f0: 0, f1: params.specPreset }; }
+
+    function scopeHitCursor(px, W){ if (!cursors.scope.on) return null; const dA = Math.abs(cursors.scope.a * W - px), dB = Math.abs(cursors.scope.b * W - px); if (Math.min(dA, dB) > 9) return null; return dA <= dB ? 'a' : 'b'; }
+    function specHitCursor(px, W){ if (!cursors.spec.on) return null; const plotW = W - SPEC_ML - SPEC_MR; const ax = SPEC_ML + cursors.spec.a * plotW, bx = SPEC_ML + cursors.spec.b * plotW; const dA = Math.abs(ax - px), dB = Math.abs(bx - px); if (Math.min(dA, dB) > 9) return null; return dA <= dB ? 'a' : 'b'; }
+
+    // Zoom-/Pan-Mathematik als wiederverwendbare Funktionen (Mausrad UND Pinch rufen dieselbe Logik)
+    function zoomScopeAt(fx, fy, factor, axis){
+        const v = params.scopeView;
+        if (axis === 'voltage' || axis === 'both'){ const spanV = v.v1 - v.v0, vc = v.v1 - fy * spanV; let nsV = Math.min(200000, Math.max(20, spanV / factor)); v.v1 = vc + fy * nsV; v.v0 = v.v1 - nsV; }
+        if (axis === 'time' || axis === 'both'){ const spanT = v.t1 - v.t0, tc = v.t0 + fx * spanT; let nsT = Math.min(FULL_MS, Math.max(0.5, spanT / factor)); let nt0 = tc - fx * nsT; nt0 = Math.min(Math.max(0, nt0), FULL_MS - nsT); v.t0 = nt0; v.t1 = nt0 + nsT; }
     }
-    attachCursor(scopeCanvas, cursors.scope, nxScope);
-    attachCursor(specCanvas, cursors.spec, nxSpec);
+    function panScopeByPixels(dxPix, dyPix, rect){
+        const v = params.scopeView, spanT = v.t1 - v.t0, spanV = v.v1 - v.v0;
+        let dt = -(dxPix / rect.width) * spanT, dv = (dyPix / rect.height) * spanV;
+        if (v.t0 + dt < 0) dt = -v.t0; if (v.t1 + dt > FULL_MS) dt = FULL_MS - v.t1;
+        v.t0 += dt; v.t1 += dt; v.v0 += dv; v.v1 += dv;
+    }
+    function zoomSpecAt(fx, factor){
+        const view = params.specView, spanF = view.f1 - view.f0, fc = view.f0 + fx * spanF;
+        let ns = Math.min(NYQ, Math.max(25, spanF / factor)); let nf0 = fc - fx * ns; nf0 = Math.min(Math.max(0, nf0), NYQ - ns);
+        view.f0 = nf0; view.f1 = nf0 + ns;
+    }
+    function panSpecByPixels(dxPix, plotW){
+        const view = params.specView, spanF = view.f1 - view.f0;
+        let df = -(dxPix / plotW) * spanF;
+        if (view.f0 + df < 0) df = -view.f0; if (view.f1 + df > NYQ) df = NYQ - view.f1;
+        view.f0 += df; view.f1 += df;
+    }
+
+    // --- Scope: Maus (Rad+Ziehen) UND Touch (1 Finger = verschieben, 2 Finger = Pinch-Zoom) ---
+    let sDrag = null;                 // Ein-Punkt-Interaktion: {mode:'cur'|'pan', key?, lastX, lastY}
+    const scopePts = new Map();       // aktive Pointer für Pinch-Erkennung
+    let scopePinch = null;            // {lastDist, lastMidX, lastMidY}
+
+    scopeCanvas.addEventListener('pointerdown', e => {
+        scopeCanvas.setPointerCapture(e.pointerId);
+        scopePts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (scopePts.size >= 2){
+            sDrag = null; scopeCanvas.style.cursor = 'crosshair';
+            const [p1, p2] = [...scopePts.values()];
+            scopePinch = { lastDist: Math.hypot(p1.x - p2.x, p1.y - p2.y), lastMidX: (p1.x + p2.x) / 2, lastMidY: (p1.y + p2.y) / 2 };
+            return;
+        }
+        const r = scopeCanvas.getBoundingClientRect(), px = e.clientX - r.left;
+        const key = scopeHitCursor(px, r.width);
+        if (key){ sDrag = { mode: 'cur', key }; cursors.scope[key] = Math.min(1, Math.max(0, px / r.width)); }
+        else { sDrag = { mode: 'pan', lastX: e.clientX, lastY: e.clientY }; scopeCanvas.style.cursor = 'grabbing'; }
+        render();
+    });
+    scopeCanvas.addEventListener('pointermove', e => {
+        if (scopePts.has(e.pointerId)) scopePts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (scopePinch && scopePts.size >= 2){
+            const [p1, p2] = [...scopePts.values()];
+            const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y), midX = (p1.x + p2.x) / 2, midY = (p1.y + p2.y) / 2;
+            const r = scopeCanvas.getBoundingClientRect();
+            const factor = dist / (scopePinch.lastDist || dist);
+            zoomScopeAt((midX - r.left) / r.width, (midY - r.top) / r.height, factor, 'both');
+            panScopeByPixels(midX - scopePinch.lastMidX, midY - scopePinch.lastMidY, r);
+            scopePinch = { lastDist: dist, lastMidX: midX, lastMidY: midY };
+            render(); return;
+        }
+        if (!sDrag) return; const r = scopeCanvas.getBoundingClientRect();
+        if (sDrag.mode === 'cur'){ cursors.scope[sDrag.key] = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); render(); return; }
+        panScopeByPixels(e.clientX - sDrag.lastX, e.clientY - sDrag.lastY, r);
+        sDrag.lastX = e.clientX; sDrag.lastY = e.clientY; render();
+    });
+    const scopeEnd = e => {
+        if (e && scopePts.has(e.pointerId)) scopePts.delete(e.pointerId);
+        if (scopePts.size < 2) scopePinch = null;
+        if (scopePts.size === 0){ sDrag = null; scopeCanvas.style.cursor = 'crosshair'; }
+    };
+    scopeCanvas.addEventListener('pointerup', scopeEnd);
+    scopeCanvas.addEventListener('pointercancel', scopeEnd);
+    scopeCanvas.addEventListener('dblclick', () => { resetScopeView(); render(); });
+    scopeCanvas.addEventListener('wheel', e => {
+        e.preventDefault(); const r = scopeCanvas.getBoundingClientRect();
+        const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height, factor = Math.exp(-e.deltaY * 0.0015);
+        zoomScopeAt(fx, fy, factor, e.shiftKey ? 'voltage' : 'time');
+        render();
+    }, { passive: false });
+
+    // --- Spektrum: Maus (Rad+Ziehen) UND Touch (1 Finger = verschieben, 2 Finger = Pinch-Zoom, nur Frequenzachse) ---
+    let pDrag = null;
+    const specPts = new Map();
+    let specPinch = null;
+
+    specCanvas.addEventListener('pointerdown', e => {
+        specCanvas.setPointerCapture(e.pointerId);
+        specPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (specPts.size >= 2){
+            pDrag = null; specCanvas.style.cursor = 'crosshair';
+            const [p1, p2] = [...specPts.values()];
+            specPinch = { lastDist: Math.hypot(p1.x - p2.x, p1.y - p2.y), lastMidX: (p1.x + p2.x) / 2 };
+            return;
+        }
+        const r = specCanvas.getBoundingClientRect(), px = e.clientX - r.left, plotW = r.width - SPEC_ML - SPEC_MR;
+        const key = specHitCursor(px, r.width);
+        if (key){ pDrag = { mode: 'cur', key }; cursors.spec[key] = Math.min(1, Math.max(0, (px - SPEC_ML) / plotW)); }
+        else { pDrag = { mode: 'pan', lastX: e.clientX }; specCanvas.style.cursor = 'grabbing'; }
+        render();
+    });
+    specCanvas.addEventListener('pointermove', e => {
+        if (specPts.has(e.pointerId)) specPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (specPinch && specPts.size >= 2){
+            const [p1, p2] = [...specPts.values()];
+            const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y), midX = (p1.x + p2.x) / 2;
+            const r = specCanvas.getBoundingClientRect(), plotW = r.width - SPEC_ML - SPEC_MR;
+            const factor = dist / (specPinch.lastDist || dist);
+            zoomSpecAt(Math.min(1, Math.max(0, (midX - r.left - SPEC_ML) / plotW)), factor);
+            panSpecByPixels(midX - specPinch.lastMidX, plotW);
+            specPinch = { lastDist: dist, lastMidX: midX };
+            render(); return;
+        }
+        if (!pDrag) return; const r = specCanvas.getBoundingClientRect(), plotW = r.width - SPEC_ML - SPEC_MR;
+        if (pDrag.mode === 'cur'){ cursors.spec[pDrag.key] = Math.min(1, Math.max(0, (e.clientX - r.left - SPEC_ML) / plotW)); render(); return; }
+        panSpecByPixels(e.clientX - pDrag.lastX, plotW);
+        pDrag.lastX = e.clientX; render();
+    });
+    const specEnd = e => {
+        if (e && specPts.has(e.pointerId)) specPts.delete(e.pointerId);
+        if (specPts.size < 2) specPinch = null;
+        if (specPts.size === 0){ pDrag = null; specCanvas.style.cursor = 'crosshair'; }
+    };
+    specCanvas.addEventListener('pointerup', specEnd);
+    specCanvas.addEventListener('pointercancel', specEnd);
+    specCanvas.addEventListener('dblclick', () => { resetSpecView(); render(); });
+    specCanvas.addEventListener('wheel', e => {
+        e.preventDefault(); const r = specCanvas.getBoundingClientRect(), plotW = r.width - SPEC_ML - SPEC_MR;
+        const fx = Math.min(1, Math.max(0, (e.clientX - r.left - SPEC_ML) / plotW));
+        zoomSpecAt(fx, Math.exp(-e.deltaY * 0.0015)); render();
+    }, { passive: false });
+
     document.getElementById('cur-scope').addEventListener('change', e => { cursors.scope.on = e.target.checked; render(); });
     document.getElementById('cur-spec').addEventListener('change', e => { cursors.spec.on = e.target.checked; render(); });
+    document.getElementById('btn-reset-scope').addEventListener('click', () => { resetScopeView(); render(); });
+    document.getElementById('btn-reset-spec').addEventListener('click', () => { resetSpecView(); render(); });
 
     /* =======================================================================
        Ursachen-Datenbank
        ======================================================================= */
     const causesDB = {
-        dip: { title: "🟠 Spannungseinbruch (Dip)", isDamage: false, items: [
-            "Anlauf großer Asynchronmaschinen / Pumpen im selben oder benachbarten Abzweig.",
-            "Kurzschlüsse im vorgelagerten Netz (Fehlerklärung durch Schutzeinrichtungen).",
-            "Zuschalten sehr großer Lasten (Öfen, Schweißanlagen) an weicher Netzimpedanz."
-        ]},
-        swell: { title: "🟠 Spannungsanhebung (Swell)", isDamage: false, items: [
-            "Lastabwurf großer Verbraucher (Spannung steigt kurzzeitig an).",
-            "Erdschluss in einer anderen Phase hebt die beiden gesunden Außenleiter an.",
-            "Zuschalten / Fehlabstimmung von Kompensationskondensatoren."
-        ]},
-        notches: { title: "Kommutierungseinbrüche", items: [
-            "Netzgeführte Stromrichter (z.B. B6-Thyristorbrücken in großen Spritzgießmaschinen).",
-            "Umschaltvorgänge in Frequenzumrichtern ohne ausreichende Netzdrosseln.",
-            "Leistungsstarke Schweißanlagen mit Phasenanschnittsteuerung."
-        ]},
-        odd: { title: "Ungerade Oberwellen (3.–15. Ordnung)", items: [
-            "Unkompensierte B6-Gleichrichter (AFE deaktiviert oder passiv).",
-            "Geballte einphasige IT-Lasten (Serverfarmen: 3., 9. und 15. Harmonische).",
-            "Nichtlineare LED-Beleuchtung ohne aktive Power Factor Correction (PFC)."
-        ]},
-        even: { title: "Gerade Oberwellen (2.–8. Ordnung)", items: [
-            "Asymmetrische Phasenanschnittsteuerung (ungleiche Zündwinkel der Halbwellen).",
-            "Defekte Dioden in Brückengleichrichtern (Halbwelleneffekt).",
-            "Gleichstromvormagnetisierung von Leistungstransformatoren."
-        ]},
-        supra: { title: "Supraharmonische (HF, 2–150 kHz)", items: [
-            "Taktfrequenzen von Active-Front-End-(AFE)-Umrichtern (meist 2–15 kHz).",
-            "Einstreuungen durch PV-Wechselrichter und DC-Schnellladeinfrastruktur.",
-            "Powerline Communication (PLC) / Rundsteuertechnik stört sensible Elektronik."
-        ]},
-        flicker: { title: "Flicker (Amplitudenmodulation)", items: [
-            "Lichtbogenöfen in der Stahl- und Schwerindustrie.",
-            "Taktbetrieb großer industrieller Punktschweißmaschinen.",
-            "Schweranlauf großer Asynchronmaschinen im benachbarten Netzabzweig."
-        ]},
-        harmonicsIndiv: { title: "🎛️ Gezielte Einzel-Oberwellen (Ordnung 2–20)", items: [
-            "Resonanzanregung einzelner Ordnungen durch Kompensationskondensatoren (Parallelresonanz mit Netzimpedanz).",
-            "Interharmonische Kopplungen durch parallel betriebene, unterschiedlich getaktete Umrichter.",
-            "Charakteristische Pulszahl von Gleichrichtern (12-, 18-, 24-pulsig) erzeugt bestimmte Einzelordnungen."
-        ]},
-        evtIgbt: { title: "🔴 IGBT-Zerstörung (Resonanz / Verzerrung)", isDamage: true, items: [
-            "Ursache: Aufschaukeln von Resonanzen durch Filterkreise benachbarter Anlagen.",
-            "Auswirkung: Strom- (di/dt) oder Spannungssteilheit (du/dt) überschreitet das Limit.",
-            "Folge: Durchlegieren der IGBTs/Thyristoren – Baugruppe brennt ab."
-        ]},
-        evtTriac: { title: "🔴 TRIAC-Fehlzündung (Unsauberer Nulldurchgang)", isDamage: true, items: [
-            "Ursache: Verzerrungen verursachen Mehrfachnulldurchgänge am Detektor.",
-            "Auswirkung: TRIACs (z.B. L1-L2) zünden im falschen Phasenwinkel.",
-            "Folge: Magnetspannplatten bauen keine volle Haltekraft auf (Sicherheitsrisiko)."
-        ]},
-        evtTransient: { title: "🔴 Transientes Ringing", isDamage: true, items: [
-            "Ursache: Zuschalten großer Kondensatorbänke oder MS-Schalthandlungen.",
-            "Auswirkung: Tiefer Spannungseinbruch am Scheitelpunkt mit hochfrequentem Ausschwingen.",
-            "Folge: Belastet Isolationsschichten und lässt Varistoren schleichend altern."
-        ]},
-        evtSpike: { title: "🔴 Massiver Überspannungs-Spike", isDamage: true, items: [
-            "Ursache: Naher Blitzschlag oder Abriss massiver Kurzschlussströme.",
-            "Auswirkung: Ein extrem steiler Peak, der den Nennbereich weit übersteigt.",
-            "Folge: Akuter Durchschlag von Motorisolationen oder Zerstörung von Netzteilen."
-        ]}
+        dip: { title: "🟠 Spannungseinbruch (Dip)", items: ["Anlauf großer Asynchronmaschinen / Pumpen im selben oder benachbarten Abzweig.", "Kurzschlüsse im vorgelagerten Netz (Fehlerklärung durch Schutzeinrichtungen).", "Zuschalten sehr großer Lasten (Öfen, Schweißanlagen) an weicher Netzimpedanz."] },
+        swell: { title: "🟠 Spannungsanhebung (Swell)", items: ["Lastabwurf großer Verbraucher (Spannung steigt kurzzeitig an).", "Erdschluss in einer anderen Phase hebt die gesunden Außenleiter an.", "Zuschalten / Fehlabstimmung von Kompensationskondensatoren."] },
+        notches: { title: "Kommutierungseinbrüche", items: ["Netzgeführte Stromrichter (z.B. B6-Thyristorbrücken in großen Spritzgießmaschinen).", "Umschaltvorgänge in Frequenzumrichtern ohne ausreichende Netzdrosseln.", "Leistungsstarke Schweißanlagen mit Phasenanschnittsteuerung."] },
+        odd: { title: "Ungerade Oberwellen (3.–15. Ordnung)", items: ["Unkompensierte B6-Gleichrichter (AFE deaktiviert oder passiv).", "Geballte einphasige IT-Lasten (Serverfarmen: 3., 9. und 15. Harmonische).", "Nichtlineare LED-Beleuchtung ohne aktive Power Factor Correction (PFC)."] },
+        even: { title: "Gerade Oberwellen (2.–8. Ordnung)", items: ["Asymmetrische Phasenanschnittsteuerung (ungleiche Zündwinkel der Halbwellen).", "Defekte Dioden in Brückengleichrichtern (Halbwelleneffekt).", "Gleichstromvormagnetisierung von Leistungstransformatoren."] },
+        supra: { title: "Supraharmonische (HF, 2–150 kHz)", items: ["Taktfrequenzen von Active-Front-End-(AFE)-Umrichtern (meist 2–15 kHz).", "Einstreuungen durch PV-Wechselrichter und DC-Schnellladeinfrastruktur.", "Powerline Communication (PLC) / Rundsteuertechnik stört sensible Elektronik."] },
+        flicker: { title: "Flicker (Amplitudenmodulation)", items: ["Lichtbogenöfen in der Stahl- und Schwerindustrie.", "Taktbetrieb großer industrieller Punktschweißmaschinen.", "Schweranlauf großer Asynchronmaschinen im benachbarten Netzabzweig."] },
+        harmonicsIndiv: { title: "🎛️ Gezielte Einzel-Oberwellen (2–20)", items: ["Resonanzanregung einzelner Ordnungen durch Kompensationskondensatoren (Parallelresonanz mit Netzimpedanz).", "Interharmonische Kopplungen durch parallel betriebene, unterschiedlich getaktete Umrichter.", "Charakteristische Pulszahl von Gleichrichtern (12-, 18-, 24-pulsig)."] },
+        evtIgbt: { title: "🔴 IGBT-Zerstörung (Resonanz / Verzerrung)", dmg: true, items: ["Ursache: Aufschaukeln von Resonanzen durch Filterkreise benachbarter Anlagen.", "Auswirkung: Strom- (di/dt) oder Spannungssteilheit (du/dt) überschreitet das Limit.", "Folge: Durchlegieren der IGBTs/Thyristoren – Baugruppe brennt ab."] },
+        evtTriac: { title: "🔴 TRIAC-Fehlzündung (Unsauberer Nulldurchgang)", dmg: true, items: ["Ursache: Verzerrungen verursachen Mehrfachnulldurchgänge am Detektor.", "Auswirkung: TRIACs (z.B. L1-L2) zünden im falschen Phasenwinkel.", "Folge: Magnetspannplatten bauen keine volle Haltekraft auf (Sicherheitsrisiko)."] },
+        evtTransient: { title: "🔴 Transientes Ringing", dmg: true, items: ["Ursache: Zuschalten großer Kondensatorbänke oder MS-Schalthandlungen.", "Auswirkung: Tiefer Spannungseinbruch am Scheitelpunkt mit hochfrequentem Ausschwingen.", "Folge: Belastet Isolationsschichten und lässt Varistoren schleichend altern."] },
+        evtSpike: { title: "🔴 Massiver Überspannungs-Spike", dmg: true, items: ["Ursache: Naher Blitzschlag oder Abriss massiver Kurzschlussströme.", "Auswirkung: Ein extrem steiler Peak, der den Nennbereich weit übersteigt.", "Folge: Akuter Durchschlag von Motorisolationen oder Zerstörung von Netzteilen."] }
     };
-
     function activeCauses(){
         const a = [];
         if (params.evtIgbt) a.push(causesDB.evtIgbt);
@@ -661,286 +675,150 @@
         if (params.harmonics.some(v => v > 0)) a.push(causesDB.harmonicsIndiv);
         return a;
     }
-
     function updateDiagnosis(){
-        const diag = document.getElementById('diagnosis-content');
-        const active = activeCauses();
-        if (active.length === 0){ diag.innerHTML = '<p class="text-emerald-400 font-medium">Ideales Netz: keine Störungen aktiv.</p>'; return; }
-        diag.innerHTML = active.map(evt => `
-            <div class="mb-3 bg-slate-900/50 p-3 rounded border border-slate-700 shadow-sm">
-                <span class="font-bold block mb-1 ${evt.isDamage ? 'text-red-400' : 'text-blue-300'}">${evt.title}</span>
-                <ul class="${evt.isDamage ? 'cause-list damage-list' : 'cause-list'} ml-2 text-slate-300">${evt.items.map(i => `<li>${i}</li>`).join('')}</ul>
-            </div>`).join('');
+        const diag = document.getElementById('diagnosis-content'), active = activeCauses();
+        if (!active.length){ diag.innerHTML = '<p class="diag-ok">Ideales Netz: keine Störungen aktiv.</p>'; return; }
+        diag.innerHTML = active.map(e => `<div class="diag-item ${e.dmg ? 'dmg' : ''}"><h4>${e.title}</h4><ul>${e.items.map(i => `<li>${i}</li>`).join('')}</ul></div>`).join('');
     }
 
-    // ITIC/CBEMA – an reale Stützpunkte angelehnt
     function iticClassify(depthPct, durMs){
         if (durMs === 0 || depthPct === 100) return { status: 'NONE', msg: 'Spannung im Nennbereich.' };
         if (depthPct >= 90 && depthPct <= 110) return { status: 'SAFE', msg: 'Innerhalb ±10 % (EN 50160 Normalbetrieb).' };
-        if (depthPct > 110){ // Überspannung
+        if (depthPct > 110){
             if (depthPct > 200 && durMs > 1)   return { status: 'DAMAGE', msg: 'Weit über der ITIC-Kurve – akute Zerstörungsgefahr.' };
             if (depthPct > 140 && durMs > 3)   return { status: 'DAMAGE', msg: 'Oberhalb der zulässigen Überspannungskurve.' };
             if (depthPct > 120 && durMs > 500) return { status: 'DAMAGE', msg: 'Dauer-Überspannung > 0,5 s: Bauteil-/Isolationsschaden.' };
             return { status: 'SAFE', msg: 'Kurzzeitige Überhöhung – von Varistoren abgefangen.' };
         }
-        // Unterspannung
         if (durMs <= 20) return { status: 'SAFE', msg: 'Sehr kurzer Einbruch – von Netzteil-Kondensatoren überbrückt.' };
         if (depthPct < 70)  return { status: 'FAIL', msg: 'Unter 70 % > 20 ms: Reboot/Ausfall von Elektronik.' };
         if (depthPct < 80 && durMs > 500) return { status: 'FAIL', msg: 'Unter 80 % > 0,5 s: Systemausfall wahrscheinlich.' };
         return { status: 'SAFE', msg: 'Innerhalb der ITIC-Toleranzkurve.' };
     }
-
     function updateITIC(){
-        const depth = params.eventDepth * 100, dur = params.eventDurationMs;
-        const r = iticClassify(depth, dur);
+        const r = iticClassify(params.eventDepth * 100, params.eventDurationMs);
         const icon = document.getElementById('itic-icon'), text = document.getElementById('itic-text');
         const sub = document.getElementById('itic-subtext'), cont = document.getElementById('itic-container');
         const map = {
-            NONE:   ['✅', 'Kein Ereignis', 'text-emerald-400', '#334155'],
-            SAFE:   ['🟢', 'Toleranzbereich', 'text-emerald-400', '#10b981'],
-            FAIL:   ['⚠️', 'Ausfall (Reboot)', 'text-amber-400', '#f59e0b'],
-            DAMAGE: ['💥', 'Hardwareschaden', 'text-red-500', '#ef4444']
+            NONE:   ['✅', 'Kein Ereignis',   'var(--cl-ok)',   'var(--cl-line)'],
+            SAFE:   ['🟢', 'Toleranzbereich',  'var(--cl-ok)',   'var(--cl-ok)'],
+            FAIL:   ['⚠️', 'Ausfall (Reboot)', 'var(--cl-warn)', 'var(--cl-warn)'],
+            DAMAGE: ['💥', 'Hardwareschaden',  'var(--cl-err)',  'var(--cl-err)']
         };
-        const [ic, tx, cls, bc] = map[r.status];
-        icon.innerText = ic; text.innerText = tx; text.className = `block font-bold text-lg ${cls}`;
-        cont.style.borderColor = bc; sub.innerText = r.msg;
+        const [ic, tx, col, bc] = map[r.status];
+        icon.innerText = ic; text.innerText = tx; text.style.color = col; cont.style.borderColor = bc; sub.innerText = r.msg;
     }
 
     /* =======================================================================
-       UI-Aufbau & Bindung
+       Bedienelemente
        ======================================================================= */
     const harmonicsGrid = document.getElementById('harmonics-grid');
     for (let n = 2; n <= 20; n++){
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2';
-        row.innerHTML = `
-            <span class="text-xs text-slate-400 w-9 font-mono shrink-0">H${n}</span>
-            <input type="range" id="slider-h${n}" min="0" max="50" value="0" class="w-full" style="accent-color:#a855f7">
-            <span id="val-h${n}" class="text-xs text-purple-300 font-mono w-10 text-right shrink-0">0%</span>`;
+        const row = document.createElement('div'); row.className = 'harm-row';
+        row.innerHTML = `<span class="hn">H${n}</span><input type="range" id="slider-h${n}" min="0" max="50" value="0"><span class="hv" id="val-h${n}">0%</span>`;
         harmonicsGrid.appendChild(row);
-        row.querySelector('input').addEventListener('input', (e) => {
-            const v = parseFloat(e.target.value);
-            params.harmonics[n] = v / 100;
-            document.getElementById(`val-h${n}`).innerText = `${v}%`;
-            updateDiagnosis(); refresh();
-        });
+        row.querySelector('input').addEventListener('input', e => { const v = parseFloat(e.target.value); params.harmonics[n] = v / 100; document.getElementById(`val-h${n}`).innerText = `${v}%`; updateDiagnosis(); refresh(); });
     }
-
-    const updateVal = (id, val, suffix) => document.getElementById(`val-${id}`).innerText = `${val}${suffix}`;
-
+    const updateVal = (id, val, suf) => document.getElementById(`val-${id}`).innerText = `${val}${suf}`;
     document.querySelectorAll('input[name="voltage"]').forEach(r => r.addEventListener('change', e => { params.voltageRMS = parseInt(e.target.value); refresh(); }));
-
-    ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(key => {
-        document.getElementById(`slider-${key}`).addEventListener('input', e => {
-            params[key] = parseFloat(e.target.value) / 100; updateVal(key, e.target.value, '%'); updateDiagnosis(); refresh();
-        });
-    });
-
-    document.getElementById('slider-event-depth').addEventListener('input', e => {
-        params.eventDepth = parseFloat(e.target.value) / 100; updateVal('event-depth', e.target.value, '%'); updateDiagnosis(); updateITIC(); refresh();
-    });
-    document.getElementById('slider-event-duration').addEventListener('input', e => {
-        params.eventDurationMs = parseInt(e.target.value); updateVal('event-duration', e.target.value, ' ms'); updateDiagnosis(); updateITIC(); refresh();
-    });
-
+    ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(key => document.getElementById(`slider-${key}`).addEventListener('input', e => { params[key] = parseFloat(e.target.value) / 100; updateVal(key, e.target.value, '%'); updateDiagnosis(); refresh(); }));
+    document.getElementById('slider-event-depth').addEventListener('input', e => { params.eventDepth = parseFloat(e.target.value) / 100; updateVal('event-depth', e.target.value, '%'); updateDiagnosis(); updateITIC(); refresh(); });
+    document.getElementById('slider-event-duration').addEventListener('input', e => { params.eventDurationMs = parseInt(e.target.value); updateVal('event-duration', e.target.value, ' ms'); updateDiagnosis(); updateITIC(); refresh(); });
     const evtKeyMap = { 'evt-igbt': 'evtIgbt', 'evt-triac': 'evtTriac', 'evt-transient': 'evtTransient', 'evt-spike': 'evtSpike' };
-    Object.keys(evtKeyMap).forEach(id => {
-        document.getElementById(id).addEventListener('change', e => { params[evtKeyMap[id]] = e.target.checked; updateDiagnosis(); refresh(); });
-    });
-
-    document.getElementById('btn-toggle-harmonics').addEventListener('click', () => {
-        const grid = document.getElementById('harmonics-grid'), icon = document.getElementById('harmonics-toggle-icon');
-        const hidden = grid.style.display === 'none';
-        grid.style.display = hidden ? 'grid' : 'none'; icon.innerText = hidden ? '▾' : '▸';
-    });
-
-    function syncPanRange(){
-        const durationMs = 200 / params.zoomX;
-        const pan = document.getElementById('pan-x');
-        const max = Math.max(0, Math.round(200 - durationMs));
-        pan.max = max; if (params.panMs > max) params.panMs = max; pan.value = params.panMs;
-        pan.disabled = max === 0;
-    }
-    document.getElementById('zoom-x').addEventListener('input', e => { params.zoomX = parseFloat(e.target.value); syncPanRange(); refresh(); });
-    document.getElementById('zoom-y').addEventListener('input', e => { params.zoomY = parseFloat(e.target.value); refresh(); });
-    document.getElementById('pan-x').addEventListener('input', e => { params.panMs = parseInt(e.target.value); refresh(); });
-    document.getElementById('btn-theme').addEventListener('click', () => { params.lightMode = !params.lightMode; refresh(); });
-
-    document.getElementById('spec-range').addEventListener('change', e => { params.specRangeHz = parseInt(e.target.value); refresh(); });
-    document.getElementById('spec-scale').addEventListener('change', e => { params.specScale = e.target.value; refresh(); });
+    Object.keys(evtKeyMap).forEach(id => document.getElementById(id).addEventListener('change', e => { params[evtKeyMap[id]] = e.target.checked; updateDiagnosis(); refresh(); }));
+    document.getElementById('btn-toggle-harmonics').addEventListener('click', () => { const g = document.getElementById('harmonics-grid'), ic = document.getElementById('harmonics-toggle-icon'); const hidden = g.style.display === 'none'; g.style.display = hidden ? 'grid' : 'none'; ic.innerText = hidden ? '▾' : '▸'; });
+    document.getElementById('spec-range').addEventListener('change', e => { params.specPreset = parseInt(e.target.value); resetSpecView(); render(); });
+    document.getElementById('spec-scale').addEventListener('change', e => { params.specScale = e.target.value; render(); });
 
     /* =======================================================================
-       Zustand: setzt UI aus params
+       Theme
+       ======================================================================= */
+    function applyTheme(){ document.documentElement.dataset.theme = params.theme; render(); }
+    document.getElementById('btn-theme').addEventListener('click', () => { params.theme = params.theme === 'dark' ? 'light' : 'dark'; applyTheme(); });
+
+    /* =======================================================================
+       UI aus params setzen
        ======================================================================= */
     function applyParamsToUI(){
         document.querySelectorAll('input[name="voltage"]').forEach(r => r.checked = (parseInt(r.value) === params.voltageRMS));
-        ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(k => {
-            const pct = Math.round(params[k] * 100);
-            document.getElementById(`slider-${k}`).value = pct; updateVal(k, pct, '%');
-        });
-        document.getElementById('slider-event-depth').value = Math.round(params.eventDepth * 100);
-        updateVal('event-depth', Math.round(params.eventDepth * 100), '%');
-        document.getElementById('slider-event-duration').value = params.eventDurationMs;
-        updateVal('event-duration', params.eventDurationMs, ' ms');
-        for (let n = 2; n <= 20; n++){
-            const pct = Math.round((params.harmonics[n] || 0) * 100);
-            const s = document.getElementById(`slider-h${n}`); if (s) s.value = pct;
-            const l = document.getElementById(`val-h${n}`); if (l) l.innerText = `${pct}%`;
-        }
+        ['notches', 'odd', 'even', 'supra', 'flicker'].forEach(k => { const p = Math.round(params[k] * 100); document.getElementById(`slider-${k}`).value = p; updateVal(k, p, '%'); });
+        document.getElementById('slider-event-depth').value = Math.round(params.eventDepth * 100); updateVal('event-depth', Math.round(params.eventDepth * 100), '%');
+        document.getElementById('slider-event-duration').value = params.eventDurationMs; updateVal('event-duration', params.eventDurationMs, ' ms');
+        for (let n = 2; n <= 20; n++){ const p = Math.round((params.harmonics[n] || 0) * 100); const s = document.getElementById(`slider-h${n}`); if (s) s.value = p; const l = document.getElementById(`val-h${n}`); if (l) l.innerText = `${p}%`; }
         Object.keys(evtKeyMap).forEach(id => document.getElementById(id).checked = !!params[evtKeyMap[id]]);
-        document.getElementById('zoom-x').value = params.zoomX;
-        document.getElementById('zoom-y').value = params.zoomY;
-        document.getElementById('spec-range').value = String(params.specRangeHz);
+        document.getElementById('spec-range').value = String(params.specPreset);
         document.getElementById('spec-scale').value = params.specScale;
-        syncPanRange();
+        document.documentElement.dataset.theme = params.theme;
         updateDiagnosis(); updateITIC(); refresh();
     }
-
     function currentStateSummary(){
         return {
-            voltageRMS: params.voltageRMS,
-            thd: Number(lastThd.toFixed(2)),
+            voltageRMS: params.voltageRMS, thd: Number(lastThd.toFixed(2)),
             event: params.eventDurationMs > 0 ? { niveau_pct: Math.round(params.eventDepth * 100), dauer_ms: params.eventDurationMs } : null,
-            kontinuierlich: {
-                notches_pct: Math.round(params.notches * 100), odd_pct: Math.round(params.odd * 100),
-                even_pct: Math.round(params.even * 100), supra_pct: Math.round(params.supra * 100),
-                flicker_pct: Math.round(params.flicker * 100)
-            },
+            kontinuierlich: { notches_pct: Math.round(params.notches * 100), odd_pct: Math.round(params.odd * 100), even_pct: Math.round(params.even * 100), supra_pct: Math.round(params.supra * 100), flicker_pct: Math.round(params.flicker * 100) },
             einzelharmonische: params.harmonics.map((v, n) => ({ ordnung: n, pct: Math.round(v * 100) })).filter(h => h.ordnung >= 2 && h.pct > 0),
             transienten: Object.keys(evtKeyMap).map(id => evtKeyMap[id]).filter(k => params[k])
         };
     }
 
     /* =======================================================================
-       Speichern / Laden (JSON)
+       Speichern / Laden
        ======================================================================= */
-    function download(filename, content, mime){
-        const blob = new Blob([content], { type: mime });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-    function tstamp(){ const d = new Date(); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
-
-    document.getElementById('btn-save-json').addEventListener('click', () => {
-        const wrap = { app: 'PQ-Simulator', version: 4, timestamp: new Date().toISOString(), params };
-        download(`PQ_Zustand_${tstamp()}.json`, JSON.stringify(wrap, null, 2), 'application/json');
-    });
-
+    function download(name, content, mime){ const b = new Blob([content], { type: mime }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
+    function tstamp(){ const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+    document.getElementById('btn-save-json').addEventListener('click', () => download(`PQ_Zustand_${tstamp()}.json`, JSON.stringify({ app: 'PQ-Simulator', version: 5, timestamp: new Date().toISOString(), params }, null, 2), 'application/json'));
     document.getElementById('btn-load-json').addEventListener('click', () => document.getElementById('file-load').click());
     document.getElementById('file-load').addEventListener('change', e => {
-        const f = e.target.files[0]; if (!f) return;
-        const reader = new FileReader();
-        reader.onload = ev => {
+        const f = e.target.files[0]; if (!f) return; const rd = new FileReader();
+        rd.onload = ev => {
             try {
-                const data = JSON.parse(ev.target.result);
-                const p = data.params || data; // toleriert reine params-Dateien
-                const merged = Object.assign(defaultParams(), p);
+                const data = JSON.parse(ev.target.result), p = data.params || data, merged = Object.assign(defaultParams(), p);
                 merged.harmonics = defaultParams().harmonics.map((_, i) => (p.harmonics && p.harmonics[i] != null) ? p.harmonics[i] : 0);
-                params = merged;
-                applyParamsToUI();
-            } catch (err) {
-                alert('Diese Datei konnte nicht gelesen werden. Bitte eine gültige PQ-Zustand-JSON wählen.');
-            }
+                if (!p.scopeView) merged.scopeView = defaultView(merged.voltageRMS);
+                if (!p.specView) merged.specView = { f0: 0, f1: merged.specPreset };
+                params = merged; applyParamsToUI();
+            } catch (err) { alert('Diese Datei konnte nicht gelesen werden. Bitte eine gültige PQ-Zustand-JSON wählen.'); }
             e.target.value = '';
         };
-        reader.readAsText(f);
+        rd.readAsText(f);
     });
 
     /* =======================================================================
-       Export: PNG (Zeitsignal + Spektrum + Ursachen) und Ursachen-Markdown
+       Export: PNG (Zeitsignal + Spektrum + Ursachen) & Markdown
        ======================================================================= */
-    function wrapText(ctx, text, maxW){
-        const words = text.split(' '); const lines = []; let line = '';
-        for (const w of words){ const test = line ? line + ' ' + w : w; if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; } else line = test; }
-        if (line) lines.push(line); return lines;
-    }
-
+    function wrapText(ctx, text, maxW){ const words = text.split(' '); const lines = []; let line = ''; for (const w of words){ const test = line ? line + ' ' + w : w; if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; } else line = test; } if (line) lines.push(line); return lines; }
     function buildExportCanvas(){
-        const light = params.lightMode;
-        const W = 1600, pad = 40, scopeH = 380, specH = 320, gap = 24;
-        // Höhe der Ursachen dynamisch messen
-        const measure = document.createElement('canvas').getContext('2d');
-        const active = activeCauses();
-        measure.font = '15px sans-serif';
-        let causeLines = 0;
-        active.forEach(c => { causeLines += 1; c.items.forEach(it => { causeLines += wrapText(measure, '•  ' + it, W - 2 * pad - 20).length; }); causeLines += 0.4; });
-        const causesH = active.length ? Math.ceil(40 + causeLines * 22 + 20) : 60;
-        const headerH = 110;
+        const c = T(), W = 1600, pad = 40, scopeH = 380, specH = 320, gap = 24;
+        const measure = document.createElement('canvas').getContext('2d'); measure.font = '15px sans-serif';
+        const active = activeCauses(); let causeLines = 0;
+        active.forEach(ca => { causeLines += 1; ca.items.forEach(it => { causeLines += wrapText(measure, '•  ' + it, W - 2 * pad - 20).length; }); causeLines += 0.4; });
+        const causesH = active.length ? Math.ceil(40 + causeLines * 22 + 20) : 60, headerH = 110;
         const H = pad + headerH + scopeH + gap + specH + gap + causesH + pad;
-
-        const cv = document.createElement('canvas');
-        const dpr = 2; cv.width = W * dpr; cv.height = H * dpr;
+        const cv = document.createElement('canvas'), dpr = 2; cv.width = W * dpr; cv.height = H * dpr;
         const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-        ctx.fillStyle = light ? '#f8fafc' : '#0f172a'; ctx.fillRect(0, 0, W, H);
-
-        // Header
-        ctx.fillStyle = light ? '#0f172a' : '#ffffff'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'left';
-        ctx.fillText('PQ-Simulator · Netzqualitäts-Analyse', pad, pad + 34);
-        ctx.font = '16px sans-serif'; ctx.fillStyle = light ? '#475569' : '#94a3b8';
-        const meta = `Spannungsebene: ${params.voltageRMS} V   ·   THD: ${lastThd.toFixed(1)} %   ·   ${new Date().toLocaleString('de-DE')}`;
-        ctx.fillText(meta, pad, pad + 64);
-        const ev = params.eventDurationMs > 0 ? `RMS-Ereignis: ${Math.round(params.eventDepth*100)} % für ${params.eventDurationMs} ms` : 'Kein RMS-Ereignis';
-        ctx.fillText(ev, pad, pad + 90);
-
-        // Scope + Spectrum in Teilcanvas rendern, dann einbetten
+        ctx.fillStyle = c.page; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = c.strong; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('PQ-Simulator · Netzqualitäts-Analyse', pad, pad + 34);
+        ctx.font = '16px sans-serif'; ctx.fillStyle = c.text;
+        ctx.fillText(`Spannungsebene: ${params.voltageRMS} V   ·   THD: ${lastThd.toFixed(1)} %   ·   ${new Date().toLocaleString('de-DE')}`, pad, pad + 64);
+        ctx.fillText(params.eventDurationMs > 0 ? `RMS-Ereignis: ${Math.round(params.eventDepth * 100)} % für ${params.eventDurationMs} ms` : 'Kein RMS-Ereignis', pad, pad + 90);
         const innerW = W - 2 * pad;
-        const sc = document.createElement('canvas'); sc.width = innerW; sc.height = scopeH;
-        renderScope(sc.getContext('2d'), innerW, scopeH);
-        const sp = document.createElement('canvas'); sp.width = innerW; sp.height = specH;
-        renderSpectrum(sp.getContext('2d'), innerW, specH);
-
-        let y = pad + headerH;
-        ctx.strokeStyle = light ? '#cbd5e1' : '#334155'; ctx.lineWidth = 1;
-        ctx.fillStyle = light ? '#0f172a' : '#e2e8f0'; ctx.font = 'bold 16px sans-serif';
-        ctx.fillText('Zeitsignal (Oszilloskop)', pad, y - 8);
-        ctx.drawImage(sc, pad, y, innerW, scopeH); ctx.strokeRect(pad, y, innerW, scopeH);
-        y += scopeH + gap;
-        ctx.fillText('Frequenzspektrum (FFT)', pad, y - 8);
-        ctx.drawImage(sp, pad, y, innerW, specH); ctx.strokeRect(pad, y, innerW, specH);
-        y += specH + gap;
-
-        // Ursachen
-        ctx.fillStyle = light ? '#0f172a' : '#ffffff'; ctx.font = 'bold 18px sans-serif';
-        ctx.fillText('Angegebene Fehlerursachen', pad, y + 6); y += 28;
-        ctx.font = '15px sans-serif';
-        if (!active.length){
-            ctx.fillStyle = light ? '#059669' : '#34d399';
-            ctx.fillText('Ideales Netz – keine Störungen aktiv.', pad, y + 6);
-        } else {
-            active.forEach(c => {
-                ctx.fillStyle = c.isDamage ? (light ? '#dc2626' : '#f87171') : (light ? '#2563eb' : '#60a5fa');
-                ctx.font = 'bold 15px sans-serif';
-                ctx.fillText(c.title, pad, y + 6); y += 24;
-                ctx.font = '14px sans-serif'; ctx.fillStyle = light ? '#334155' : '#cbd5e1';
-                c.items.forEach(it => { wrapText(ctx, '•  ' + it, innerW - 20).forEach(l => { ctx.fillText(l, pad + 14, y + 4); y += 20; }); });
-                y += 8;
-            });
-        }
+        const sc = document.createElement('canvas'); sc.width = innerW; sc.height = scopeH; renderScope(sc.getContext('2d'), innerW, scopeH);
+        const sp = document.createElement('canvas'); sp.width = innerW; sp.height = specH;  renderSpectrum(sp.getContext('2d'), innerW, specH);
+        let y = pad + headerH; ctx.strokeStyle = c.grid; ctx.lineWidth = 1; ctx.fillStyle = c.strong; ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('Zeitsignal (Oszilloskop)', pad, y - 8); ctx.drawImage(sc, pad, y, innerW, scopeH); ctx.strokeRect(pad, y, innerW, scopeH); y += scopeH + gap;
+        ctx.fillText('Frequenzspektrum (FFT)', pad, y - 8); ctx.drawImage(sp, pad, y, innerW, specH); ctx.strokeRect(pad, y, innerW, specH); y += specH + gap;
+        ctx.fillStyle = c.strong; ctx.font = 'bold 18px sans-serif'; ctx.fillText('Angegebene Fehlerursachen', pad, y + 6); y += 28; ctx.font = '15px sans-serif';
+        if (!active.length){ ctx.fillStyle = rc('var(--cl-ok)'); ctx.fillText('Ideales Netz – keine Störungen aktiv.', pad, y + 6); }
+        else active.forEach(ca => { ctx.fillStyle = ca.dmg ? c.error : rc('var(--cl-link)'); ctx.font = 'bold 15px sans-serif'; ctx.fillText(ca.title, pad, y + 6); y += 24; ctx.font = '14px sans-serif'; ctx.fillStyle = c.text; ca.items.forEach(it => { wrapText(ctx, '•  ' + it, innerW - 20).forEach(l => { ctx.fillText(l, pad + 14, y + 4); y += 20; }); }); y += 8; });
         return cv;
     }
-
-    document.getElementById('btn-export-png').addEventListener('click', () => {
-        computeSpectrum();
-        const cv = buildExportCanvas();
-        const a = document.createElement('a'); a.download = `PQ_Analyse_${params.voltageRMS}V_${tstamp()}.png`;
-        a.href = cv.toDataURL('image/png', 1.0); a.click();
-    });
-
+    document.getElementById('btn-export-png').addEventListener('click', () => { computeSpectrum(); const cv = buildExportCanvas(); const a = document.createElement('a'); a.download = `PQ_Analyse_${params.voltageRMS}V_${tstamp()}.png`; a.href = cv.toDataURL('image/png', 1.0); a.click(); });
     document.getElementById('btn-export-md').addEventListener('click', () => {
-        const active = activeCauses();
-        let md = `# PQ-Simulator – Fehlerursachen\n\n`;
-        md += `**Erstellt:** ${new Date().toLocaleString('de-DE')}\n\n`;
-        md += `## Betriebspunkt\n\n`;
-        md += `- Spannungsebene: **${params.voltageRMS} V**\n`;
-        md += `- THD: **${lastThd.toFixed(1)} %**\n`;
-        md += params.eventDurationMs > 0
-            ? `- RMS-Ereignis: **${Math.round(params.eventDepth*100)} %** für **${params.eventDurationMs} ms** (ITIC: ${iticClassify(params.eventDepth*100, params.eventDurationMs).status})\n`
-            : `- RMS-Ereignis: keins\n`;
+        const active = activeCauses(); let md = `# PQ-Simulator – Fehlerursachen\n\n**Erstellt:** ${new Date().toLocaleString('de-DE')}\n\n## Betriebspunkt\n\n- Spannungsebene: **${params.voltageRMS} V**\n- THD: **${lastThd.toFixed(1)} %**\n`;
+        md += params.eventDurationMs > 0 ? `- RMS-Ereignis: **${Math.round(params.eventDepth * 100)} %** für **${params.eventDurationMs} ms** (ITIC: ${iticClassify(params.eventDepth * 100, params.eventDurationMs).status})\n` : `- RMS-Ereignis: keins\n`;
         md += `\n## Aktive Phänomene & Ursachen\n\n`;
-        if (!active.length){ md += `_Ideales Netz – keine Störungen aktiv._\n`; }
-        else active.forEach(c => { md += `### ${c.title}\n\n`; c.items.forEach(it => md += `- ${it}\n`); md += `\n`; });
+        if (!active.length) md += `_Ideales Netz – keine Störungen aktiv._\n`;
+        else active.forEach(c => { md += `### ${c.title}\n\n`; c.items.forEach(i => md += `- ${i}\n`); md += `\n`; });
         md += `\n---\n\n## Konfiguration (JSON)\n\n\`\`\`json\n${JSON.stringify(currentStateSummary(), null, 2)}\n\`\`\`\n`;
         download(`PQ_Ursachen_${tstamp()}.md`, md, 'text/markdown');
     });
@@ -949,7 +827,7 @@
 
     /* Start */
     applyParamsToUI();
-    setTimeout(refresh, 60);
-    </script>
+    setTimeout(refresh, 80);
+</script>
 </body>
 </html>
