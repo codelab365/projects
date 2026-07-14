@@ -117,6 +117,21 @@
   .p-card.is-hidden { display: none; }
   .cat-block.is-hidden { display: none; }
 
+  /* Kachel mit zusätzlichen Schnellzugriffslinks (kein umschließendes <a>, sondern gestreckter Link) */
+  .p-card__stretch-link { position: absolute; inset: 0; z-index: 1; }
+  .p-card__share, .p-card__quicklinks { position: relative; z-index: 2; }
+  .p-card__quicklinks { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 var(--cl-space-3); }
+  .p-card__quicklink {
+    position: relative;
+    font-family: var(--cl-font-mono); font-size: .72rem; letter-spacing: .03em;
+    padding: .32rem .65rem; border-radius: var(--cl-radius-sm);
+    border: 1px solid var(--cl-line); background: var(--cl-surface-2);
+    color: var(--cl-muted); text-decoration: none; white-space: nowrap;
+    transition: all .15s ease;
+  }
+  .p-card__quicklink:hover { border-color: var(--cl-navy-600); color: var(--cl-text); background: var(--cl-surface); }
+  @media (prefers-color-scheme: dark){ .p-card__quicklink:hover { color: var(--cl-signal); } }
+
   /* Teilen-Button */
   .p-card__share {
     position: relative; z-index: 2;
@@ -264,12 +279,18 @@
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
-        <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/LinzSpielt/" target="_blank" rel="noopener noreferrer">
+        <div class="p-card" data-cat="spiele">
+          <a class="p-card__stretch-link" href="https://codelab365.github.io/LinzSpielt/" target="_blank" rel="noopener noreferrer" aria-label="Linz Spielt öffnen"></a>
           <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/LinzSpielt/" data-title="Linz Spielt" aria-label="Link zu Linz Spielt teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">Linz Spielt</h3>
           <p class="p-card__desc">Digitale Spieleausleihe mit Live-Datenbank. Filtern nach Spieleranzahl, Dauer, Alter und Verfügbarkeit; Admin-Bereich mit BGG-Import.</p>
+          <div class="p-card__quicklinks">
+            <a class="p-card__quicklink" href="https://codelab365.github.io/LinzSpielt/spieleausleihe-dokumentation" target="_blank" rel="noopener noreferrer">Dokumentation</a>
+            <a class="p-card__quicklink" href="https://codelab365.github.io/LinzSpielt/spieleausleihe-verwaltung" target="_blank" rel="noopener noreferrer">Verwaltung</a>
+            <a class="p-card__quicklink" href="https://codelab365.github.io/LinzSpielt/" target="_blank" rel="noopener noreferrer">Datenbank</a>
+          </div>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
-        </a>
+        </div>
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/Spielesammlung-Genduron/" target="_blank" rel="noopener noreferrer">
           <div class="p-card__top"><span class="cl-tag">Spiele</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/Spielesammlung-Genduron/" data-title="Spieledatenbank Genduron" aria-label="Link zu Spieledatenbank Genduron teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
