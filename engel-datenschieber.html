@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENGEL Datenschieber – Material data for injection moulders</title>
+<style>
+  :root{
+    --navy:#0e2a52;
+    --navy-deep:#081b38;
+    --navy-mid:#16386b;
+    --paper:#f4f6fa;
+    --white:#ffffff;
+    --accent:#7fb3ff;
+    --line: rgba(255,255,255,.25);
+    --ink:#0e2a52;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--paper);
+    color:var(--ink);
+  }
+  .ruler-top{
+    height:14px;
+    background: repeating-linear-gradient(90deg, var(--navy-deep) 0 1px, transparent 1px 20px);
+    background-color: var(--navy);
+  }
+  header{
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-mid) 100%);
+    color:#fff;
+    padding: 28px 5vw 22px;
+  }
+  header h1{
+    margin:0 0 4px;
+    font-size: clamp(22px, 3.2vw, 34px);
+    letter-spacing:.5px;
+  }
+  header p{margin:0; opacity:.85; font-size:14px;}
+  .logo{
+    font-weight:800; letter-spacing:2px; font-size:20px;
+    border:2px solid #fff; padding:2px 10px; display:inline-block; border-radius:3px;
+  }
+  nav{
+    display:flex; gap:6px; flex-wrap:wrap;
+    padding: 14px 5vw; background:var(--navy-deep);
+    position:sticky; top:0; z-index:20;
+  }
+  nav button{
+    background:transparent; color:#cdd9ee; border:1px solid var(--line);
+    padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer;
+    transition:.15s;
+  }
+  nav button.active, nav button:hover{ background:var(--accent); color:var(--navy-deep); border-color:var(--accent); font-weight:600;}
+
+  main{padding: 26px 5vw 60px; max-width:1400px; margin:0 auto;}
+  section{display:none;}
+  section.active{display:block; animation: fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .card{
+    background:var(--white); border-radius:10px; padding:22px 26px;
+    box-shadow:0 1px 3px rgba(14,42,82,.12), 0 8px 24px rgba(14,42,82,.06);
+    margin-bottom:22px;
+  }
+  .card h2{
+    color:var(--navy); margin-top:0; font-size:19px;
+    border-bottom:2px solid var(--navy); padding-bottom:8px;
+  }
+  .disclaimer{
+    background:#fff6e6; border:1px solid #e8c674; border-left:5px solid #d99a1f;
+    border-radius:8px; padding:16px 20px; margin-bottom:22px; font-size:13.5px; line-height:1.55;
+  }
+  .disclaimer b{color:#7a4a00;}
+
+  table{border-collapse:collapse; width:100%; font-size:13px;}
+  th,td{border:1px solid #d7dee8; padding:6px 9px; text-align:left;}
+  th{background:var(--navy); color:#fff; font-weight:600; position:sticky; top:0;}
+  tr:nth-child(even){background:#f0f4fa;}
+  .table-scroll{overflow-x:auto; border-radius:6px;}
+
+  .formula{
+    font-family: 'Cambria Math', Cambria, serif; font-size:15px; background:#eef2f9;
+    padding:10px 14px; border-radius:6px; margin:6px 0; display:inline-block;
+  }
+  .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:22px;}
+  @media(max-width:800px){.grid2{grid-template-columns:1fr;}}
+  .grid3{display:grid; grid-template-columns: repeat(3,1fr); gap:14px;}
+  @media(max-width:800px){.grid3{grid-template-columns:1fr;}}
+
+  .legend-box{background:#eef2f9; border-radius:6px; padding:10px 14px; font-size:13px; line-height:1.7;}
+
+  select, input[type=text]{
+    padding:8px 12px; border-radius:6px; border:1px solid #c3cee0; font-size:14px; width:100%;
+  }
+  .datasheet{margin-top:18px;}
+  .datasheet table{font-size:14px;}
+  .datasheet td.label{background:#eef2f9; font-weight:600; width:46%;}
+  .datasheet td.unit{color:#7183a3; width:60px;}
+
+  .pill{display:inline-block; background:var(--navy); color:#fff; border-radius:14px; padding:3px 10px; font-size:12px; margin-right:6px;}
+
+  .chart-wrap{display:flex; gap:26px; flex-wrap:wrap;}
+  .chart-box{flex:1; min-width:320px;}
+  footer{
+    text-align:center; padding:20px; color:#8092ac; font-size:12px;
+  }
+
+  /* --- Visual replica (faithful ruler card) --- */
+  .side-toggle{display:flex; gap:8px; margin:14px 0 18px;}
+  .side-btn{
+    background:#eef2f9; color:var(--navy); border:1px solid #c3cee0; border-radius:6px;
+    padding:8px 14px; font-size:13px; cursor:pointer; font-weight:600;
+  }
+  .side-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .ruler-wrap{overflow-x:auto; padding:10px 0 10px; background:#dcdfe4; border-radius:8px;}
+  .ruler-card{
+    position:relative;
+    width:max-content;
+    min-width:100%;
+    background: var(--navy);
+    color:#fff;
+    font-family: Arial, 'Helvetica Neue', sans-serif;
+    user-select:none; -webkit-user-select:none;
+    padding: 22px 30px 46px;
+    margin: 18px 16px;
+    box-shadow: 0 10px 24px rgba(0,0,0,.35);
+  }
+  .ruler-card .notch{
+    position:absolute; width:22px; height:22px; top:40%; margin-top:-11px;
+    background:#dcdfe4; border-radius:50%;
+  }
+  .notch-left{ left:-11px; }
+  .notch-right{ right:-11px; }
+
+  /* cm ruler along the very top, ticks like the real card */
+  .cm-ruler{ position:relative; height:22px; margin-bottom:14px; }
+  .cm-ruler .tick{ position:absolute; top:0; width:1px; background:#9db3d9; }
+  .cm-ruler .tick.major{ height:11px; background:#c7d5f0; }
+  .cm-ruler .tick.minor{ height:6px; }
+  .cm-ruler .num{ position:absolute; top:11px; font-size:9px; color:#c7d5f0; transform:translateX(-50%); }
+  .cm-ruler .cm-label{ position:absolute; top:-1px; left:0; font-size:8.5px; color:#8fa6d1; }
+
+  table.replica{ border-collapse:collapse; font-size:11.5px; }
+  table.replica th, table.replica td{
+    border:1px solid rgba(255,255,255,.28);
+    padding:4px 8px;
+    white-space:nowrap;
+    text-align:center;
+  }
+  table.replica th.rowlabel, table.replica td.rowlabel{
+    text-align:left; font-weight:600; color:#dce6f7; background:rgba(255,255,255,.03);
+    position:sticky; left:0; z-index:2;
+  }
+  table.replica thead th{
+    font-weight:800; font-size:12px; letter-spacing:.3px; padding-top:6px; padding-bottom:6px;
+    background:rgba(255,255,255,.04);
+  }
+  table.replica thead th.rowlabel{ background:var(--navy); }
+  table.replica td.matcol, table.replica th.matcol{ cursor:pointer; transition:.12s; }
+  table.replica tr td.matcol.sel, table.replica tr th.matcol.sel{
+    background:rgba(255,206,74,.22);
+  }
+  table.replica td.matcol.sel{ box-shadow: inset 0 0 0 9999px rgba(255,206,74,.10); }
+
+  .replica-footer{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    margin-top:16px; padding-top:10px; border-top:1px solid rgba(255,255,255,.25);
+    font-size:9.5px; color:#b9c8e6;
+  }
+  .engel-badge{
+    font-weight:800; letter-spacing:1.5px; font-size:15px; color:#fff;
+    border:1.5px solid #fff; padding:2px 10px; border-radius:2px;
+  }
+  .replica-doc{ font-size:9px; color:#8fa6d1; writing-mode:vertical-rl; position:absolute; right:6px; top:24px; }
+
+  table.replica td, table.replica th{ color:#fff; }
+  table.replica tr:nth-child(even){ background:transparent; }
+  table.replica td.rowlabel, table.replica th.rowlabel{ background:#0a2245; }
+
+  .ruler-readout{
+    background:#fff; border:1px solid #d7dee8; border-radius:8px; padding:14px 20px; margin-top:14px;
+    font-size:13.5px; box-shadow:0 1px 3px rgba(14,42,82,.08);
+  }
+  .ruler-readout b{color:var(--navy);}
+  .ruler-readout .rr-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:8px 18px; margin-top:8px;
+  }
+
+  /* --- CSV / clipboard export --- */
+  .export-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:12px 0 4px;
+  }
+  .export-btn{
+    background:var(--navy); color:#fff; border:none; border-radius:6px;
+    padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .export-btn:hover{ background:var(--navy-mid); }
+  .export-btn:active{ transform:translateY(1px); }
+  .export-status{ font-size:12.5px; color:#1f8a4c; font-weight:600; min-height:1em; }
+</style>
+</head>
+<body>
+
+<div class="ruler-top"></div>
+<header>
+  <span class="logo">ENGEL</span>
+  <h1>Datenschieber — Material data for injection moulders</h1>
+  <p>Digitale Nachbildung des ENGEL-Datenschiebers (15 646 / 09.21) · Andreas Neuhold · codeLAB365</p>
+</header>
+
+<nav>
+  <button data-tab="material" class="active">Materialdaten</button>
+  <button data-tab="formulas">Formeln &amp; Legende</button>
+  <button data-tab="application">Anwendung &amp; Werkzeuginnendruck</button>
+  <button data-tab="visual">Grafische Nachbildung (Test)</button>
+  <button data-tab="about">Hinweise</button>
+</nav>
+
+<main>
+
+<div class="disclaimer">
+  <b>Datenherkunft &amp; Genauigkeitshinweis (aktualisiert):</b> Die Werte wurden aus einem sauberen Scan beider
+  Datenschieber-Seiten (Dok.-Nr. 15 646/09.21) neu extrahiert – diesmal per Texterkennung mit Positions­zuordnung
+  je Spalte (jedes Wort wurde anhand seiner exakten x‑Koordinate der richtigen Werkstoffspalte zugeordnet, statt
+  zeilenweise "von Auge" gezählt zu werden). Das behebt die Verschiebungsfehler der Vorversion, u. a. bei
+  <b>CA</b> (Zeilen waren um eine Position verschoben), <b>ABS/PC, PC, PC GF, PC/PBT</b> (Vicat-Werte fehlten/waren
+  vertauscht mit "-") und <b>TPE‑S / TPE‑U</b> (Hersteller <b>PTS</b> und <b>BAYER</b> waren vertauscht: PTS fertigt
+  Thermoflex TF60/800, BAYER/Covestro fertigt Desmopan 385S). Die Spalten <b>PA 6 (Ultramid B3K)</b> und
+  <b>PP (Borealis BJ380MO)</b> sind weiterhin 1:1 gegen die separat abgebildete Musterseite geprüft. Einzelne Felder
+  waren im Scan nicht zweifelsfrei lesbar und sind mit „–" gekennzeichnet, statt geraten zu werden (u. a. einige
+  Kf-, ΔH- und aeff-Werte der TPE-Gruppe sowie PPS/TPE‑O-Viskositäten, die bei abweichender Scherrate angegeben sind).
+  <b>Bitte insbesondere diese Felder sowie alle produktionskritischen Werte vor Einsatz gegen das Original oder eine
+  Herstellerdatenbank gegenprüfen.</b>
+</div>
+
+<!-- MATERIAL DATA TAB -->
+<section id="material" class="active">
+  <div class="card">
+    <h2>Werkstoff wählen</h2>
+    <select id="matSelect"></select>
+    <div class="export-bar">
+      <button class="export-btn" id="btnCsvMaterial">⬇ Als CSV exportieren</button>
+      <button class="export-btn" id="btnCopyMaterial">⧉ In Zwischenablage kopieren</button>
+      <span class="export-status" id="statusMaterial"></span>
+    </div>
+    <div class="datasheet">
+      <table id="datasheetTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Alle Werkstoffe im Überblick</h2>
+    <div class="export-bar">
+      <button class="export-btn" id="btnCsvAll">⬇ Gesamtexport – alle 38 Werkstoffe als CSV</button>
+      <span class="export-status" id="statusAll"></span>
+    </div>
+    <p style="font-size:12px; color:#6b7a94; margin:2px 0 10px;">
+      Eine Zeile pro Werkstoff, alle 23 Kennwerte als Spalten — zur Weiterverwendung in Excel oder MATLAB
+      (<code>readtable("Datenschieber_Gesamtexport.csv", "Delimiter", ";")</code>).
+    </p>
+    <div class="table-scroll">
+      <table id="overviewTable"></table>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULAS TAB -->
+<section id="formulas">
+  <div class="card">
+    <h2>Kennwerte &amp; Kurzzeichen (Plastic material – short symbols)</h2>
+    <div class="grid2">
+      <div class="legend-box">
+        Manufacturer · Trade name · Grade · Filler content [%] · Structure ·
+        Density at 23°C [g/cm³] · Glass transition or melting temperature [°C] ·
+        Vicat softening temperature [°C] · Viscosity at shear rate 1000 s⁻¹ [Pa·s] at melt temperature [°C] ·
+        Flow factor K<sub>f</sub> [bar/mm] · Flow length by wall thickness of 1&nbsp;mm / 2&nbsp;mm [mm] ·
+        Melt temperature T<sub>m</sub> [°C] · Mould temperature T<sub>w</sub> [°C] ·
+        Max. peripheral screw speed v [m/s] · Pre-drying temperature [°C] · Pre-drying period [h] ·
+        Discharge factor K<sub>a</sub> [g/cm³] · Effective thermal diffusivity a<sub>eff</sub> [mm²/s] ·
+        Max. demoulding temperature T<sub>e</sub> [°C] · Enthalpy difference ΔH [kJ/kg] ·
+        Shrinkage in flow direction / transversal [%] · Humidity absorption [%]
+      </div>
+      <div class="legend-box">
+        <b>Structure</b><br>A = Amorphous &nbsp;·&nbsp; TLK = Semi crystalline<br><br>
+        <b>Fillers</b><br>GF = Glass fibre &nbsp;·&nbsp; T = Talc<br><br>
+        <b>Thermoplastic elastomers</b><br>
+        TPE-A Polyamid grades · TPE-E Polyester grades · TPE-O Polyolefine grades uncured ·
+        TPE-S Styrene grades · TPE-U Polyurethane grades · TPE-V Polyolefine grades cured
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Formeln</h2>
+    <div class="grid2">
+      <div>
+        <div class="formula">Stroke volume &nbsp; V = m / K<sub>a</sub> &nbsp; [cm³]</div><br>
+        <div class="formula">Filling pressure* &nbsp; p<sub>f</sub> = K<sub>f</sub> · K<sub>s</sub> · f<sub>w</sub> &nbsp; [bar]</div><br>
+        <div class="formula">Clamping force &nbsp; F<sub>S</sub> = A<sub>proj</sub> · (p<sub>A</sub>+100)/100 &nbsp; [kN]</div><br>
+        <div class="formula">Screw speed &nbsp; n = 60·v / (π · D<sub>S</sub>) &nbsp; [U/min]</div>
+      </div>
+      <div>
+        <div class="formula">Cooling time &nbsp; t = s²/(π²·a<sub>eff</sub>) · ln[ 4/π · (T<sub>m</sub>−T<sub>w</sub>)/(T<sub>e</sub>−T<sub>w</sub>) ] &nbsp; [s]</div><br>
+        <div class="formula">Heat loss &nbsp; Q = ṁ · ΔH &nbsp; [kJ/h]</div><br>
+        <span style="font-size:12px; color:#6b7a94;">* Required filling pressure for volumetric filling without sprue and gate</span>
+      </div>
+    </div>
+    <p style="font-size:12px; color:#6b7a94; margin-top:14px;">
+      m Shot weight [g] · K<sub>a</sub> Discharge factor [g/cm³] · f<sub>w</sub> Flowpath [mm] · p<sub>f</sub> Filling pressure [bar] ·
+      A<sub>proj</sub> Projected area [cm²] · F<sub>S</sub> Clamping force [kN] · p<sub>A</sub> Mould reaction pressure [bar] ·
+      s Wall thickness [mm] · t Cooling time [s] · D<sub>S</sub> Screw diameter [m] · ṁ Material throughput [kg/h]
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Wanddicken-Faktor K<sub>s</sub></h2>
+    <div class="table-scroll">
+      <table>
+        <tr><th>s [mm]</th><th>K<sub>s</sub></th><th>s [mm]</th><th>K<sub>s</sub></th></tr>
+        <tr><td>0,4</td><td>11,9</td><td>1,4</td><td>1,5</td></tr>
+        <tr><td>0,5</td><td>9,2</td><td>1,6</td><td>1,1</td></tr>
+        <tr><td>0,6</td><td>7,3</td><td>1,8</td><td>0,9</td></tr>
+        <tr><td>0,8</td><td>4,5</td><td>2,0</td><td>0,7</td></tr>
+        <tr><td>1,0</td><td>3,0</td><td>2,5</td><td>0,5</td></tr>
+        <tr><td>1,2</td><td>2,1</td><td>5,0</td><td>0,5</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Abbreviations for plastics</h2>
+    <div class="grid3" id="abbrGrid"></div>
+  </div>
+</section>
+
+<!-- APPLICATION TAB -->
+<section id="application">
+  <div class="card">
+    <h2>Application / Material / Quality requirements</h2>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Application</th><th>Material</th><th>Dimensional stability</th><th>Surface quality</th>
+            <th>Wall thickness [mm]</th><th>Flow length : wall thickness</th><th>Mould reaction pressure p<sub>A</sub> [bar]</th></tr>
+        <tr><td>Flat parts</td><td>PE, PP, PS, ABS</td><td>−</td><td>o</td><td>2,0 – 3,5</td><td>&lt; 100 : 1</td><td>200 – 350</td></tr>
+        <tr><td>Flat thin parts</td><td>PP, PE, PS</td><td>−</td><td>o</td><td>1,0 – 2,0</td><td>&lt; 100 : 1</td><td>350 – 450</td></tr>
+        <tr><td>Visible parts with ribs</td><td>PP, ABS, PA, PMMA</td><td>o</td><td>+</td><td>1,5 – 3,0</td><td>&lt; 100 : 1</td><td>450 – 600</td></tr>
+        <tr><td>Technical parts</td><td>PA, POM, PBT, PC</td><td>+</td><td>o</td><td>1,5 – 5,0</td><td>&lt; 100 : 1</td><td>450 – 600</td></tr>
+        <tr><td>Containers</td><td>PP, PE, PS</td><td>o</td><td>o</td><td>0,4 – 1,5</td><td>150 – 300 : 1</td><td>600 – 900</td></tr>
+      </table>
+    </div>
+    <p style="font-size:12px; color:#6b7a94;">o : medium &nbsp;·&nbsp; − : low &nbsp;·&nbsp; + : high</p>
+  </div>
+
+  <div class="card">
+    <h2>Mould reaction pressure ranges &amp; determination</h2>
+    <div class="chart-wrap">
+      <div class="chart-box">
+        <canvas id="pressureChart" width="480" height="360" style="max-width:100%;"></canvas>
+      </div>
+      <div class="chart-box">
+        <p><b>Determination of the mould reaction pressure</b></p>
+        <div class="formula" style="font-size:13px;">F<sub>S</sub> = A<sub>proj</sub> · (p<sub>A</sub>+100)/100</div><br>
+        <div class="formula" style="font-size:13px;">F<sub>S</sub> = A<sub>proj</sub> · (p<sub>AB</sub>+100)/100</div>
+        <p style="font-size:13px; margin-top:12px;">
+          f<sub>W</sub> = f<sub>WB</sub> + f<sub>WR</sub> — Flow path [mm], gemessen von Anguss bis Fließwegende;
+          p<sub>f</sub> fällt linear von p<sub>A</sub> am Anguss auf p<sub>AB</sub> am Fließwegende.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VISUAL REPLICA TAB (TEST, additive) -->
+<section id="visual">
+  <div class="card">
+    <h2>Grafische Nachbildung der physischen Schieberkarte <span class="pill" style="background:#a15c00;">Test</span></h2>
+    <p style="font-size:13.5px; color:#5a6c8a; margin-top:-4px;">
+      Zusätzlich zu den Tabellen oben — echtes Zeilen/Spalten-Raster wie auf der Originalkarte: cm-Skala am
+      oberen Rand, seitliche Kerben, dünne weiße Gitterlinien, Firmenzeile und Logo unten. Spalte anklicken,
+      um sie hervorzuheben (gelb, wie ein Schieber-Fenster).
+    </p>
+    <div class="side-toggle">
+      <button class="side-btn active" data-side="0">Karte 1 · ABS – PMMA</button>
+      <button class="side-btn" data-side="1">Karte 2 · POM – TPE-V</button>
+    </div>
+
+    <div class="ruler-wrap">
+      <div class="ruler-card" id="rulerCard">
+        <div class="notch notch-left"></div>
+        <div class="notch notch-right"></div>
+        <div class="replica-doc">15 646/09.21</div>
+        <div class="cm-ruler" id="cmRuler"><span class="cm-label">cm</span></div>
+        <table class="replica" id="replicaTable"></table>
+        <div class="replica-footer">
+          <div>
+            Material data for injection moulders<br>
+            ENGEL Austria GmbH, A-4311 Schwertberg, Telefon ++43 50 620 – 0, Telefax ++43 50 620 – 3009
+          </div>
+          <div class="engel-badge">ENGEL</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="export-bar">
+      <button class="export-btn" id="btnCsvVisual">⬇ Als CSV exportieren</button>
+      <button class="export-btn" id="btnCopyVisual">⧉ In Zwischenablage kopieren</button>
+      <span class="export-status" id="statusVisual"></span>
+    </div>
+
+    <div class="ruler-readout" id="rulerReadout"></div>
+  </div>
+</section>
+
+<!-- ABOUT TAB -->
+<section id="about">
+  <div class="card">
+    <h2>Über dieses Tool</h2>
+    <p>Diese Seite bildet den physischen ENGEL-Datenschieber „Material data for injection moulders“
+      (Dok.-Nr. 15 646/09.21, ENGEL Austria GmbH, A-4311 Schwertberg) als interaktive Web-Referenz nach:
+      die allgemeinen Auslegungsformeln, die Kurzzeichen-Legende, die Anwendungs-/Qualitätstabelle und
+      die Werkzeuginnendruck-Diagramme der Rückseite sowie die Werkstoffdatenbank der beiden Schieberkarten
+      (ABS … PMMA und POM … TPE-V) der Vorderseite.</p>
+    <p>Erstellt mit <span class="pill">codeLAB365</span> Workflow — einzelne, in sich geschlossene HTML-Datei,
+      keine externen Abhängigkeiten.</p>
+  </div>
+</section>
+
+</main>
+<footer>ENGEL Austria GmbH · Quelle: Datenschieber 15 646/09.21 · Digitalisierung: codeLAB365 · Andreas Neuhold</footer>
+
+<script>
+// ---------------------------------------------------------------
+// MATERIAL DATABASE
+// Row order per Datenschieber legend (identical for every material)
+// ---------------------------------------------------------------
+const FIELDS = [
+  ["manufacturer","Manufacturer","",""],
+  ["trade","Trade name","",""],
+  ["grade","Grade","",""],
+  ["filler","Filler content","","%"],
+  ["structure","Structure","",""],
+  ["density","Density at 23°C","","g/cm³"],
+  ["tgTm","Glass transition or melting temperature","","°C"],
+  ["vicat","Vicat softening temperature","","°C"],
+  ["visc","Viscosity at shear rate of 1000 s⁻¹","","Pa·s"],
+  ["viscT","… at melt temperature","","°C"],
+  ["kf","Flow factor Kf","","bar/mm"],
+  ["flow","Flow length by wall thickness of 1 mm / 2 mm","","mm"],
+  ["tm","Melt temperature Tm","","°C"],
+  ["tw","Mould temperature Tw","","°C"],
+  ["v","Max. peripheral screw speed v","","m/s"],
+  ["predryT","Pre-drying temperature","","°C"],
+  ["predryH","Pre-drying period","","h"],
+  ["ka","Discharge factor Ka","","g/cm³"],
+  ["aeff","Effective thermal diffusivity aeff","","mm²/s"],
+  ["te","Max. demoulding temperature Te","","°C"],
+  ["dH","Enthalpy difference ΔH","","kJ/kg"],
+  ["shrink","Shrinkage flow dir. / transversal","","%"],
+  ["humidity","Humidity absorption","","%"],
+];
+
+const MATERIALS = [
+{cat:"ABS", manufacturer:"INEOS", trade:"Novodur", grade:"P2H-AT", filler:"–", structure:"A", density:"1,05", tgTm:"115", vicat:"98", visc:"208", viscT:"220", kf:"2,3", flow:"90/370", tm:"220-260", tw:"60-80", v:"0,6", predryT:"80", predryH:"1-2", ka:"0,92", aeff:"0,08", te:"100", dH:"340", shrink:"0,5/0,5", humidity:"–"},
+{cat:"ABS/PC", manufacturer:"BAYER", trade:"Bayblend", grade:"T65", filler:"–", structure:"Blend", density:"1,13", tgTm:"–", vicat:"120", visc:"230", viscT:"260", kf:"2,6", flow:"80/330", tm:"240-280", tw:"70-100", v:"0,3", predryT:"100-110", predryH:"2-4", ka:"0,95", aeff:"0,092", te:"115", dH:"345", shrink:"0,6/0,6", humidity:"0,2"},
+{cat:"CA", manufacturer:"ALBIS", trade:"Cellidor", grade:"B 500-05", filler:"–", structure:"A", density:"1,2", tgTm:"110", vicat:"102", visc:"247", viscT:"200", kf:"2,6", flow:"80/320", tm:"190-235", tw:"40-80", v:"0,3", predryT:"70", predryH:"2", ka:"0,97", aeff:"0,06", te:"90", dH:"–", shrink:"0,6", humidity:"–"},
+{cat:"LCP", manufacturer:"DUPONT", trade:"Zenite", grade:"6130WT010", filler:"30 GF", structure:"TLK", density:"1,68", tgTm:"335", vicat:"277", visc:"110", viscT:"340", kf:"1,6", flow:"130/540", tm:"350-360", tw:"65-110", v:"0,4", predryT:"150", predryH:"3", ka:"1,38", aeff:"–", te:"280", dH:"–", shrink:"-0,07/0,5", humidity:"0,002"},
+{cat:"PA 6", manufacturer:"BASF", trade:"Ultramid", grade:"B3K", filler:"–", structure:"TLK", density:"1,13", tgTm:"220", vicat:"204", visc:"123", viscT:"260", kf:"1,7", flow:"120/510", tm:"250-270", tw:"40-80", v:"0,6", predryT:"80", predryH:"4", ka:"0,96", aeff:"0,083", te:"200", dH:"550", shrink:"0,9/-", humidity:"3", verified:true},
+{cat:"PA 6 GF", manufacturer:"BASF", trade:"Ultramid", grade:"B3WG7", filler:"35 GF", structure:"TLK", density:"1,41", tgTm:"220", vicat:"220", visc:"130", viscT:"280", kf:"1,7", flow:"120/500", tm:"270-290", tw:"80-90", v:"0,4", predryT:"80", predryH:"4", ka:"1,15", aeff:"0,088", te:"200", dH:"550", shrink:"0,25/0,75", humidity:"2"},
+{cat:"PA 6.6", manufacturer:"BASF", trade:"Ultramid", grade:"A3K", filler:"–", structure:"TLK", density:"1,13", tgTm:"260", vicat:"250", visc:"105", viscT:"290", kf:"1,5", flow:"130/560", tm:"280-300", tw:"60-80", v:"0,6", predryT:"80", predryH:"4", ka:"0,96", aeff:"0,083", te:"200", dH:"550", shrink:"1,4/1,7", humidity:"2,8"},
+{cat:"PA 6.6 GF", manufacturer:"BASF", trade:"Ultramid", grade:"A3WG7", filler:"35 GF", structure:"TLK", density:"1,41", tgTm:"260", vicat:"250", visc:"124", viscT:"290", kf:"1,7", flow:"120/510", tm:"280-300", tw:"80-90", v:"0,4", predryT:"80", predryH:"4", ka:"1,15", aeff:"0,088", te:"200", dH:"550", shrink:"0,4/1,0", humidity:"1,6"},
+{cat:"PBT", manufacturer:"LANXESS", trade:"Pocan", grade:"B1505", filler:"–", structure:"TLK", density:"1,3", tgTm:"225", vicat:"180", visc:"414", viscT:"250", kf:"3,9", flow:"50/220", tm:"250-260", tw:"80-100", v:"0,6", predryT:"120", predryH:"2-3", ka:"1,07", aeff:"0,09", te:"160", dH:"370", shrink:"1,9/1,9", humidity:"0,2"},
+{cat:"PBT GF", manufacturer:"LANXESS", trade:"Pocan", grade:"B 4235", filler:"30 GF", structure:"TLK", density:"1,65", tgTm:"225", vicat:"210", visc:"382", viscT:"250", kf:"3,7", flow:"50/230", tm:"240-260", tw:"80-100", v:"0,4", predryT:"120", predryH:"2-3", ka:"1,36", aeff:"0,123", te:"180", dH:"370", shrink:"0,3/1,2", humidity:"0,1"},
+{cat:"PC", manufacturer:"SABIC", trade:"Lexan", grade:"101", filler:"–", structure:"A", density:"1,2", tgTm:"145", vicat:"144", visc:"576", viscT:"300", kf:"5,2", flow:"40/160", tm:"290-320", tw:"80-120", v:"0,3", predryT:"120-130", predryH:"2-4", ka:"1,04", aeff:"0,11", te:"125", dH:"350", shrink:"0,5/0,7", humidity:"0,15"},
+{cat:"PC GF", manufacturer:"SABIC", trade:"Lexan", grade:"3413R", filler:"30 GF", structure:"A", density:"1,44", tgTm:"145", vicat:"147", visc:"421", viscT:"300", kf:"4", flow:"50/210", tm:"290-320", tw:"80-120", v:"0,4", predryT:"120-130", predryH:"2-4", ka:"1,30", aeff:"0,11", te:"125", dH:"350", shrink:"0,1/0,4", humidity:"0,11"},
+{cat:"PC/PBT", manufacturer:"SABIC", trade:"Xenoy", grade:"CL101", filler:"–", structure:"Blend", density:"1,22", tgTm:"225", vicat:"155", visc:"391", viscT:"260", kf:"3,8", flow:"50/230", tm:"255-270", tw:"60-80", v:"0,6", predryT:"90-100", predryH:"2-4", ka:"1,04", aeff:"0,1", te:"130", dH:"360", shrink:"0,7/1,1", humidity:"0,15"},
+{cat:"PE-HD", manufacturer:"Lyondell-Basell", trade:"Hostalen", grade:"GC7260", filler:"–", structure:"TLK", density:"0,957", tgTm:"130", vicat:"72", visc:"156", viscT:"240", kf:"1,9", flow:"100/440", tm:"190-280", tw:"20-40", v:"0,8", predryT:"–", predryH:"–", ka:"0,72", aeff:"0,092", te:"110", dH:"650", shrink:"2,4", humidity:"0,01"},
+{cat:"PE-LD", manufacturer:"Lyondell-Basell", trade:"Lupolen", grade:"1800S", filler:"–", structure:"TLK", density:"0,917", tgTm:"106", vicat:"80", visc:"60", viscT:"210", kf:"1,2", flow:"170/720", tm:"180", tw:"20-40", v:"0,8", predryT:"–", predryH:"–", ka:"0,70", aeff:"0,09", te:"80", dH:"550", shrink:"2,6/-", humidity:"0,01"},
+{cat:"PEI", manufacturer:"SABIC", trade:"Ultem", grade:"1000", filler:"–", structure:"A", density:"1,27", tgTm:"217", vicat:"211", visc:"478", viscT:"375", kf:"4,4", flow:"50/190", tm:"370-410", tw:"140-180", v:"0,4", predryT:"150", predryH:"4-6", ka:"1,20", aeff:"0,11", te:"195", dH:"–", shrink:"0,5/0,7", humidity:"0,7"},
+{cat:"PES", manufacturer:"BASF", trade:"Ultrason E", grade:"2010", filler:"–", structure:"A", density:"1,37", tgTm:"223", vicat:"215", visc:"315", viscT:"360", kf:"3,2", flow:"60/270", tm:"340-380", tw:"140-160", v:"0,4", predryT:"140", predryH:"4", ka:"1,20", aeff:"–", te:"170-180", dH:"–", shrink:"0,8/0,9", humidity:"0,8"},
+{cat:"PET GF", manufacturer:"DUPONT", trade:"Rynite", grade:"530NC010", filler:"30 GF", structure:"TLK", density:"1,56", tgTm:"252", vicat:"228", visc:"168", viscT:"280", kf:"2", flow:"100/420", tm:"280-300", tw:"110", v:"0,4", predryT:"120", predryH:"4", ka:"1,28", aeff:"–", te:"180-190", dH:"440", shrink:"0,2/0,8", humidity:"0,2"},
+{cat:"PMMA", manufacturer:"EVONIK", trade:"Plexiglas", grade:"7N", filler:"–", structure:"A", density:"1,19", tgTm:"110", vicat:"103", visc:"196", viscT:"240", kf:"2,2", flow:"90/380", tm:"220-260", tw:"60-90", v:"0,3", predryT:"90", predryH:"2-3", ka:"1,04", aeff:"0,073", te:"80", dH:"301", shrink:"0,2-0,5", humidity:"0,6"},
+
+{cat:"POM", manufacturer:"DUPONT", trade:"Delrin", grade:"500P NC010", filler:"–", structure:"TLK", density:"1,42", tgTm:"178", vicat:"155", visc:"224", viscT:"215", kf:"2,9", flow:"80/350", tm:"210-220", tw:"80-100", v:"0,4", predryT:"80", predryH:"2-4", ka:"1,15", aeff:"0,057", te:"150", dH:"490", shrink:"1,9/2,0", humidity:"0,3"},
+{cat:"PP", manufacturer:"BOREALIS", trade:"–", grade:"BC250MO", filler:"–", structure:"TLK", density:"0,904", tgTm:"165", vicat:"64", visc:"138", viscT:"230", kf:"1,8", flow:"110/480", tm:"230-260", tw:"10-30", v:"0,8", predryT:"n.n.", predryH:"n.n.", ka:"0,73", aeff:"0,067", te:"65", dH:"520", shrink:"1-2", humidity:"<0,1"},
+{cat:"PP", manufacturer:"BOREALIS", trade:"–", grade:"HD120MO", filler:"–", structure:"TLK", density:"0,908", tgTm:"165", vicat:"84", visc:"111", viscT:"230", kf:"1,6", flow:"130/540", tm:"230-260", tw:"10-30", v:"0,8", predryT:"n.n.", predryH:"n.n.", ka:"0,73", aeff:"0,067", te:"80", dH:"520", shrink:"1-2", humidity:"<0,1"},
+{cat:"PPT", manufacturer:"BOREALIS", trade:"–", grade:"FS65T20", filler:"20 T", structure:"TLK", density:"1,04", tgTm:"165", vicat:"89", visc:"128", viscT:"230", kf:"1,7", flow:"120/500", tm:"220-260", tw:"30-50", v:"0,8", predryT:"80", predryH:"3", ka:"0,87", aeff:"0,07", te:"80", dH:"520", shrink:"0,9/1", humidity:"<0,4"},
+{cat:"PP", manufacturer:"BOREALIS", trade:"–", grade:"BJ380MO", filler:"–", structure:"TLK", density:"0,906", tgTm:"165", vicat:"72", visc:"35", viscT:"230", kf:"1", flow:"200/870", tm:"210-260", tw:"20-50", v:"0,8", predryT:"n.n.", predryH:"n.n.", ka:"0,73", aeff:"0,067", te:"65", dH:"520", shrink:"1-2", humidity:"<0,1", verified:true},
+{cat:"PPE/PA", manufacturer:"SABIC", trade:"Noryl", grade:"GTX914", filler:"–", structure:"TLK", density:"1,09", tgTm:"260", vicat:"190", visc:"158", viscT:"300", kf:"1,9", flow:"100/440", tm:"270-300", tw:"80-120", v:"0,4", predryT:"100-110", predryH:"2-3", ka:"0,92", aeff:"0,095", te:"150", dH:"420", shrink:"1,2/1,6", humidity:"1,2"},
+{cat:"PPS", manufacturer:"TICONA", trade:"Fortron", grade:"1140L4", filler:"40 GF", structure:"TLK", density:"1,65", tgTm:"280-285", vicat:"–", visc:"370 (bei 400 s⁻¹)", viscT:"316", kf:"3,6", flow:"60/240", tm:"310-340", tw:"135-160", v:"0,4", predryT:"140", predryH:"3-4", ka:"1,45", aeff:"0,13", te:"225", dH:"–", shrink:"0,2/0,6", humidity:"0,02"},
+{cat:"PS", manufacturer:"BASF", trade:"Polystyrol", grade:"165H", filler:"–", structure:"A", density:"1,045", tgTm:"90", vicat:"90", visc:"89", viscT:"230", kf:"1,4", flow:"140/610", tm:"180-280", tw:"10-60", v:"0,8", predryT:"80", predryH:"4", ka:"0,92", aeff:"0,08", te:"80", dH:"320", shrink:"0,55/-", humidity:"<0,1"},
+{cat:"PS", manufacturer:"BASF", trade:"Polystyrol", grade:"143E", filler:"–", structure:"A", density:"1,043", tgTm:"85", vicat:"84", visc:"73", viscT:"230", kf:"1,3", flow:"160/670", tm:"180-280", tw:"10-60", v:"0,8", predryT:"80", predryH:"4", ka:"0,92", aeff:"0,08", te:"80", dH:"320", shrink:"0,45/-", humidity:"<0,1"},
+{cat:"PSU", manufacturer:"BASF", trade:"Ultrason S", grade:"2010", filler:"–", structure:"A", density:"1,234", tgTm:"188", vicat:"180", visc:"285", viscT:"360", kf:"2,9", flow:"70/290", tm:"330-390", tw:"120-160", v:"0,4", predryT:"140", predryH:"4", ka:"1,1", aeff:"–", te:"155", dH:"–", shrink:"0,68/0,72", humidity:"0,3"},
+{cat:"PVC-U", manufacturer:"–", trade:"–", grade:"–", filler:"–", structure:"–", density:"1,43", tgTm:"80", vicat:"–", visc:"480", viscT:"210", kf:"4,5", flow:"40/190", tm:"180-215", tw:"40-60", v:"0,3", predryT:"–", predryH:"–", ka:"1,12", aeff:"0,072", te:"70", dH:"220", shrink:"0,4", humidity:"–"},
+{cat:"SAN", manufacturer:"BASF", trade:"Luran", grade:"368R", filler:"–", structure:"A", density:"1,08", tgTm:"–", vicat:"106", visc:"155", viscT:"245", kf:"1,9", flow:"100/450", tm:"220-260", tw:"40-80", v:"0,6", predryT:"80", predryH:"2-4", ka:"0,96", aeff:"0,0855", te:"110", dH:"340", shrink:"0,5", humidity:"0,2"},
+{cat:"TPE-A", manufacturer:"ARKEMA", trade:"Pebax", grade:"4033SA01", filler:"–", structure:"–", density:"1", tgTm:"160", vicat:"131", visc:"188", viscT:"230", kf:"2,2", flow:"90/390", tm:"200-270", tw:"20-40", v:"0,6", predryT:"65", predryH:"4-6", ka:"0,83", aeff:"–", te:"110", dH:"–", shrink:"0,4/1,1", humidity:"0,5"},
+{cat:"TPE-E", manufacturer:"DUPONT", trade:"Hytrel", grade:"4056", filler:"–", structure:"–", density:"1,16", tgTm:"150", vicat:"105", visc:"272", viscT:"210", kf:"2,8", flow:"70/300", tm:"180-205", tw:"–", v:"0,4", predryT:"80", predryH:"2-3", ka:"–", aeff:"–", te:"80-90", dH:"–", shrink:"0,6/0,7", humidity:"0,3"},
+{cat:"TPE-O", manufacturer:"TEKNOR", trade:"Sarlink", grade:"4165", filler:"–", structure:"–", density:"0,96", tgTm:"150", vicat:"–", visc:"349 (bei 200 s⁻¹)", viscT:"200", kf:"–", flow:"–", tm:"180-220", tw:"10-65", v:"0,6", predryT:"n.n.", predryH:"3", ka:"–", aeff:"–", te:"80-90", dH:"–", shrink:"–", humidity:"–"},
+{cat:"TPE-S", manufacturer:"KRAIBURG", trade:"Thermolast K", grade:"TC6 GPZ", filler:"30 (PEBBS+PP)", structure:"–", density:"1,1", tgTm:"–", vicat:"–", visc:"41", viscT:"205", kf:"1", flow:"190/830", tm:"190-220", tw:"25-40", v:"0,8", predryT:"n.n.", predryH:"n.n.", ka:"1,08", aeff:"–", te:"85", dH:"–", shrink:"2,0/1,0", humidity:"–"},
+{cat:"TPE-S", manufacturer:"PTS", trade:"Thermoflex", grade:"TF60/800", filler:"–", structure:"–", density:"1,19", tgTm:"150", vicat:"–", visc:"60", viscT:"200", kf:"1,2", flow:"170/720", tm:"200-220", tw:"25-40", v:"0,8", predryT:"–", predryH:"–", ka:"0,98", aeff:"–", te:"40-60", dH:"–", shrink:"1,7/0,6", humidity:"–"},
+{cat:"TPE-U", manufacturer:"BAYER", trade:"Desmopan", grade:"385 S", filler:"–", structure:"TLK", density:"1,2", tgTm:"–", vicat:"–", visc:"420", viscT:"200", kf:"4", flow:"50/210", tm:"210-230", tw:"20-40", v:"0,2", predryT:"80", predryH:"2", ka:"0,99", aeff:"0,08", te:"80-90", dH:"–", shrink:"–", humidity:"–"},
+{cat:"TPE-V", manufacturer:"ExxonMobil", trade:"Santoprene", grade:"201-73", filler:"Polyolefin", structure:"–", density:"0,97", tgTm:"180", vicat:"–", visc:"78", viscT:"205", kf:"1,3", flow:"150/650", tm:"190-230", tw:"20-60", v:"0,6", predryT:"80", predryH:"3", ka:"0,72", aeff:"–", te:"50-70", dH:"–", shrink:"2,4-2,3", humidity:"0,2-0,3"},
+];
+
+const ABBR = [
+["ABS","Acrylonitrile/Butadiene/Styrene"],["CA","Cellulose acetate"],["LCP","Liquid Cristal Polymer"],
+["PA","Polyamide"],["PBT","Polybutylene terephthalate"],["PC","Polycarbonate"],
+["PE-HD","Polyethylene high density"],["PE-LD","Polyethylene low density"],["PEI","Polyether imide"],
+["PES","Polyether sulphone"],["PET","Polyethylene terephthalate"],["POM","Polyoxymethylene"],
+["PMMA","Polymethyl methacrylate"],["PP","Polypropylene"],["PPE/PA","Polyphenylene ether/Polyamide"],
+["PPS","Polyphenylene sulphide"],["PS-HI","Polystyrene – high impact"],["PS","Polystyrene"],
+["PSU","Polysulphone"],["PVC-U","Polyvinyl chloride – rigid"],["SAN","Styrene/Acrylonitrile copolymer"],
+];
+
+// --- render tabs ---
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// --- populate select ---
+const sel = document.getElementById('matSelect');
+MATERIALS.forEach((m,i)=>{
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = `${m.cat} — ${m.manufacturer} ${m.trade} ${m.grade}` + (m.verified? "  ✓ geprüft" : "");
+  sel.appendChild(opt);
+});
+
+function renderDatasheet(idx){
+  const m = MATERIALS[idx];
+  let html = `<tr><th colspan="3">${m.cat} — ${m.manufacturer} ${m.trade} ${m.grade}${m.verified? " &nbsp;<span class='pill' style='background:#1f8a4c'>✓ gegen Original geprüft</span>":""}</th></tr>`;
+  FIELDS.forEach(f=>{
+    html += `<tr><td class="label">${f[1]}</td><td>${m[f[0]]}</td><td class="unit">${f[3]}</td></tr>`;
+  });
+  document.getElementById('datasheetTable').innerHTML = html;
+}
+sel.addEventListener('change', e=>renderDatasheet(e.target.value));
+renderDatasheet(4); // default PA6 (verified)
+sel.value = 4;
+
+// =================================================================
+// CSV / CLIPBOARD EXPORT (shared by "Materialdaten" and "Grafische
+// Nachbildung" tabs — exports the currently selected material column)
+// =================================================================
+function csvEscape(v){
+  v = (v===undefined || v===null) ? "" : String(v);
+  if(/[;"\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function materialToCSV(m){
+  const rows = [["Feld","Wert","Einheit"], ["Kurzzeichen", m.cat, ""]];
+  FIELDS.forEach(f=>{ rows.push([f[1], m[f[0]], f[3]]); });
+  return rows.map(r=>r.map(csvEscape).join(";")).join("\r\n");
+}
+function materialFilename(m){
+  return `Datenschieber_${m.cat}_${m.grade}`.replace(/[^\w.-]+/g,'_') + ".csv";
+}
+function allMaterialsToCSV(){
+  const header = ["Kurzzeichen", ...FIELDS.map(f=> f[1] + (f[3]? ` [${f[3]}]` : ""))];
+  const rows = [header];
+  MATERIALS.forEach(m=>{
+    rows.push([m.cat, ...FIELDS.map(f=>m[f[0]])]);
+  });
+  return rows.map(r=>r.map(csvEscape).join(";")).join("\r\n");
+}
+function downloadAllCSV(){
+  const csv = allMaterialsToCSV();
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = "Datenschieber_Gesamtexport_alle_Werkstoffe.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+}
+function downloadCSV(m){
+  const csv = materialToCSV(m);
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = materialFilename(m);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+}
+function copyCSV(m, statusEl){
+  const csv = materialToCSV(m);
+  const done = ()=>{ if(statusEl){ statusEl.textContent="✓ in Zwischenablage kopiert"; setTimeout(()=>statusEl.textContent="",2000); } };
+  const fail = ()=>{
+    // fallback for browsers/contexts without Clipboard API permission
+    const ta = document.createElement('textarea');
+    ta.value = csv; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }
+    catch(e){ if(statusEl) statusEl.textContent="Kopieren fehlgeschlagen — bitte manuell markieren."; }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(csv).then(done).catch(fail);
+  } else { fail(); }
+}
+
+// wire buttons — Materialdaten tab
+document.getElementById('btnCsvMaterial').addEventListener('click', ()=>{
+  downloadCSV(MATERIALS[sel.value]);
+});
+document.getElementById('btnCopyMaterial').addEventListener('click', ()=>{
+  copyCSV(MATERIALS[sel.value], document.getElementById('statusMaterial'));
+});
+
+// --- overview table ---
+function renderOverview(){
+  const rowsToShow = ["density","tgTm","vicat","tm","tw","kf","shrink"];
+  const labels = {density:"ρ [g/cm³]", tgTm:"Tg/Tm [°C]", vicat:"Vicat [°C]", tm:"Tm-Bereich [°C]", tw:"Tw-Bereich [°C]", kf:"Kf [bar/mm]", shrink:"Schwindung [%]"};
+  let head = "<tr><th>Kurzz.</th><th>Hersteller</th><th>Handelsname</th><th>Grade</th>";
+  rowsToShow.forEach(r=>head+=`<th>${labels[r]}</th>`);
+  head += "</tr>";
+  let body = "";
+  MATERIALS.forEach(m=>{
+    body += `<tr><td><b>${m.cat}</b>${m.verified?" ✓":""}</td><td>${m.manufacturer}</td><td>${m.trade}</td><td>${m.grade}</td>`;
+    rowsToShow.forEach(r=>body+=`<td>${m[r]}</td>`);
+    body += "</tr>";
+  });
+  document.getElementById('overviewTable').innerHTML = head + body;
+}
+renderOverview();
+
+document.getElementById('btnCsvAll').addEventListener('click', ()=>{
+  downloadAllCSV();
+  const st = document.getElementById('statusAll');
+  st.textContent = "✓ Datei heruntergeladen (38 Werkstoffe × 23 Kennwerte)";
+  setTimeout(()=>st.textContent="", 2500);
+});
+
+// --- abbreviations ---
+document.getElementById('abbrGrid').innerHTML = ABBR.map(a=>`<div class="legend-box"><b>${a[0]}</b><br>${a[1]}</div>`).join('');
+
+// --- mould reaction pressure chart (canvas) ---
+function drawChart(){
+  const c = document.getElementById('pressureChart');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const padL=55, padB=35, padT=15, padR=15;
+  const w = c.width - padL - padR, h = c.height - padT - padB;
+  const xMax = 3.4, yMax = 900;
+  function X(v){return padL + (v/xMax)*w;}
+  function Y(v){return padT + h - (v/yMax)*h;}
+  // axes
+  ctx.strokeStyle="#0e2a52"; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+h); ctx.lineTo(padL+w,padT+h); ctx.stroke();
+  ctx.fillStyle="#4a5b7a"; ctx.font="10px Arial";
+  for(let y=0;y<=900;y+=100){ ctx.fillText(y, 8, Y(y)+3); ctx.strokeStyle="#e5eaf2"; ctx.beginPath(); ctx.moveTo(padL,Y(y)); ctx.lineTo(padL+w,Y(y)); ctx.stroke();}
+  for(let x=0.4;x<=3.4;x+=0.4){ ctx.fillText(x.toFixed(1), X(x)-8, padT+h+15); }
+  ctx.fillText("pA [bar]", 4, padT-2);
+  ctx.fillText("s [mm]", padL+w-30, padT+h+30);
+
+  function band(points, color, label){
+    ctx.fillStyle = color; ctx.globalAlpha=0.55;
+    ctx.beginPath();
+    points.forEach((p,i)=> i===0? ctx.moveTo(X(p[0]),Y(p[1])) : ctx.lineTo(X(p[0]),Y(p[1])) );
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle="#0e2a52"; ctx.font="11px Arial";
+    ctx.fillText(label, X(points[Math.floor(points.length/2)][0])-20, Y(points[Math.floor(points.length/2)][1]));
+  }
+  band([[0.4,900],[1.6,900],[1.6,600],[0.4,600]], "#7fb3ff", "Containers");
+  band([[1.6,600],[3.4,600],[3.4,450],[1.6,450]], "#a8c8ff", "Techn. parts / ribs");
+  band([[0.4,600],[1.6,600],[1.6,450],[0.4,450]], "#a8c8ff", "");
+  band([[1.0,450],[3.4,450],[3.4,350],[1.0,350]], "#cfe0ff", "Flat parts");
+  band([[0.4,450],[1.0,450],[1.0,200],[0.4,200]], "#e6eeff", "Flat thin parts");
+}
+drawChart();
+
+// =================================================================
+// VISUAL REPLICA (TEST) — faithful grid mock of the physical card
+// =================================================================
+(function(){
+  const cmRuler = document.getElementById('cmRuler');
+  const table = document.getElementById('replicaTable');
+  const readout = document.getElementById('rulerReadout');
+  let side = 0; // 0 = page1 (ABS..PMMA), 1 = page2 (POM..TPE-V)
+  let selIdx = 4; // default PA6 on side 0
+
+  // Row order matches the physical card exactly
+  const ROWS = [
+    ['manufacturer','Manufacturer'], ['trade','Trade name'], ['grade','Grade'],
+    ['filler','Filler content %'], ['structure','Structure'],
+    ['density','Density at 23°C g/cm³'], ['tgTm','Glass transition / melting °C'],
+    ['vicat','Vicat softening temp. °C'], ['visc','Viscosity 1000 s⁻¹ Pa·s'],
+    ['viscT','… at melt temperature °C'], ['kf','Flow factor Kf bar/mm'],
+    ['flow','Flow length 1/2mm mm'], ['tm','Melt temperature Tm °C'],
+    ['tw','Mould temperature Tw °C'], ['v','Max. screw speed v m/s'],
+    ['predryT','Pre-drying temp. °C'], ['predryH','Pre-drying period h'],
+    ['ka','Discharge factor Ka g/cm³'], ['aeff','Thermal diffusivity aeff mm²/s'],
+    ['te','Max. demoulding temp. Te °C'], ['dH','Enthalpy diff. ΔH kJ/kg'],
+    ['shrink','Shrinkage %'], ['humidity','Humidity absorption %'],
+  ];
+
+  function materialsForSide(){
+    return side===0 ? MATERIALS.slice(0,19) : MATERIALS.slice(19,38);
+  }
+
+  function renderRuler(){
+    cmRuler.querySelectorAll('.tick,.num').forEach(e=>e.remove());
+    const totalCm = 23;
+    for(let i=0;i<=totalCm;i++){
+      const pct = i/totalCm*100;
+      const t = document.createElement('div');
+      t.className = 'tick ' + (i%1===0 ? 'major':'minor');
+      t.style.left = pct+'%';
+      cmRuler.appendChild(t);
+      if(i%2===0){
+        const n = document.createElement('div');
+        n.className='num'; n.style.left=pct+'%'; n.textContent=i;
+        cmRuler.appendChild(n);
+      }
+    }
+  }
+
+  function renderTable(){
+    const mats = materialsForSide();
+    if(selIdx>=mats.length) selIdx = 0;
+    let thead = '<thead><tr><th class="rowlabel">Plastic material – short symbol</th>';
+    mats.forEach((m,i)=>{
+      thead += `<th class="matcol${i===selIdx?' sel':''}" data-i="${i}">${m.cat}${m.verified?' ✓':''}</th>`;
+    });
+    thead += '</tr></thead>';
+
+    let tbody = '<tbody>';
+    ROWS.forEach(([key,label])=>{
+      tbody += `<tr><td class="rowlabel">${label}</td>`;
+      mats.forEach((m,i)=>{
+        tbody += `<td class="matcol${i===selIdx?' sel':''}" data-i="${i}">${m[key]}</td>`;
+      });
+      tbody += '</tr>';
+    });
+    tbody += '</tbody>';
+
+    table.innerHTML = thead + tbody;
+    table.querySelectorAll('[data-i]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        selIdx = parseInt(el.dataset.i,10);
+        highlight();
+        renderReadout();
+      });
+    });
+    renderReadout();
+  }
+
+  function highlight(){
+    table.querySelectorAll('[data-i]').forEach(el=>{
+      el.classList.toggle('sel', parseInt(el.dataset.i,10)===selIdx);
+    });
+  }
+
+  function renderReadout(){
+    const m = materialsForSide()[selIdx];
+    readout.innerHTML = `
+      <b>${m.cat}</b> — ${m.manufacturer} ${m.trade!=="–"?m.trade:""} ${m.grade}
+      ${m.verified? " <span class='pill' style='background:#1f8a4c'>✓ gegen Original geprüft</span>":""}
+      <div class="rr-grid">
+        <div>Dichte: <b>${m.density}</b> g/cm³</div>
+        <div>Massetemp. T<sub>m</sub>: <b>${m.tm}</b> °C</div>
+        <div>Werkzeugtemp. T<sub>w</sub>: <b>${m.tw}</b> °C</div>
+        <div>Schwindung: <b>${m.shrink}</b> %</div>
+        <div>Fließfaktor K<sub>f</sub>: <b>${m.kf}</b> bar/mm</div>
+        <div>Struktur: <b>${m.structure}</b></div>
+      </div>`;
+  }
+
+  document.querySelectorAll('.side-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      side = parseInt(btn.dataset.side,10);
+      selIdx = 0;
+      renderTable();
+    });
+  });
+
+  // CSV / clipboard export for the currently selected column
+  document.getElementById('btnCsvVisual').addEventListener('click', ()=>{
+    downloadCSV(materialsForSide()[selIdx]);
+  });
+  document.getElementById('btnCopyVisual').addEventListener('click', ()=>{
+    copyCSV(materialsForSide()[selIdx], document.getElementById('statusVisual'));
+  });
+
+  renderRuler();
+  renderTable();
+})();
+</script>
+</body>
+</html>
