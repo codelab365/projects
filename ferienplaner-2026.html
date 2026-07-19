@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Familien-Ferienplaner 2026 · codeLAB365</title>
+<title>Familien-Aktivitätsplaner · codeLAB365</title>
 <link rel="stylesheet" href="codelab365.css">
 <style>
   /* Ergänzungen, die das Design-System nicht abdeckt (Tabs, Kalender, Modal) –
@@ -17,7 +17,7 @@
   .fp-hero{padding-block: var(--cl-space-4) var(--cl-space-3);}
   .fp-hero .cl-lead{margin-top:.4rem;}
 
-  .fp-tabs, .fp-monthswitch{display:flex;gap:.5rem;margin-bottom:var(--cl-space-3);flex-wrap:wrap;}
+  .fp-tabs{display:flex;gap:.5rem;margin-bottom:var(--cl-space-3);flex-wrap:wrap;}
 
   .fp-toolbar{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:var(--cl-space-3);}
   .fp-toolbar .cl-input{flex:2;min-width:200px;}
@@ -31,6 +31,9 @@
 
   .fp-empty{text-align:center;color:var(--cl-muted);padding:2.5rem 1rem;}
 
+  .fp-monthnav{display:flex;align-items:center;gap:.6rem;margin-bottom:var(--cl-space-3);flex-wrap:wrap;}
+  .fp-monthnav h2{margin:0;min-width:170px;text-align:center;}
+
   .fp-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem;}
   .fp-cal .fp-dow{text-align:center;font-family:var(--cl-font-mono);font-size:.72rem;letter-spacing:.08em;
     text-transform:uppercase;color:var(--cl-muted);padding:.2rem 0;}
@@ -39,7 +42,7 @@
     padding:.4rem;cursor:pointer;font-size:.78rem;display:flex;flex-direction:column;gap:.3rem;transition:.15s;
   }
   .fp-day:hover{border-color:var(--cl-signal);}
-  .fp-day.out-of-range{opacity:.3;cursor:default;}
+  .fp-day.pad{visibility:hidden;}
   .fp-day.today{border-color:var(--cl-signal);box-shadow:var(--cl-ring);}
   .fp-day .num{font-weight:700;color:var(--cl-muted);}
   .fp-day .chips{display:flex;flex-direction:column;gap:.2rem;}
@@ -61,13 +64,11 @@
 <header class="cl-header">
   <div class="cl-container fp-header__inner">
     <a class="cl-brand" href="#">
-      <span style="font-size:1.6rem;line-height:1;">🌴</span>
-      <span class="cl-brand__name">Familien-<b>Ferienplaner</b></span>
+      <span style="font-size:1.6rem;line-height:1;">👨‍👩‍👧‍👦</span>
+      <span class="cl-brand__name">Familien-<b>Aktivitätsplaner</b></span>
     </a>
     <div class="fp-header__spacer">
-      <div class="fp-syncstatus"><span class="fp-syncdot" id="syncDot"></span><span id="syncLabel">Nur dieses Gerät</span></div>
-      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="themeToggle" title="Hell/Dunkel">🌓</button>
-      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="settingsBtn" title="Sync-Einstellungen">⚙️ Sync</button>
+      <div class="fp-syncstatus"><span class="fp-syncdot" id="syncDot"></span><span id="syncLabel">Verbinde ...</span></div>
     </div>
   </div>
 </header>
@@ -75,9 +76,9 @@
 <main class="cl-container">
 
   <section class="fp-hero">
-    <span class="cl-eyebrow">19.07. – 30.08.2026</span>
-    <h1>Ferienaktivitäten planen</h1>
-    <p class="cl-lead">Sammelt Ideen, filtert nach Lust und Wetter, und plant sie gemeinsam im Kalender ein.</p>
+    <span class="cl-eyebrow">Das ganze Jahr</span>
+    <h1>Familienaktivitäten planen</h1>
+    <p class="cl-lead">Sammelt Ideen, filtert nach Lust und Wetter, und plant sie gemeinsam im Kalender ein – egal ob Ferien, Wochenende oder Feiertag.</p>
   </section>
 
   <div class="fp-tabs">
@@ -104,9 +105,11 @@
   <!-- CALENDAR TAB -->
   <div id="tab-cal" style="display:none;">
     <div class="cl-card cl-card--pad">
-      <div class="fp-monthswitch">
-        <button class="cl-chip is-active" data-month="6" id="monthJul" aria-pressed="true">Juli 2026</button>
-        <button class="cl-chip" data-month="7" id="monthAug" aria-pressed="false">August 2026</button>
+      <div class="fp-monthnav">
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" id="prevMonth">‹ Zurück</button>
+        <h2 id="monthLabel">Juli 2026</h2>
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" id="nextMonth">Weiter ›</button>
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" id="todayMonth">Heute</button>
       </div>
       <div class="fp-cal" id="calGrid"></div>
     </div>
@@ -115,7 +118,7 @@
 </main>
 
 <footer class="cl-footer">
-  <div class="cl-container">codeLAB365 · Familien-Ferienplaner 2026</div>
+  <div class="cl-container">codeLAB365 · Familien-Aktivitätsplaner</div>
 </footer>
 
 <!-- Activity Modal -->
@@ -190,124 +193,67 @@
   </div>
 </div>
 
-<!-- Settings / Sync modal -->
-<div class="fp-overlay" id="settingsModalOverlay" style="display:none;">
-  <div class="cl-card cl-card--pad fp-modal">
-    <h2>Familien-Sync einrichten</h2>
-    <p class="cl-lead" style="font-size:.88rem;">
-      Standardmäßig werden alle Daten nur lokal in diesem Browser gespeichert. Damit die ganze Familie
-      dieselbe Liste und denselben Kalender sieht, könnt ihr ein kostenloses
-      <strong>Firebase-Projekt</strong> (Firestore) anlegen und die Konfiguration hier einfügen.
-      Alle Geräte mit derselben Konfiguration sehen dann live dieselben Daten.
-    </p>
-    <div class="fp-field">
-      <label class="cl-label">Firebase-Konfiguration (als JSON einfügen)</label>
-      <textarea class="cl-textarea" id="firebaseConfigInput" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...", ...}'></textarea>
-    </div>
-    <p class="cl-muted" style="font-size:.8rem;">
-      Firestore-Sicherheitsregeln für den Familien-Modus (keine Anmeldung nötig, nur der Link/die Config ist der Schutz):<br>
-      <code class="cl-mono">allow read, write: if true;</code> auf Collections <code class="cl-mono">activities</code> und <code class="cl-mono">calendarEntries</code>.
-    </p>
-    <div class="fp-modal-actions">
-      <button class="cl-btn cl-btn--ghost" id="clearSyncBtn">Nur lokal verwenden</button>
-      <button class="cl-btn cl-btn--ghost" id="closeSettingsBtn">Schließen</button>
-      <button class="cl-btn cl-btn--signal" id="saveSyncBtn">Verbinden</button>
-    </div>
-  </div>
-</div>
-
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+// Fest verdrahtete Firebase-Verbindung (bestehendes Projekt "private").
+// Kein Login nötig – Zugriff auf die Collections "activities" und "calendarEntries"
+// ist über die Firestore-Regeln offen (siehe Notiz am Ende der Datei).
+const firebaseConfig = {
+  apiKey: "AIzaSyBdQX7fc8iACTX4DqBt6KNDmt31hUfKtsA",
+  authDomain: "private-c25ce.firebaseapp.com",
+  projectId: "private-c25ce",
+  storageBucket: "private-c25ce.firebasestorage.app",
+  messagingSenderId: "669741086329",
+  appId: "1:669741086329:web:1a270f74a95d374cc146a8",
+  measurementId: "G-5940R8W5F6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 const CATEGORIES = ["Outdoor","Sport","Kultur & Ausflug","Essen & Picknick","Indoor & Regentag","Baden & Wasser","Sonstiges"];
-const RANGE_START = new Date(2026,6,19); // 19 Jul 2026
-const RANGE_END   = new Date(2026,7,30); // 30 Aug 2026
+const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+const today = new Date();
 
 let state = {
-  mode: "local", // or "firestore"
   activities: [],
-  calendar: [], // {id, date:'YYYY-MM-DD', activityId, note}
+  calendar: [], // {id, date:'YYYY-MM-DD', activityId}
   filters: {search:"", cat:"", cost:"", weather:""},
   activeTab: "list",
-  activeMonth: 6, // 6=Jul, 7=Aug (0-indexed JS month)
-  theme: localStorage.getItem("fp_theme") || ""
+  viewYear: today.getFullYear(),
+  viewMonth: today.getMonth()
 };
-
-let db = null;
-let unsubActs = null, unsubCal = null;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function ymd(d){ return d.toISOString().slice(0,10); }
 
-// ---------- persistence ----------
-function loadLocal(){
-  state.activities = JSON.parse(localStorage.getItem("fp_activities")||"[]");
-  state.calendar = JSON.parse(localStorage.getItem("fp_calendar")||"[]");
-}
-function saveLocal(){
-  localStorage.setItem("fp_activities", JSON.stringify(state.activities));
-  localStorage.setItem("fp_calendar", JSON.stringify(state.calendar));
-}
-
-function tryInitFirestore(){
-  const cfgRaw = localStorage.getItem("fp_firebase_config");
-  if(!cfgRaw) { setSyncStatus(false); return; }
-  try{
-    const cfg = JSON.parse(cfgRaw);
-    if(!window.firebase){ setSyncStatus(false); return; }
-    if(!firebase.apps || !firebase.apps.length){ firebase.initializeApp(cfg); }
-    db = firebase.firestore();
-    state.mode = "firestore";
-    setSyncStatus(true);
-    unsubActs = db.collection("activities").onSnapshot(snap=>{
-      state.activities = snap.docs.map(d=>({id:d.id, ...d.data()}));
-      renderAll();
-    }, err=>{ console.error(err); setSyncStatus(false); });
-    unsubCal = db.collection("calendarEntries").onSnapshot(snap=>{
-      state.calendar = snap.docs.map(d=>({id:d.id, ...d.data()}));
-      renderAll();
-    }, err=>console.error(err));
-  }catch(e){
-    console.error("Firebase-Config ungültig", e);
-    setSyncStatus(false);
-  }
-}
-
 function setSyncStatus(on){
   document.getElementById("syncDot").classList.toggle("on", on);
-  document.getElementById("syncLabel").textContent = on ? "Familien-Sync aktiv" : "Nur dieses Gerät";
+  document.getElementById("syncLabel").textContent = on ? "Familien-Sync aktiv" : "Keine Verbindung";
 }
 
+db.collection("activities").onSnapshot(snap=>{
+  state.activities = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  setSyncStatus(true);
+  renderAll();
+}, err=>{ console.error(err); setSyncStatus(false); });
+
+db.collection("calendarEntries").onSnapshot(snap=>{
+  state.calendar = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderAll();
+}, err=>console.error(err));
+
 // ---------- CRUD ----------
-function addActivity(a){
-  if(state.mode==="firestore"){ db.collection("activities").add(a); }
-  else { state.activities.push({id:uid(), ...a}); saveLocal(); renderAll(); }
-}
-function updateActivity(id, a){
-  if(state.mode==="firestore"){ db.collection("activities").doc(id).update(a); }
-  else {
-    const idx = state.activities.findIndex(x=>x.id===id);
-    if(idx>-1){ state.activities[idx] = {...state.activities[idx], ...a}; saveLocal(); renderAll(); }
-  }
-}
+function addActivity(a){ db.collection("activities").add(a); }
+function updateActivity(id, a){ db.collection("activities").doc(id).update(a); }
 function deleteActivity(id){
   if(!confirm("Diese Aktivität wirklich löschen?")) return;
-  if(state.mode==="firestore"){
-    db.collection("activities").doc(id).delete();
-    state.calendar.filter(c=>c.activityId===id).forEach(c=>db.collection("calendarEntries").doc(c.id).delete());
-  } else {
-    state.activities = state.activities.filter(x=>x.id!==id);
-    state.calendar = state.calendar.filter(c=>c.activityId!==id);
-    saveLocal(); renderAll();
-  }
+  db.collection("activities").doc(id).delete();
+  state.calendar.filter(c=>c.activityId===id).forEach(c=>db.collection("calendarEntries").doc(c.id).delete());
 }
-function addAssignment(date, activityId){
-  const entry = {date, activityId};
-  if(state.mode==="firestore"){ db.collection("calendarEntries").add(entry); }
-  else { state.calendar.push({id:uid(), ...entry}); saveLocal(); renderAll(); }
-}
-function removeAssignment(id){
-  if(state.mode==="firestore"){ db.collection("calendarEntries").doc(id).delete(); }
-  else { state.calendar = state.calendar.filter(c=>c.id!==id); saveLocal(); renderAll(); }
-}
+function addAssignment(date, activityId){ db.collection("calendarEntries").add({date, activityId}); }
+function removeAssignment(id){ db.collection("calendarEntries").doc(id).delete(); }
 
 // ---------- rendering: list ----------
 function populateCategorySelects(){
@@ -376,32 +322,45 @@ function escapeHtml(str){
 
 // ---------- rendering: calendar ----------
 function renderCalendar(){
+  document.getElementById("monthLabel").textContent = `${MONTH_NAMES[state.viewMonth]} ${state.viewYear}`;
   const grid = document.getElementById("calGrid");
-  const year = 2026, month = state.activeMonth;
+  const year = state.viewYear, month = state.viewMonth;
   const first = new Date(year, month, 1);
   const startOffset = (first.getDay()+6)%7; // Monday=0
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const dow = ["Mo","Di","Mi","Do","Fr","Sa","So"];
   let html = dow.map(d=>`<div class="fp-dow">${d}</div>`).join("");
 
-  for(let i=0;i<startOffset;i++) html += `<div class="fp-day out-of-range"></div>`;
+  for(let i=0;i<startOffset;i++) html += `<div class="fp-day pad"></div>`;
 
+  const todayStr = ymd(today);
   for(let day=1; day<=daysInMonth; day++){
     const dateObj = new Date(year, month, day);
     const dateStr = ymd(dateObj);
-    const inRange = dateObj >= RANGE_START && dateObj <= RANGE_END;
-    const isToday = ymd(new Date(2026,6,19)) === dateStr;
+    const isToday = todayStr === dateStr;
     const entries = state.calendar.filter(c=>c.date===dateStr);
     const chips = entries.map(e=>{
       const act = state.activities.find(a=>a.id===e.activityId);
       return `<div class="fp-chip">${act?escapeHtml(act.title):"?"}</div>`;
     }).join("");
-    html += `<div class="fp-day ${inRange?"":"out-of-range"} ${isToday?"today":""}" ${inRange?`onclick="openDay('${dateStr}')"`:""}>
+    html += `<div class="fp-day ${isToday?"today":""}" onclick="openDay('${dateStr}')">
       <span class="num">${day}</span>
       <div class="chips">${chips}</div>
     </div>`;
   }
   grid.innerHTML = html;
+}
+
+function changeMonth(delta){
+  state.viewMonth += delta;
+  if(state.viewMonth < 0){ state.viewMonth = 11; state.viewYear--; }
+  if(state.viewMonth > 11){ state.viewMonth = 0; state.viewYear++; }
+  renderCalendar();
+}
+function jumpToToday(){
+  state.viewYear = today.getFullYear();
+  state.viewMonth = today.getMonth();
+  renderCalendar();
 }
 
 // ---------- modals: activity ----------
@@ -464,8 +423,8 @@ function openAssignFromCard(activityId){
   document.getElementById("tab-list").style.display="none";
   document.getElementById("tab-cal").style.display="block";
   setActiveTab("cal");
-  const today = ymd(new Date(2026,6,19));
-  openDay(today);
+  jumpToToday();
+  openDay(ymd(today));
   document.getElementById("assignPicker").value = activityId;
 }
 function renderAssignedList(){
@@ -482,13 +441,6 @@ function renderAssignedList(){
 }
 function closeAssignModal(){ document.getElementById("assignModalOverlay").style.display="none"; }
 
-// ---------- settings ----------
-function openSettings(){
-  document.getElementById("firebaseConfigInput").value = localStorage.getItem("fp_firebase_config") || "";
-  document.getElementById("settingsModalOverlay").style.display = "flex";
-}
-function closeSettings(){ document.getElementById("settingsModalOverlay").style.display="none"; }
-
 // ---------- tabs ----------
 function setActiveTab(tab){
   state.activeTab = tab;
@@ -502,12 +454,6 @@ function setActiveTab(tab){
   if(tab==="cal") renderCalendar();
 }
 
-// ---------- theme ----------
-function applyTheme(){
-  if(state.theme){ document.documentElement.setAttribute("data-theme", state.theme); }
-  else { document.documentElement.removeAttribute("data-theme"); }
-}
-
 function renderAll(){
   renderList();
   renderCalendar();
@@ -516,8 +462,6 @@ function renderAll(){
 // ---------- wire up ----------
 document.addEventListener("DOMContentLoaded", ()=>{
   populateCategorySelects();
-  loadLocal();
-  applyTheme();
 
   document.querySelectorAll(".fp-tabs .cl-chip").forEach(t=>t.addEventListener("click", ()=>setActiveTab(t.dataset.tab)));
   document.getElementById("addActivityBtn").addEventListener("click", openNewActivity);
@@ -537,18 +481,9 @@ document.addEventListener("DOMContentLoaded", ()=>{
     renderList();
   });
 
-  document.getElementById("monthJul").addEventListener("click", ()=>{
-    state.activeMonth=6;
-    document.getElementById("monthJul").classList.add("is-active"); document.getElementById("monthJul").setAttribute("aria-pressed","true");
-    document.getElementById("monthAug").classList.remove("is-active"); document.getElementById("monthAug").setAttribute("aria-pressed","false");
-    renderCalendar();
-  });
-  document.getElementById("monthAug").addEventListener("click", ()=>{
-    state.activeMonth=7;
-    document.getElementById("monthAug").classList.add("is-active"); document.getElementById("monthAug").setAttribute("aria-pressed","true");
-    document.getElementById("monthJul").classList.remove("is-active"); document.getElementById("monthJul").setAttribute("aria-pressed","false");
-    renderCalendar();
-  });
+  document.getElementById("prevMonth").addEventListener("click", ()=>changeMonth(-1));
+  document.getElementById("nextMonth").addEventListener("click", ()=>changeMonth(1));
+  document.getElementById("todayMonth").addEventListener("click", jumpToToday);
 
   document.getElementById("closeAssignBtn").addEventListener("click", closeAssignModal);
   document.getElementById("addAssignBtn").addEventListener("click", ()=>{
@@ -558,47 +493,20 @@ document.addEventListener("DOMContentLoaded", ()=>{
     setTimeout(renderAssignedList, 50);
   });
 
-  document.getElementById("settingsBtn").addEventListener("click", openSettings);
-  document.getElementById("closeSettingsBtn").addEventListener("click", closeSettings);
-  document.getElementById("clearSyncBtn").addEventListener("click", ()=>{
-    localStorage.removeItem("fp_firebase_config");
-    location.reload();
-  });
-  document.getElementById("saveSyncBtn").addEventListener("click", ()=>{
-    const raw = document.getElementById("firebaseConfigInput").value.trim();
-    try{
-      JSON.parse(raw);
-      localStorage.setItem("fp_firebase_config", raw);
-      loadFirebaseSdkThenInit();
-      closeSettings();
-    }catch(e){
-      alert("Das sieht nicht nach gültigem JSON aus. Bitte die Firebase-Konfiguration genau so einfügen, wie sie in der Firebase-Konsole angezeigt wird.");
-    }
-  });
-
-  document.getElementById("themeToggle").addEventListener("click", ()=>{
-    state.theme = state.theme === "dark" ? "light" : (state.theme === "light" ? "" : "dark");
-    localStorage.setItem("fp_theme", state.theme);
-    applyTheme();
-  });
-
-  loadFirebaseSdkThenInit();
   renderAll();
 });
-
-function loadFirebaseSdkThenInit(){
-  if(!localStorage.getItem("fp_firebase_config")) return;
-  if(window.firebase){ tryInitFirestore(); return; }
-  const s1 = document.createElement("script");
-  s1.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
-  s1.onload = ()=>{
-    const s2 = document.createElement("script");
-    s2.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js";
-    s2.onload = tryInitFirestore;
-    document.head.appendChild(s2);
-  };
-  document.head.appendChild(s1);
-}
 </script>
 </body>
 </html>
+<!--
+Firestore-Regeln: bitte in der Firebase-Konsole (Firestore Database → Regeln)
+zu den bestehenden Regeln (z.B. für "termine") diese zwei Blöcke ergänzen,
+ohne die bestehenden zu löschen:
+
+match /activities/{activityId} {
+  allow read, write: if true;
+}
+match /calendarEntries/{entryId} {
+  allow read, write: if true;
+}
+-->
