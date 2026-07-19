@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dreier×Schach — codeLAB365</title>
+<link rel="stylesheet" href="codelab365.css">
+<style>
+  /* ---------- Spiel-spezifische Tokens, abgeleitet aus dem codeLAB365-System ---------- */
+  :root{
+    --board-light: var(--cl-surface);
+    --board-dark:  color-mix(in srgb, var(--cl-line) 65%, var(--cl-surface-2));
+
+    --zw-light: color-mix(in srgb, var(--cl-navy) 5%,  var(--board-light));
+    --zw-dark:  color-mix(in srgb, var(--cl-navy) 18%, var(--board-dark));
+    --zb-light: color-mix(in srgb, var(--cl-text) 6%,  var(--board-light));
+    --zb-dark:  color-mix(in srgb, var(--cl-text) 20%, var(--board-dark));
+    --zr-light: color-mix(in srgb, var(--cl-err) 10%,  var(--board-light));
+    --zr-dark:  color-mix(in srgb, var(--cl-err) 24%,  var(--board-dark));
+
+    --white-piece:#ffffff;
+    --black-piece: var(--cl-text);
+    --red-piece:   var(--cl-err);
+    --piece-outline: var(--cl-navy-700);
+
+    --cell:44px;
+  }
+
+  /* ---------- Layout ---------- */
+  .app-main{ padding-block: var(--cl-space-4) var(--cl-space-5); }
+  .app-title{ margin-top: .3em; }
+  .app-title .x{ color: var(--cl-signal); }
+
+  .app-layout{
+    display:flex; gap: var(--cl-space-4); align-items:flex-start; flex-wrap:wrap;
+    margin-top: var(--cl-space-4);
+  }
+  .board-col{ display:flex; flex-direction:column; align-items:center; gap: var(--cl-space-2); }
+  .app-aside{ width:288px; display:flex; flex-direction:column; gap: var(--cl-space-2); }
+
+  .app-nav{ margin-left:auto; }
+  .nav-divider{ width:1px; height:22px; background:var(--cl-line); display:inline-block; margin-inline:.25rem; }
+
+  /* ---------- Statuszeile ---------- */
+  .status-bar{
+    display:flex; align-items:center; gap:.65rem;
+    font-family: var(--cl-font-mono); font-size:0.92rem;
+    min-height:1.4em; color: var(--cl-text);
+  }
+  .dot{ width:12px; height:12px; border-radius:50%; display:inline-block; border:1.5px solid var(--cl-muted); }
+  .dot.w{ background:var(--white-piece); }
+  .dot.b{ background:var(--black-piece); border-color:var(--black-piece); }
+  .dot.r{ background:var(--red-piece);   border-color:var(--red-piece); }
+  #statusText.check{ color:var(--cl-err); font-weight:600; }
+  #statusText.over{  color:var(--cl-signal-600); font-weight:600; }
+
+  /* ---------- Brett ---------- */
+  .board-wrap{ position:relative; }
+  #board{
+    display:grid;
+    border:1px solid var(--cl-line);
+    border-radius: var(--cl-radius-sm);
+    overflow:hidden;
+    box-shadow: var(--cl-shadow-lg);
+  }
+  .cell{
+    width:var(--cell); height:var(--cell); position:relative;
+    display:flex; align-items:center; justify-content:center; cursor:default;
+  }
+  .cell.invalid{ background:transparent; pointer-events:none; }
+  .cell.light.zone-c{ background:var(--board-light); }
+  .cell.dark.zone-c{  background:var(--board-dark); }
+  .cell.light.zone-w{ background:var(--zw-light); }
+  .cell.dark.zone-w{  background:var(--zw-dark); }
+  .cell.light.zone-b{ background:var(--zb-light); }
+  .cell.dark.zone-b{  background:var(--zb-dark); }
+  .cell.light.zone-r{ background:var(--zr-light); }
+  .cell.dark.zone-r{  background:var(--zr-dark); }
+
+  .cell.clickable{ cursor:pointer; }
+  .cell.selected::after{
+    content:""; position:absolute; inset:2px;
+    border:2px solid var(--cl-signal); border-radius:2px; pointer-events:none;
+  }
+  .cell.target::before{
+    content:""; position:absolute; width:28%; height:28%; border-radius:50%;
+    background:color-mix(in srgb, var(--cl-text) 35%, transparent);
+  }
+  .cell.target.capture::before{
+    width:100%; height:100%; border-radius:0; background:transparent;
+    border:4px solid color-mix(in srgb, var(--cl-err) 55%, transparent);
+    box-sizing:border-box;
+  }
+  .cell.in-check{ box-shadow: inset 0 0 0 3px var(--cl-err); }
+  .cell.last-from::after, .cell.last-to::after{
+    content:""; position:absolute; inset:0;
+    background: color-mix(in srgb, var(--cl-signal) 18%, transparent);
+    pointer-events:none;
+  }
+
+  .piece{ font-size:calc(var(--cell) * 0.72); line-height:1; user-select:none; }
+  .piece.w{ color:var(--white-piece); -webkit-text-stroke:1.6px var(--piece-outline); paint-order:stroke fill;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+  .piece.b{ color:var(--black-piece); filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)); }
+  .piece.r{ color:var(--red-piece); -webkit-text-stroke:0.8px var(--piece-outline); paint-order:stroke fill;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+
+  /* Wende-Dial: zeigt Zugreihenfolge/Symmetrie */
+  .dial{ display:flex; gap:10px; align-items:center; }
+  .dial .pip{
+    width:9px; height:9px; border-radius:50%; border:1px solid var(--cl-line);
+    background:transparent; transition:all .2s ease;
+  }
+  .dial .pip.active{
+    background:var(--cl-signal); border-color:var(--cl-signal);
+    box-shadow:0 0 8px 1px color-mix(in srgb, var(--cl-signal) 55%, transparent);
+  }
+  .dial .pip.dead{ background:var(--cl-line); border-color:var(--cl-line); }
+
+  /* ---------- Seitenleiste ---------- */
+  .app-panel h2{
+    font-size:0.95rem; margin:0 0 .6rem 0; color:var(--cl-muted); font-weight:600; letter-spacing:.02em;
+  }
+  .player-row{
+    display:flex; align-items:center; gap:8px;
+    font-family: var(--cl-font-mono); font-size:0.85rem; padding:4px 0; color:var(--cl-text);
+  }
+  .player-row.eliminated{ color:var(--cl-muted); text-decoration:line-through; opacity:.65; }
+  .captured-row{ display:flex; flex-wrap:wrap; gap:2px; min-height:1.4em; font-size:1.1rem; }
+  .captured-row .piece{ font-size:1.05rem; filter:none; }
+  .captured-row .cap-label{ color:var(--cl-muted); font-size:0.72rem; width:100%; font-family:var(--cl-font-mono); }
+
+  #log{ max-height:220px; overflow-y:auto; font-family:var(--cl-font-mono); font-size:0.78rem; line-height:1.6; color:var(--cl-muted); }
+  #log div{ border-bottom:1px dotted var(--cl-line); padding:2px 0; }
+  #log div:last-child{ color:var(--cl-signal-600); }
+
+  .app-note{ font-size:0.8rem; line-height:1.6; max-width:70ch; margin-top: var(--cl-space-4); }
+
+  /* ---------- Modale (Umwandlung & Doku) ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:color-mix(in srgb, var(--cl-navy-700) 55%, transparent);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:1rem;
+  }
+  .modal-backdrop.show{ display:flex; }
+  .modal{
+    background:var(--cl-surface); border:1px solid var(--cl-line); border-radius:var(--cl-radius);
+    box-shadow: var(--cl-shadow-lg); padding: var(--cl-space-4); text-align:center;
+    position:relative;
+  }
+  .modal h3{ margin:0 0 var(--cl-space-2) 0; }
+  .modal-choices{ display:flex; gap:10px; }
+  .modal-choices button{
+    font-size:1.6rem; width:56px; height:56px;
+    background:var(--cl-surface-2); border:1px solid var(--cl-line); border-radius:var(--cl-radius-sm);
+    cursor:pointer; color:var(--cl-text);
+  }
+  .modal-choices button:hover{ border-color:var(--cl-signal); }
+
+  .modal--docs{ max-width:640px; text-align:left; max-height:82vh; overflow-y:auto; }
+  .modal-close{
+    position:absolute; top:.7rem; right:.7rem; width:32px; height:32px; border-radius:50%;
+    border:1px solid var(--cl-line); background:var(--cl-surface-2); color:var(--cl-muted);
+    font-size:1.1rem; line-height:1; cursor:pointer;
+  }
+  .modal-close:hover{ color:var(--cl-text); border-color:var(--cl-navy-600); }
+  .docs-content h3{ font-size:1.1rem; margin:1.1em 0 .4em; }
+  .docs-content h3:first-child{ margin-top:0; }
+  .docs-content p, .docs-content li{ color:var(--cl-muted); font-size:0.94rem; }
+  .docs-content ul{ padding-left:1.2em; margin:.3em 0 .9em; }
+  .docs-content strong{ color:var(--cl-text); }
+
+  @media (max-width:760px){
+    :root{ --cell:30px; }
+    .app-aside{ width:100%; }
+    .app-layout{ flex-direction:column; align-items:center; }
+    .app-nav{ margin-left:0; width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="cl-header">
+  <div class="cl-container cl-header__inner">
+    <a class="cl-brand" href="#" onclick="return false;">
+      <span class="cl-brand__name">code<b>LAB365</b></span>
+    </a>
+    <nav class="cl-flex cl-flex-wrap app-nav">
+      <button class="cl-chip" data-mode="solo" id="modeSoloBtn">Solo</button>
+      <button class="cl-chip" data-mode="2p" id="mode2pBtn">2 Spieler</button>
+      <button class="cl-chip" data-mode="3p" id="mode3pBtn">3 Spieler</button>
+      <span class="nav-divider"></span>
+      <button class="cl-chip" id="docsBtn">Doku</button>
+      <span class="nav-divider"></span>
+      <button class="cl-chip" id="langDe" aria-pressed="true">DE</button>
+      <button class="cl-chip" id="langEn" aria-pressed="false">EN</button>
+    </nav>
+  </div>
+</header>
+
+<main class="cl-container app-main">
+  <span class="cl-eyebrow" id="eyebrowText">3-Spieler-Variante · Kreuzbrett</span>
+  <h1 class="app-title" id="appTitle">Dreier<span class="x">×</span>Schach</h1>
+
+  <div class="app-layout">
+    <div class="board-col">
+      <div class="status-bar">
+        <span class="dot" id="turnDot"></span>
+        <span id="statusText">Wähle einen Modus.</span>
+      </div>
+      <div class="board-wrap"><div id="board"></div></div>
+      <div class="dial" id="dial"></div>
+    </div>
+
+    <aside class="app-aside">
+      <div class="cl-card app-panel">
+        <h2 id="playersHeading">Spieler</h2>
+        <div id="playerList"></div>
+      </div>
+      <div class="cl-card app-panel">
+        <h2 id="capturedHeading">Geschlagene Figuren</h2>
+        <div id="capturedList"></div>
+      </div>
+      <div class="cl-card app-panel">
+        <h2 id="logHeading">Verlauf</h2>
+        <div id="log"></div>
+      </div>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="restartBtn">Neu starten</button>
+    </aside>
+  </div>
+
+  <p class="cl-muted app-note" id="noteText"></p>
+</main>
+
+<footer class="cl-footer">
+  <div class="cl-container cl-flex" style="justify-content:space-between;">
+    <span>codeLAB365</span>
+    <span class="cl-mono">Dreier×Schach</span>
+  </div>
+</footer>
+
+<div class="modal-backdrop" id="promoModal">
+  <div class="modal">
+    <h3 id="promoTitle">Umwandlung wählen</h3>
+    <div class="modal-choices" id="promoChoices"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="docsModal">
+  <div class="modal modal--docs">
+    <button class="modal-close" id="docsClose" aria-label="Schließen">×</button>
+    <div id="docsContent" class="docs-content"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const N = 12; // Gesamtgroesse des Kreuz-Rasters
+
+  const PIECE_DEF = {
+    rook:   { dirs:[[1,0],[-1,0],[0,1],[0,-1]], slide:true, glyph:'♜' },
+    bishop: { dirs:[[1,1],[1,-1],[-1,1],[-1,-1]], slide:true, glyph:'♝' },
+    queen:  { dirs:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], slide:true, glyph:'♛' },
+    king:   { dirs:[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], slide:false, glyph:'♚' },
+    knight: { dirs:[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]], slide:false, glyph:'♞' },
+    pawn:   { glyph:'♟' }
+  };
+
+  /* ---------- i18n ---------- */
+  const I18N = {
+    de: {
+      htmlLang:'de',
+      docTitle:'Dreier×Schach — codeLAB365',
+      eyebrow:'3-Spieler-Variante · Kreuzbrett',
+      modeSolo:'Solo', mode2p:'2 Spieler', mode3p:'3 Spieler',
+      docsBtn:'Doku', restartBtn:'Neu starten', closeLabel:'Schließen',
+      playersHeading:'Spieler', capturedHeading:'Geschlagene Figuren', logHeading:'Verlauf',
+      statusChoose:'Wähle einen Modus.',
+      turnPrefix:'Am Zug:', checkSuffix:'— Schach!',
+      winSuffix:'gewinnt die Partie!', stalemate:'Patt — Remis.',
+      eliminatedMate:'ist mattgesetzt und scheidet aus.',
+      eliminatedStale:'ist pattgesetzt und scheidet aus.',
+      aiTag:'(KI)', outTag:'— ausgeschieden',
+      promoTitle:'Umwandlung wählen', castleTag:'(Rochade)',
+      names:{ w:'Weiß', b:'Schwarz', r:'Dritter (Rot)' },
+      note:'Prototyp mit vereinfachten Regeln — Details siehe Doku oben.',
+      docsHtml: `
+        <h3>Spielmodi</h3>
+        <ul>
+          <li><strong>Solo</strong> — klassisches 8×8-Schach gegen eine einfache KI, die zufällige legale Züge spielt.</li>
+          <li><strong>2 Spieler</strong> — klassisches 8×8-Schach, abwechselnd am selben Gerät.</li>
+          <li><strong>3 Spieler</strong> — Kreuzbrett mit zentralem 8×8-Feld und drei angesetzten Armen: Weiß unten, Schwarz links, der Dritte (Rot) rechts.</li>
+        </ul>
+        <h3>Zugreihenfolge &amp; Schach</h3>
+        <p>Im 3-Spieler-Modus wird im Uhrzeigersinn gezogen: Weiß → Schwarz → Rot → Weiß … Ein König kann von jedem der beiden Gegner Schach geboten bekommen, nicht nur von einem.</p>
+        <h3>Ausscheiden &amp; Sieg</h3>
+        <p>Wird ein Spieler matt- oder pattgesetzt, scheidet er aus. Seine Figuren bleiben als neutrale Blockadefiguren stehen. Gewonnen hat, wer als Letzter einen König behält. Im Solo- und 2-Spieler-Modus gilt klassisches Schach: Matt beendet die Partie sofort, Patt ist Remis.</p>
+        <h3>Rochade &amp; Umwandlung</h3>
+        <p>Rochade ist entlang der eigenen Grundreihenachse jedes Spielers möglich, sofern König und Turm noch nicht gezogen haben, der Weg frei ist und König sowie Zielfeld nicht angegriffen werden. Ein Bauer wandelt um, sobald er das letzte für ihn erreichbare Feld in seine Zugrichtung erreicht.</p>
+        <h3>Bedienung</h3>
+        <p>Eigene Figur anklicken zeigt die legalen Züge (Punkt = Zug, Rahmen = Schlagzug). Zielfeld anklicken führt den Zug aus.</p>
+        <h3>Bekannte Vereinfachungen</h3>
+        <ul>
+          <li>Kein En-passant-Schlagzug.</li>
+          <li>Die Umwandlungslinien sind je nach Spieler unterschiedlich lang, da Schwarz und Rot ggf. durch fremdes Arm-Gebiet ziehen.</li>
+        </ul>
+      `
+    },
+    en: {
+      htmlLang:'en',
+      docTitle:'Three-Player Chess — codeLAB365',
+      eyebrow:'3-player variant · cross board',
+      modeSolo:'Solo', mode2p:'2 Players', mode3p:'3 Players',
+      docsBtn:'Docs', restartBtn:'Restart', closeLabel:'Close',
+      playersHeading:'Players', capturedHeading:'Captured pieces', logHeading:'Move log',
+      statusChoose:'Choose a mode.',
+      turnPrefix:'To move:', checkSuffix:'— Check!',
+      winSuffix:'wins the game!', stalemate:'Stalemate — draw.',
+      eliminatedMate:'is checkmated and is out.',
+      eliminatedStale:'is stalemated and is out.',
+      aiTag:'(AI)', outTag:'— eliminated',
+      promoTitle:'Choose promotion', castleTag:'(castling)',
+      names:{ w:'White', b:'Black', r:'Third (Red)' },
+      note:'Prototype with simplified rules — see the docs above for details.',
+      docsHtml: `
+        <h3>Modes</h3>
+        <ul>
+          <li><strong>Solo</strong> — classic 8×8 chess against a simple AI that plays random legal moves.</li>
+          <li><strong>2 Players</strong> — classic 8×8 chess, hot-seat on the same device.</li>
+          <li><strong>3 Players</strong> — a cross-shaped board with a central 8×8 field and three arms: White at the bottom, Black on the left, the Third player (Red) on the right.</li>
+        </ul>
+        <h3>Turn order &amp; check</h3>
+        <p>In 3-player mode, turns go clockwise: White → Black → Red → White … A king can be put in check by either opponent, not just one.</p>
+        <h3>Elimination &amp; winning</h3>
+        <p>A player who is checkmated or stalemated is eliminated. Their pieces remain on the board as neutral blockers. Whoever keeps a king longest wins. In Solo and 2-player mode, classic rules apply: checkmate ends the game immediately, stalemate is a draw.</p>
+        <h3>Castling &amp; promotion</h3>
+        <p>Castling works along each player's own back-rank axis, as long as the king and rook haven't moved, the path is clear, and neither the king nor its destination is under attack. A pawn promotes as soon as it reaches the last square it can still advance to in its direction of travel.</p>
+        <h3>Controls</h3>
+        <p>Click your own piece to see legal moves (dot = move, ring = capture). Click the target square to play the move.</p>
+        <h3>Known simplifications</h3>
+        <ul>
+          <li>No en passant captures.</li>
+          <li>Promotion distance differs per player, since Black and Red may travel through another player's arm territory.</li>
+        </ul>
+      `
+    }
+  };
+
+  let state = null;
+
+  function t(key){ return I18N[state.lang][key]; }
+  function pname(owner){ return I18N[state.lang].names[owner]; }
+
+  function makeEmptyBoard(){
+    const b = [];
+    for(let r=0;r<N;r++){
+      const row=[];
+      for(let c=0;c<N;c++) row.push({valid:false, piece:null});
+      b.push(row);
+    }
+    return b;
+  }
+
+  function markValid(board, r0,c0,r1,c1){
+    for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++) board[r][c].valid = true;
+  }
+
+  function placeBackRank(board, cells, owner){
+    const order = ['rook','knight','bishop','queen','king','bishop','knight','rook'];
+    cells.forEach((rc,i)=>{
+      board[rc.r][rc.c].piece = { type: order[i], owner, hasMoved:false };
+    });
+  }
+
+  function placePawns(board, cells, owner){
+    cells.forEach(rc=>{ board[rc.r][rc.c].piece = { type:'pawn', owner, hasMoved:false }; });
+  }
+
+  function buildCellsHoriz(row, c0, c1){
+    const arr=[]; for(let c=c0;c<=c1;c++) arr.push({r:row,c}); return arr;
+  }
+  function buildCellsVert(col, r0, r1){
+    const arr=[]; for(let r=r0;r<=r1;r++) arr.push({r,c:col}); return arr;
+  }
+
+  function initGame(mode){
+    const board = makeEmptyBoard();
+    let players = {};
+    let order = [];
+
+    // Zentrum ist in jedem Modus die Basis (8x8 klassisches Feld)
+    markValid(board, 2,2, 9,9);
+
+    if(mode === '2p' || mode === 'solo'){
+      players = {
+        w: { forward:[-1,0], lateral:[0,1], eliminated:false, ai:false },
+        b: { forward:[1,0],  lateral:[0,1], eliminated:false, ai:(mode==='solo') }
+      };
+      order = ['w','b'];
+      placeBackRank(board, buildCellsHoriz(9,2,9), 'w');
+      placePawns(board, buildCellsHoriz(8,2,9), 'w');
+      placeBackRank(board, buildCellsHoriz(2,2,9), 'b');
+      placePawns(board, buildCellsHoriz(3,2,9), 'b');
+    } else {
+      markValid(board, 10,2, 11,9); // Arm W unten
+      markValid(board, 2,0, 9,1);   // Arm B links
+      markValid(board, 2,10, 9,11); // Arm R rechts
+
+      players = {
+        w: { forward:[-1,0], lateral:[0,1], eliminated:false, ai:false },
+        b: { forward:[0,1],  lateral:[1,0], eliminated:false, ai:false },
+        r: { forward:[0,-1], lateral:[1,0], eliminated:false, ai:false }
+      };
+      order = ['w','b','r'];
+
+      placeBackRank(board, buildCellsHoriz(11,2,9), 'w');
+      placePawns(board, buildCellsHoriz(10,2,9), 'w');
+      placeBackRank(board, buildCellsVert(0,2,9), 'b');
+      placePawns(board, buildCellsVert(1,2,9), 'b');
+      placeBackRank(board, buildCellsVert(11,2,9), 'r');
+      placePawns(board, buildCellsVert(10,2,9), 'r');
+    }
+
+    const prevLang = state ? state.lang : (document.documentElement.lang === 'en' ? 'en' : 'de');
+
+    state = {
+      mode, board, players, order,
+      lang: prevLang,
+      currentIdx: 0,
+      selected: null,
+      legalTargets: [],
+      lastMove: null,
+      log: [],
+      captured: Object.fromEntries(order.map(o=>[o,[]])),
+      pendingPromotion: null,
+      gameOver: false,
+      winner: null
+    };
+
+    render();
+    updateStatus();
+    maybeTriggerAI();
+  }
+
+  function inBounds(r,c){ return r>=0 && r<N && c>=0 && c<N; }
+  function cellAt(board,r,c){ return inBounds(r,c) ? board[r][c] : null; }
+  function isValidEmpty(board,r,c){
+    const cell = cellAt(board,r,c);
+    return cell && cell.valid && !cell.piece;
+  }
+  function isValidCell(board,r,c){
+    const cell = cellAt(board,r,c);
+    return cell && cell.valid;
+  }
+
+  function isLastRankAfter(board, r, c, dr, dc){
+    const nr=r+dr, nc=c+dc;
+    return !isValidCell(board, nr, nc);
+  }
+
+  function genPseudoMoves(board, r, c, playerMeta){
+    const cell = board[r][c];
+    if(!cell.piece) return [];
+    const { type, owner, hasMoved } = cell.piece;
+    const moves = [];
+
+    if(type === 'pawn'){
+      const [fr,fc] = playerMeta.forward;
+      const [lr,lc] = playerMeta.lateral;
+
+      const oneR = r+fr, oneC = c+fc;
+      if(isValidEmpty(board, oneR, oneC)){
+        moves.push({ r:oneR, c:oneC, capture:false, promo:isLastRankAfter(board,oneR,oneC,fr,fc) });
+        if(!hasMoved){
+          const twoR = r+2*fr, twoC = c+2*fc;
+          if(isValidEmpty(board, twoR, twoC)){
+            moves.push({ r:twoR, c:twoC, capture:false, doubleStep:true, promo:false });
+          }
+        }
+      }
+      [[fr+lr, fc+lc],[fr-lr, fc-lc]].forEach(([dr,dc])=>{
+        const tr=r+dr, tc=c+dc;
+        const tgt = cellAt(board,tr,tc);
+        if(tgt && tgt.valid && tgt.piece && tgt.piece.owner !== owner){
+          moves.push({ r:tr, c:tc, capture:true, promo:isLastRankAfter(board,tr,tc,fr,fc) });
+        }
+      });
+      return moves;
+    }
+
+    const def = PIECE_DEF[type];
+    for(const [dr,dc] of def.dirs){
+      let nr=r+dr, nc=c+dc;
+      while(isValidCell(board,nr,nc)){
+        const tgt = board[nr][nc];
+        if(!tgt.piece){
+          moves.push({ r:nr, c:nc, capture:false });
+        } else {
+          if(tgt.piece.owner !== owner) moves.push({ r:nr, c:nc, capture:true });
+          break;
+        }
+        if(!def.slide) break;
+        nr += dr; nc += dc;
+      }
+    }
+    return moves;
+  }
+
+  function findKing(board, owner){
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+      const p = board[r][c].piece;
+      if(p && p.owner===owner && p.type==='king') return {r,c};
+    }
+    return null;
+  }
+
+  function activeOwners(){
+    return state.order.filter(o=>!state.players[o].eliminated);
+  }
+
+  function isAttacked(board, r, c, byOwners){
+    for(let rr=0;rr<N;rr++) for(let cc=0;cc<N;cc++){
+      const cell = board[rr][cc];
+      if(!cell.piece) continue;
+      if(!byOwners.includes(cell.piece.owner)) continue;
+      const meta = state.players[cell.piece.owner];
+      const moves = genPseudoMoves(board, rr, cc, meta);
+      if(moves.some(m=>m.r===r && m.c===c)) return true;
+    }
+    return false;
+  }
+
+  function inCheck(board, owner){
+    const kp = findKing(board, owner);
+    if(!kp) return false;
+    const others = state.order.filter(o=>o!==owner);
+    return isAttacked(board, kp.r, kp.c, others);
+  }
+
+  function cloneBoard(board){
+    return board.map(row=>row.map(cell=>({ valid:cell.valid, piece: cell.piece ? {...cell.piece} : null })));
+  }
+
+  function simulateMove(board, from, to){
+    const b2 = cloneBoard(board);
+    b2[to.r][to.c].piece = b2[from.r][from.c].piece;
+    b2[from.r][from.c].piece = null;
+    return b2;
+  }
+
+  function getCastleMoves(board, r, c, owner, meta){
+    const moves = [];
+    if(inCheck(board, owner)) return moves;
+    const king = board[r][c].piece;
+    if(king.hasMoved) return moves;
+    const [lr,lc] = meta.lateral;
+
+    for(const sign of [1,-1]){
+      const dr = lr*sign, dc = lc*sign;
+      let nr=r+dr, nc=c+dc, steps=0;
+      while(isValidCell(board,nr,nc)){
+        const cell = board[nr][nc];
+        if(cell.piece){
+          if(cell.piece.owner===owner && cell.piece.type==='rook' && !cell.piece.hasMoved && steps>=1){
+            const mid  = { r:r+dr,   c:c+dc };
+            const dest = { r:r+2*dr, c:c+2*dc };
+            const destFree = isValidCell(board,dest.r,dest.c) && (!board[dest.r][dest.c].piece || (dest.r===nr && dest.c===nc));
+            if(isValidCell(board,mid.r,mid.c) && destFree){
+              const others = state.order.filter(o=>o!==owner);
+              const midAttacked  = isAttacked(board, mid.r,  mid.c,  others);
+              const destAttacked = isAttacked(board, dest.r, dest.c, others);
+              if(!midAttacked && !destAttacked){
+                moves.push({ r:dest.r, c:dest.c, castle:true, rookFrom:{r:nr,c:nc}, rookTo:mid });
+              }
+            }
+          }
+          break;
+        }
+        nr+=dr; nc+=dc; steps++;
+      }
+    }
+    return moves;
+  }
+
+  function getLegalMoves(r, c){
+    const board = state.board;
+    const cell = board[r][c];
+    if(!cell.piece) return [];
+    const owner = cell.piece.owner;
+    const meta = state.players[owner];
+    let pseudo = genPseudoMoves(board, r, c, meta);
+    if(cell.piece.type === 'king'){
+      pseudo = pseudo.concat(getCastleMoves(board, r, c, owner, meta));
+    }
+    return pseudo.filter(m=>{
+      if(m.castle) return true;
+      const b2 = simulateMove(board, {r,c}, {r:m.r,c:m.c});
+      return !inCheck(b2, owner);
+    });
+  }
+
+  function ownerHasAnyLegalMove(owner){
+    const board = state.board;
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+      const p = board[r][c].piece;
+      if(p && p.owner===owner){
+        if(getLegalMoves(r,c).length>0) return true;
+      }
+    }
+    return false;
+  }
+
+  function colLabel(c){ return String.fromCharCode(97+c); }
+  function rowLabel(r){ return N-r; }
+  function sq(r,c){ return colLabel(c)+rowLabel(r); }
+
+  function formatLogEntry(e){
+    if(e.kind === 'eliminated'){
+      return pname(e.owner) + ' ' + (e.reason==='mate' ? t('eliminatedMate') : t('eliminatedStale'));
+    }
+    let line = pname(e.owner) + ': ' + sq(e.from.r,e.from.c) + (e.capture ? ' × ' : '–') + sq(e.to.r,e.to.c);
+    if(e.castle) line += ' ' + t('castleTag');
+    if(e.promo) line += ' =' + e.promo;
+    return line;
+  }
+
+  function addLogEntry(entry){
+    state.log.push(entry);
+    renderLog();
+  }
+
+  function executeMove(from, to, moveInfo, promoType){
+    const board = state.board;
+    const piece = board[from.r][from.c].piece;
+    const owner = piece.owner;
+    const captured = board[to.r][to.c].piece;
+
+    if(captured){
+      state.captured[owner].push(captured.type);
+    }
+
+    board[to.r][to.c].piece = { ...piece, hasMoved:true };
+    board[from.r][from.c].piece = null;
+
+    if(moveInfo.castle){
+      const rook = board[moveInfo.rookFrom.r][moveInfo.rookFrom.c].piece;
+      board[moveInfo.rookTo.r][moveInfo.rookTo.c].piece = { ...rook, hasMoved:true };
+      board[moveInfo.rookFrom.r][moveInfo.rookFrom.c].piece = null;
+    }
+
+    if(moveInfo.promo && promoType){
+      board[to.r][to.c].piece.type = promoType;
+    }
+
+    state.lastMove = { from, to };
+
+    addLogEntry({
+      kind:'move', owner, from, to,
+      capture: !!captured, castle: !!moveInfo.castle,
+      promo: (moveInfo.promo && promoType) ? promoType : null
+    });
+
+    afterMove(owner);
+  }
+
+  function afterMove(movedOwner){
+    state.selected = null;
+    state.legalTargets = [];
+
+    advanceTurn();
+    render();
+
+    const current = state.order[state.currentIdx];
+    if(state.gameOver){ updateStatus(); return; }
+
+    const active = activeOwners();
+    if(active.length <= 1){
+      state.gameOver = true;
+      state.winner = active[0] || movedOwner;
+      updateStatus();
+      return;
+    }
+
+    const inChk = inCheck(state.board, current);
+    const hasMove = ownerHasAnyLegalMove(current);
+
+    if(!hasMove){
+      if(state.mode === '3p'){
+        state.players[current].eliminated = true;
+        addLogEntry({ kind:'eliminated', owner:current, reason: inChk ? 'mate' : 'stalemate' });
+        const stillActive = activeOwners();
+        if(stillActive.length <= 1){
+          state.gameOver = true;
+          state.winner = stillActive[0];
+        } else {
+          advanceTurn();
+        }
+      } else {
+        state.gameOver = true;
+        state.winner = inChk ? movedOwner : null;
+      }
+    }
+
+    render();
+    updateStatus();
+    maybeTriggerAI();
+  }
+
+  function advanceTurn(){
+    const n = state.order.length;
+    let idx = state.currentIdx;
+    for(let i=0;i<n;i++){
+      idx = (idx+1) % n;
+      const owner = state.order[idx];
+      if(!state.players[owner].eliminated){
+        state.currentIdx = idx;
+        return;
+      }
+    }
+  }
+
+  /* ---------- Rendering ---------- */
+
+  function updateStatus(){
+    const dot = document.getElementById('turnDot');
+    const text = document.getElementById('statusText');
+    text.classList.remove('check','over');
+
+    if(state.gameOver){
+      dot.className = 'dot';
+      if(state.winner){
+        dot.classList.add(state.winner);
+        text.textContent = pname(state.winner) + ' ' + t('winSuffix');
+      } else {
+        text.textContent = t('stalemate');
+      }
+      text.classList.add('over');
+      renderPlayerList();
+      renderDial();
+      return;
+    }
+
+    const current = state.order[state.currentIdx];
+    dot.className = 'dot ' + current;
+    const chk = inCheck(state.board, current);
+    text.textContent = t('turnPrefix') + ' ' + pname(current) + (chk ? ' ' + t('checkSuffix') : '');
+    if(chk) text.classList.add('check');
+    renderPlayerList();
+    renderDial();
+  }
+
+  function renderPlayerList(){
+    const el = document.getElementById('playerList');
+    el.innerHTML = '';
+    state.order.forEach(o=>{
+      const row = document.createElement('div');
+      row.className = 'player-row' + (state.players[o].eliminated ? ' eliminated' : '');
+      row.innerHTML = '<span class="dot ' + o + '"></span>' + pname(o) +
+        (state.players[o].ai ? ' ' + t('aiTag') : '') +
+        (state.players[o].eliminated ? ' ' + t('outTag') : '');
+      el.appendChild(row);
+    });
+  }
+
+  function renderDial(){
+    const el = document.getElementById('dial');
+    el.innerHTML = '';
+    state.order.forEach((o,i)=>{
+      const pip = document.createElement('span');
+      pip.className = 'pip' + (state.players[o].eliminated ? ' dead' : (i===state.currentIdx && !state.gameOver ? ' active' : ''));
+      el.appendChild(pip);
+    });
+  }
+
+  function renderLog(){
+    const el = document.getElementById('log');
+    el.innerHTML = state.log.slice().reverse().map(e=>'<div>'+formatLogEntry(e)+'</div>').join('');
+  }
+
+  function renderCaptured(){
+    const el = document.getElementById('capturedList');
+    el.innerHTML = '';
+    state.order.forEach(o=>{
+      const row = document.createElement('div');
+      row.className = 'captured-row';
+      const label = document.createElement('span');
+      label.className = 'cap-label';
+      label.textContent = pname(o) + ':';
+      row.appendChild(label);
+      state.captured[o].forEach(pt=>{
+        const s = document.createElement('span');
+        s.className = 'piece';
+        s.textContent = PIECE_DEF[pt].glyph;
+        row.appendChild(s);
+      });
+      el.appendChild(row);
+    });
+  }
+
+  function zoneOf(r,c){
+    if(r>=2 && r<=9 && c>=2 && c<=9) return 'c';
+    if(r>=10) return 'w';
+    if(c<=1) return 'b';
+    if(c>=10) return 'r';
+    return 'c';
+  }
+
+  function render(){
+    const boardEl = document.getElementById('board');
+    boardEl.innerHTML = '';
+    boardEl.style.gridTemplateColumns = 'repeat('+N+', var(--cell))';
+    boardEl.style.gridTemplateRows = 'repeat('+N+', var(--cell))';
+
+    const current = state.order[state.currentIdx];
+
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        const cellData = state.board[r][c];
+        const div = document.createElement('div');
+        div.className = 'cell';
+        if(!cellData.valid){
+          div.classList.add('invalid');
+        } else {
+          div.classList.add((r+c)%2===0 ? 'light':'dark');
+          div.classList.add('zone-'+zoneOf(r,c));
+
+          if(state.lastMove){
+            if(state.lastMove.from.r===r && state.lastMove.from.c===c) div.classList.add('last-from');
+            if(state.lastMove.to.r===r && state.lastMove.to.c===c) div.classList.add('last-to');
+          }
+
+          if(state.selected && state.selected.r===r && state.selected.c===c){
+            div.classList.add('selected');
+          }
+          const tgt = state.legalTargets.find(m=>m.r===r && m.c===c);
+          if(tgt){
+            div.classList.add('target');
+            if(tgt.capture) div.classList.add('capture');
+          }
+
+          if(cellData.piece){
+            if(cellData.piece.type==='king' && !state.gameOver && inCheck(state.board, cellData.piece.owner) && state.players[cellData.piece.owner] && !state.players[cellData.piece.owner].eliminated){
+              div.classList.add('in-check');
+            }
+            const span = document.createElement('span');
+            span.className = 'piece ' + cellData.piece.owner;
+            span.textContent = PIECE_DEF[cellData.piece.type].glyph;
+            div.appendChild(span);
+          }
+
+          if(!state.gameOver && !state.pendingPromotion){
+            const canSelect = cellData.piece && cellData.piece.owner === current && !state.players[current].ai;
+            const isTarget = !!tgt;
+            if(canSelect || isTarget){
+              div.classList.add('clickable');
+              div.addEventListener('click', ()=>handleCellClick(r,c));
+            }
+          }
+        }
+        boardEl.appendChild(div);
+      }
+    }
+    renderCaptured();
+  }
+
+  function handleCellClick(r,c){
+    if(state.gameOver || state.pendingPromotion) return;
+    const current = state.order[state.currentIdx];
+    const cellData = state.board[r][c];
+
+    if(state.selected){
+      const move = state.legalTargets.find(m=>m.r===r && m.c===c);
+      if(move){
+        if(move.promo){
+          state.pendingPromotion = { from: state.selected, to:{r,c}, moveInfo: move };
+          openPromotionModal(current);
+        } else {
+          executeMove(state.selected, {r,c}, move, null);
+        }
+        state.selected = null;
+        state.legalTargets = [];
+        render();
+        return;
+      }
+    }
+
+    if(cellData.piece && cellData.piece.owner === current){
+      state.selected = { r, c };
+      state.legalTargets = getLegalMoves(r,c);
+      render();
+    } else {
+      state.selected = null;
+      state.legalTargets = [];
+      render();
+    }
+  }
+
+  function openPromotionModal(owner){
+    const modal = document.getElementById('promoModal');
+    document.getElementById('promoTitle').textContent = t('promoTitle');
+    const choices = document.getElementById('promoChoices');
+    choices.innerHTML = '';
+    ['queen','rook','bishop','knight'].forEach(pt=>{
+      const btn = document.createElement('button');
+      btn.textContent = PIECE_DEF[pt].glyph;
+      if(owner==='w'){
+        btn.style.color = 'var(--white-piece)';
+        btn.style.webkitTextStroke = '1.6px var(--piece-outline)';
+        btn.style.paintOrder = 'stroke fill';
+      } else if(owner==='b'){
+        btn.style.color = 'var(--black-piece)';
+      } else {
+        btn.style.color = 'var(--red-piece)';
+        btn.style.webkitTextStroke = '0.8px var(--piece-outline)';
+        btn.style.paintOrder = 'stroke fill';
+      }
+      btn.addEventListener('click', ()=>{
+        const { from, to, moveInfo } = state.pendingPromotion;
+        state.pendingPromotion = null;
+        modal.classList.remove('show');
+        executeMove(from, to, moveInfo, pt);
+        render();
+      });
+      choices.appendChild(btn);
+    });
+    modal.classList.add('show');
+  }
+
+  function maybeTriggerAI(){
+    if(state.gameOver) return;
+    const current = state.order[state.currentIdx];
+    if(!state.players[current].ai) return;
+    setTimeout(runAI, 550);
+  }
+
+  function runAI(){
+    if(state.gameOver) return;
+    const current = state.order[state.currentIdx];
+    if(!state.players[current].ai) return;
+
+    const options = [];
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+      const p = state.board[r][c].piece;
+      if(p && p.owner===current){
+        const moves = getLegalMoves(r,c);
+        moves.forEach(m=>options.push({ from:{r,c}, move:m }));
+      }
+    }
+    if(options.length===0) return;
+    const pick = options[Math.floor(Math.random()*options.length)];
+    const promo = pick.move.promo ? 'queen' : null;
+    executeMove(pick.from, {r:pick.move.r,c:pick.move.c}, pick.move, promo);
+  }
+
+  /* ---------- Statische Texte & Sprache ---------- */
+
+  function applyStaticTexts(){
+    document.documentElement.lang = t('htmlLang');
+    document.title = t('docTitle');
+    document.getElementById('eyebrowText').textContent = t('eyebrow');
+    document.getElementById('modeSoloBtn').textContent = t('modeSolo');
+    document.getElementById('mode2pBtn').textContent = t('mode2p');
+    document.getElementById('mode3pBtn').textContent = t('mode3p');
+    document.getElementById('docsBtn').textContent = t('docsBtn');
+    document.getElementById('restartBtn').textContent = t('restartBtn');
+    document.getElementById('docsClose').setAttribute('aria-label', t('closeLabel'));
+    document.getElementById('playersHeading').textContent = t('playersHeading');
+    document.getElementById('capturedHeading').textContent = t('capturedHeading');
+    document.getElementById('logHeading').textContent = t('logHeading');
+    document.getElementById('noteText').textContent = t('note');
+
+    const docsModal = document.getElementById('docsModal');
+    if(docsModal.classList.contains('show')){
+      document.getElementById('docsContent').innerHTML = t('docsHtml');
+    }
+  }
+
+  function setLanguage(lang){
+    if(!state) return;
+    state.lang = lang;
+    document.getElementById('langDe').setAttribute('aria-pressed', lang==='de' ? 'true':'false');
+    document.getElementById('langEn').setAttribute('aria-pressed', lang==='en' ? 'true':'false');
+    applyStaticTexts();
+    render();
+    updateStatus();
+  }
+
+  document.getElementById('langDe').addEventListener('click', ()=>setLanguage('de'));
+  document.getElementById('langEn').addEventListener('click', ()=>setLanguage('en'));
+
+  document.querySelectorAll('nav.app-nav button[data-mode]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('nav.app-nav button[data-mode]').forEach(b=>b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      initGame(btn.dataset.mode);
+      applyStaticTexts();
+    });
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', ()=>{
+    if(state) initGame(state.mode);
+  });
+
+  const docsModal = document.getElementById('docsModal');
+  document.getElementById('docsBtn').addEventListener('click', ()=>{
+    document.getElementById('docsContent').innerHTML = t('docsHtml');
+    docsModal.classList.add('show');
+  });
+  document.getElementById('docsClose').addEventListener('click', ()=> docsModal.classList.remove('show'));
+  docsModal.addEventListener('click', (ev)=>{ if(ev.target === docsModal) docsModal.classList.remove('show'); });
+
+  document.getElementById('promoModal').addEventListener('click', (ev)=>{
+    // Umwandlung erfordert eine Wahl -> Klick auf Backdrop schließt nicht.
+  });
+
+  // Start
+  state = { lang:'de' };
+  document.querySelector('button[data-mode="3p"]').classList.add('is-active');
+  initGame('3p');
+  applyStaticTexts();
+
+})();
+</script>
+</body>
+</html>
