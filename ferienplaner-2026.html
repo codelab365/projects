@@ -57,6 +57,17 @@
   .fp-row2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
   .fp-modal-actions{display:flex;justify-content:flex-end;gap:.5rem;margin-top:var(--cl-space-3);}
   .fp-assignedrow{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--cl-line);}
+
+  .fp-menurow{border:1px solid var(--cl-line);border-radius:var(--cl-radius-sm);padding:.75rem .9rem;margin-bottom:.6rem;}
+  .fp-menurow.today{border-color:var(--cl-signal);}
+  .fp-menurow .fp-menuhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem;}
+  .fp-menurow .fp-menuhead strong{font-family:var(--cl-font-display);}
+  .fp-menuitems{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.5rem;}
+  .fp-menuitem{display:flex;justify-content:space-between;align-items:center;background:var(--cl-surface-2);
+    border-radius:8px;padding:.35rem .6rem;font-size:.88rem;}
+  .fp-menuadd{display:flex;gap:.4rem;flex-wrap:wrap;}
+  .fp-menuadd input.cl-input{flex:1;min-width:120px;}
+  .fp-menuadd input.cl-input.fp-menuname{flex:0 0 130px;}
 </style>
 </head>
 <body>
@@ -85,6 +96,7 @@
     <button class="cl-chip is-active" data-tab="list" aria-pressed="true">📋 Aktivitäten-Liste</button>
     <button class="cl-chip" data-tab="cal" aria-pressed="false">🗓️ Kalender</button>
     <button class="cl-chip" data-tab="done" aria-pressed="false">✅ Erledigt</button>
+    <button class="cl-chip" data-tab="menu" aria-pressed="false">🍽️ Menüliste</button>
   </div>
 
   <!-- LIST TAB -->
@@ -122,6 +134,14 @@
       <p class="cl-lead">Aktivitäten, die schon stattgefunden haben. Sie bleiben hier als Nachweis erhalten und können jederzeit erneut eingeplant werden.</p>
       <div id="doneList" style="margin-top:var(--cl-space-2);"></div>
       <div class="fp-empty" id="doneEmpty" style="display:none;">Noch nichts als erledigt markiert.</div>
+    </div>
+  </div>
+
+  <!-- MENU TAB -->
+  <div id="tab-menu" style="display:none;">
+    <div class="cl-card cl-card--pad">
+      <p class="cl-lead">Die nächsten 10 Tage – jeder kann für jeden Tag Essensvorschläge eintragen.</p>
+      <div id="menuList" style="margin-top:var(--cl-space-2);"></div>
     </div>
   </div>
 
@@ -229,6 +249,7 @@ const today = new Date();
 let state = {
   activities: [],
   calendar: [], // {id, date:'YYYY-MM-DD', activityId}
+  meals: [], // {id, date:'YYYY-MM-DD', author, text}
   filters: {search:"", cat:"", cost:"", weather:""},
   activeTab: "list",
   viewYear: today.getFullYear(),
@@ -261,6 +282,11 @@ db.collection("calendarEntries").onSnapshot(snap=>{
   renderAll();
 }, err=>console.error(err));
 
+db.collection("mealSuggestions").onSnapshot(snap=>{
+  state.meals = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderAll();
+}, err=>console.error(err));
+
 // ---------- CRUD ----------
 function addActivity(a){ db.collection("activities").add(a); }
 function updateActivity(id, a){ db.collection("activities").doc(id).update(a); }
@@ -279,6 +305,12 @@ function reschedule(id){
   openAssignFromCard(entry.activityId);
 }
 function removeAssignment(id){ db.collection("calendarEntries").doc(id).delete(); }
+
+function addMealSuggestion(date, author, text){
+  if(!text.trim()) return;
+  db.collection("mealSuggestions").add({date, author: author.trim(), text: text.trim()});
+}
+function removeMealSuggestion(id){ db.collection("mealSuggestions").doc(id).delete(); }
 
 // ---------- rendering: list ----------
 function populateCategorySelects(){
@@ -487,6 +519,45 @@ function renderDoneList(){
   }).join("");
 }
 
+// ---------- rendering: menu list ----------
+function renderMenuList(){
+  const box = document.getElementById("menuList");
+  const dow = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  let html = "";
+  for(let i=0;i<10;i++){
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate()+i);
+    const dateStr = ymd(d);
+    const isToday = i===0;
+    const label = `${dow[d.getDay()]}, ${d.toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit"})}`;
+    const items = state.meals.filter(m=>m.date===dateStr);
+    const itemsHtml = items.length
+      ? items.map(m=>`
+          <div class="fp-menuitem">
+            <span>${m.author?`<strong>${escapeHtml(m.author)}:</strong> `:""}${escapeHtml(m.text)}</span>
+            <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="removeMealSuggestion('${m.id}')">🗑️</button>
+          </div>`).join("")
+      : `<p class="cl-muted" style="font-size:.85rem;margin:0 0 .3rem;">Noch kein Vorschlag.</p>`;
+    html += `
+      <div class="fp-menurow ${isToday?"today":""}">
+        <div class="fp-menuhead"><strong>${isToday?"Heute – ":""}${label}</strong></div>
+        <div class="fp-menuitems">${itemsHtml}</div>
+        <div class="fp-menuadd">
+          <input class="cl-input fp-menuname" id="menuName_${dateStr}" placeholder="Name (optional)">
+          <input class="cl-input" id="menuText_${dateStr}" placeholder="Essensvorschlag ..." onkeydown="if(event.key==='Enter') submitMeal('${dateStr}')">
+          <button class="cl-btn cl-btn--signal cl-btn--sm" onclick="submitMeal('${dateStr}')">+ Hinzufügen</button>
+        </div>
+      </div>`;
+  }
+  box.innerHTML = html;
+}
+function submitMeal(dateStr){
+  const nameEl = document.getElementById("menuName_"+dateStr);
+  const textEl = document.getElementById("menuText_"+dateStr);
+  addMealSuggestion(dateStr, nameEl.value, textEl.value);
+  nameEl.value = "";
+  textEl.value = "";
+}
+
 // ---------- tabs ----------
 function setActiveTab(tab){
   state.activeTab = tab;
@@ -498,14 +569,17 @@ function setActiveTab(tab){
   document.getElementById("tab-list").style.display = tab==="list" ? "block":"none";
   document.getElementById("tab-cal").style.display = tab==="cal" ? "block":"none";
   document.getElementById("tab-done").style.display = tab==="done" ? "block":"none";
+  document.getElementById("tab-menu").style.display = tab==="menu" ? "block":"none";
   if(tab==="cal") renderCalendar();
   if(tab==="done") renderDoneList();
+  if(tab==="menu") renderMenuList();
 }
 
 function renderAll(){
   renderList();
   renderCalendar();
   renderDoneList();
+  renderMenuList();
 }
 
 // ---------- wire up ----------
@@ -556,6 +630,9 @@ match /activities/{activityId} {
   allow read, write: if true;
 }
 match /calendarEntries/{entryId} {
+  allow read, write: if true;
+}
+match /mealSuggestions/{mealId} {
   allow read, write: if true;
 }
 -->
