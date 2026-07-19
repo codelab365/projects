@@ -68,6 +68,43 @@
   .fp-mealrow{display:flex;align-items:center;gap:.5rem;background:var(--cl-surface-2);border-radius:8px;padding:.35rem .5rem .35rem .7rem;}
   .fp-mealname{flex:0 0 90px;font-weight:600;font-size:.85rem;}
   .fp-mealrow .cl-input{flex:1;padding:.4rem .6rem;}
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 640px){
+    .fp-hero h1{font-size:1.55rem;}
+    .cl-card--pad{padding: var(--cl-space-3);}
+
+    .fp-header__inner{gap:.5rem;}
+    .fp-syncstatus{font-size:.72rem;}
+
+    .fp-toolbar > *{flex:1 1 100%;min-width:0;}
+
+    .cl-grid--cards{grid-template-columns:1fr;}
+    .fp-cardfoot{flex-direction:column;align-items:stretch;}
+    .fp-cardfoot .fp-btnrow{justify-content:flex-end;}
+
+    .fp-row2{grid-template-columns:1fr;}
+
+    .fp-monthnav{justify-content:space-between;}
+    .fp-monthnav h2{flex:1 1 100%;order:-1;min-width:0;margin-bottom:.3rem;}
+
+    .fp-cal{gap:.25rem;}
+    .fp-cal .fp-dow{font-size:.62rem;}
+    .fp-day{min-height:56px;padding:.25rem;font-size:.66rem;border-radius:7px;}
+    .fp-chip{font-size:.58rem;padding:.1rem .3rem;}
+
+    .fp-mealrow{flex-wrap:wrap;}
+    .fp-mealname{flex:0 0 100%;}
+    .fp-mealrow .cl-input{flex:1 1 auto;min-width:0;}
+
+    .fp-menuitem{flex-wrap:wrap;gap:.3rem;}
+    .fp-assignedrow{flex-wrap:wrap;gap:.4rem;}
+
+    .fp-overlay{align-items:flex-end;padding:0;}
+    .fp-modal{max-width:100%;width:100%;border-radius:16px 16px 0 0;max-height:92vh;}
+    .fp-modal-actions{flex-wrap:wrap;}
+    .fp-modal-actions .cl-btn{flex:1 1 auto;}
+  }
 </style>
 </head>
 <body>
