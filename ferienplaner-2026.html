@@ -4,224 +4,150 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Familien-Ferienplaner 2026 · codeLAB365</title>
+<link rel="stylesheet" href="codelab365.css">
 <style>
-  :root{
-    --cl-navy-950:#0a0f1c;
-    --cl-navy-900:#0e1526;
-    --cl-navy-800:#131c33;
-    --cl-navy-700:#1b2745;
-    --cl-navy-600:#26365c;
-    --cl-line:#26325199;
-    --cl-text:#e9edf7;
-    --cl-text-dim:#a7b1c9;
-    --cl-accent:#f2b84b;
-    --cl-accent-2:#3fc9b0;
-    --cl-danger:#e8637a;
-    --cl-bg:var(--cl-navy-950);
-    --cl-panel:var(--cl-navy-900);
-    --cl-card:var(--cl-navy-800);
-    --cl-radius:14px;
-    --cl-shadow:0 8px 24px rgba(0,0,0,.35);
-    color-scheme: dark;
-  }
-  [data-theme="light"]{
-    --cl-bg:#f6f4ee;
-    --cl-panel:#ffffff;
-    --cl-card:#ffffff;
-    --cl-text:#182238;
-    --cl-text-dim:#5a6479;
-    --cl-line:#dfe2ea;
-    --cl-shadow:0 6px 18px rgba(20,30,60,.08);
-    color-scheme: light;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--cl-bg);
-    color:var(--cl-text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    min-height:100vh;
-    transition:background .25s ease,color .25s ease;
-  }
-  .cl-shell{max-width:1080px;margin:0 auto;padding:20px 18px 80px;}
+  /* Ergänzungen, die das Design-System nicht abdeckt (Tabs, Kalender, Modal) –
+     alles ausschließlich über cl-* Variablen, damit es sich nahtlos einfügt. */
+  .fp-header__inner{display:flex;align-items:center;gap:var(--cl-space-3);width:100%;flex-wrap:wrap;}
+  .fp-header__spacer{margin-left:auto;display:flex;gap:.5rem;align-items:center;}
+  .fp-syncstatus{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--cl-muted);}
+  .fp-syncdot{width:8px;height:8px;border-radius:50%;background:var(--cl-err);}
+  .fp-syncdot.on{background:var(--cl-ok);}
 
-  .cl-header{
-    display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
-    padding:22px 22px;background:linear-gradient(135deg,var(--cl-navy-900),var(--cl-navy-800));
-    border:1px solid var(--cl-line);border-radius:var(--cl-radius);box-shadow:var(--cl-shadow);
-    margin-bottom:18px;flex-wrap:wrap;
+  .fp-hero{padding-block: var(--cl-space-4) var(--cl-space-3);}
+  .fp-hero .cl-lead{margin-top:.4rem;}
+
+  .fp-tabs, .fp-monthswitch{display:flex;gap:.5rem;margin-bottom:var(--cl-space-3);flex-wrap:wrap;}
+
+  .fp-toolbar{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:var(--cl-space-3);}
+  .fp-toolbar .cl-input{flex:2;min-width:200px;}
+  .fp-toolbar .cl-select{flex:1;min-width:140px;}
+
+  .fp-card{display:flex;flex-direction:column;gap:.55rem;}
+  .fp-card h3{margin:0;font-size:1.05rem;}
+  .fp-card .cl-lead{font-size:.88rem;margin:0;}
+  .fp-cardfoot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:.5rem;flex-wrap:wrap;}
+  .fp-cardfoot .fp-btnrow{display:flex;gap:.4rem;}
+
+  .fp-empty{text-align:center;color:var(--cl-muted);padding:2.5rem 1rem;}
+
+  .fp-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem;}
+  .fp-cal .fp-dow{text-align:center;font-family:var(--cl-font-mono);font-size:.72rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--cl-muted);padding:.2rem 0;}
+  .fp-day{
+    min-height:88px;background:var(--cl-surface);border:1px solid var(--cl-line);border-radius:var(--cl-radius-sm);
+    padding:.4rem;cursor:pointer;font-size:.78rem;display:flex;flex-direction:column;gap:.3rem;transition:.15s;
   }
-  [data-theme="light"] .cl-header{background:linear-gradient(135deg,#fff,#f1eee4);}
-  .cl-header h1{margin:0 0 4px;font-size:1.5rem;letter-spacing:.2px;}
-  .cl-header p{margin:0;color:var(--cl-text-dim);font-size:.92rem;}
-  .cl-header-actions{display:flex;gap:8px;align-items:center;}
-  .cl-badge-range{
-    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
-    background:var(--cl-accent);color:#241a05;font-weight:600;font-size:.78rem;margin-top:8px;
-  }
+  .fp-day:hover{border-color:var(--cl-signal);}
+  .fp-day.out-of-range{opacity:.3;cursor:default;}
+  .fp-day.today{border-color:var(--cl-signal);box-shadow:var(--cl-ring);}
+  .fp-day .num{font-weight:700;color:var(--cl-muted);}
+  .fp-day .chips{display:flex;flex-direction:column;gap:.2rem;}
+  .fp-chip{background:var(--cl-primary);color:var(--cl-on-primary);border-radius:6px;padding:.15rem .4rem;
+    font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
 
-  .cl-iconbtn{
-    width:38px;height:38px;border-radius:10px;border:1px solid var(--cl-line);
-    background:var(--cl-navy-800);color:var(--cl-text);cursor:pointer;font-size:1rem;
-    display:flex;align-items:center;justify-content:center;transition:.15s;
-  }
-  [data-theme="light"] .cl-iconbtn{background:#f1eee4;}
-  .cl-iconbtn:hover{border-color:var(--cl-accent);}
-
-  .cl-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--cl-panel);border:1px solid var(--cl-line);
-    padding:5px;border-radius:12px;box-shadow:var(--cl-shadow);}
-  .cl-tab{flex:1;text-align:center;padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--cl-text-dim);
-    font-weight:600;font-size:.92rem;transition:.15s;}
-  .cl-tab.active{background:var(--cl-accent);color:#241a05;}
-
-  .cl-panel{background:var(--cl-panel);border:1px solid var(--cl-line);border-radius:var(--cl-radius);
-    padding:18px;box-shadow:var(--cl-shadow);margin-bottom:18px;}
-
-  .cl-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
-  .cl-input,.cl-select,textarea.cl-input{
-    background:var(--cl-navy-800);border:1px solid var(--cl-line);color:var(--cl-text);
-    padding:9px 12px;border-radius:9px;font-size:.9rem;outline:none;
-  }
-  [data-theme="light"] .cl-input,[data-theme="light"] .cl-select,[data-theme="light"] textarea.cl-input{background:#f6f4ee;}
-  .cl-input:focus,.cl-select:focus,textarea.cl-input:focus{border-color:var(--cl-accent);}
-  .cl-search{flex:2;min-width:180px;}
-  .cl-select{flex:1;min-width:130px;}
-  .cl-btn{
-    background:var(--cl-navy-700);color:var(--cl-text);border:1px solid var(--cl-line);
-    padding:9px 16px;border-radius:9px;cursor:pointer;font-weight:600;font-size:.88rem;transition:.15s;
-  }
-  .cl-btn:hover{border-color:var(--cl-accent);}
-  .cl-btn-primary{background:var(--cl-accent);color:#241a05;border-color:var(--cl-accent);}
-  .cl-btn-primary:hover{filter:brightness(1.08);}
-  .cl-btn-danger{background:transparent;color:var(--cl-danger);border-color:var(--cl-danger);}
-  .cl-btn-ghost{background:transparent;}
-  .cl-btn-sm{padding:6px 10px;font-size:.78rem;border-radius:7px;}
-
-  .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-  .cl-card{background:var(--cl-card);border:1px solid var(--cl-line);border-radius:12px;padding:14px 16px;
-    display:flex;flex-direction:column;gap:8px;box-shadow:var(--cl-shadow);}
-  .cl-card h3{margin:0;font-size:1.02rem;}
-  .cl-card .cl-notes{color:var(--cl-text-dim);font-size:.85rem;line-height:1.4;}
-  .cl-tagrow{display:flex;flex-wrap:wrap;gap:6px;}
-  .cl-badge{font-size:.72rem;padding:3px 9px;border-radius:999px;background:var(--cl-navy-700);color:var(--cl-text-dim);}
-  .cl-badge.cat{background:var(--cl-accent-2);color:#04211c;font-weight:700;}
-  .cl-cardfoot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:6px;flex-wrap:wrap;}
-  .cl-cardfoot .cl-btnrow{display:flex;gap:6px;}
-
-  .cl-empty{text-align:center;color:var(--cl-text-dim);padding:40px 10px;}
-
-  /* Calendar */
-  .cl-monthswitch{display:flex;gap:8px;margin-bottom:14px;}
-  .cl-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
-  .cl-cal .cl-dow{text-align:center;font-size:.75rem;color:var(--cl-text-dim);font-weight:700;padding:4px 0;}
-  .cl-day{
-    min-height:88px;background:var(--cl-card);border:1px solid var(--cl-line);border-radius:9px;
-    padding:6px;cursor:pointer;font-size:.78rem;display:flex;flex-direction:column;gap:4px;transition:.15s;
-  }
-  .cl-day:hover{border-color:var(--cl-accent);}
-  .cl-day.out-of-range{opacity:.32;cursor:default;}
-  .cl-day.today{border-color:var(--cl-accent-2);box-shadow:inset 0 0 0 1px var(--cl-accent-2);}
-  .cl-day .num{font-weight:700;color:var(--cl-text-dim);}
-  .cl-day .chips{display:flex;flex-direction:column;gap:2px;}
-  .cl-chip{background:var(--cl-accent);color:#241a05;border-radius:5px;padding:2px 5px;font-size:.68rem;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
-
-  /* Modal */
-  .cl-overlay{position:fixed;inset:0;background:rgba(4,7,15,.55);display:flex;align-items:center;justify-content:center;
-    padding:16px;z-index:50;}
-  .cl-modal{background:var(--cl-panel);border:1px solid var(--cl-line);border-radius:16px;padding:22px;
-    width:100%;max-width:480px;max-height:88vh;overflow:auto;box-shadow:var(--cl-shadow);}
-  .cl-modal h2{margin-top:0;font-size:1.15rem;}
-  .cl-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-  .cl-field label{font-size:.78rem;color:var(--cl-text-dim);font-weight:600;}
-  .cl-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .cl-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
-  .cl-hint{font-size:.78rem;color:var(--cl-text-dim);line-height:1.5;}
-  .cl-syncdot{width:9px;height:9px;border-radius:50%;background:var(--cl-danger);display:inline-block;margin-right:6px;}
-  .cl-syncdot.on{background:var(--cl-accent-2);}
-  .cl-status{display:flex;align-items:center;font-size:.78rem;color:var(--cl-text-dim);}
+  .fp-overlay{position:fixed;inset:0;background:rgba(6,14,24,.55);display:flex;align-items:center;justify-content:center;
+    padding:1rem;z-index:50;}
+  .fp-modal{width:100%;max-width:480px;max-height:88vh;overflow:auto;}
+  .fp-modal h2{margin-top:0;}
+  .fp-field{margin-bottom:var(--cl-space-2);}
+  .fp-row2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+  .fp-modal-actions{display:flex;justify-content:flex-end;gap:.5rem;margin-top:var(--cl-space-3);}
+  .fp-assignedrow{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--cl-line);}
 </style>
 </head>
 <body>
-<div class="cl-shell">
 
-  <div class="cl-header">
-    <div>
-      <h1>🌴 Familien-Ferienplaner 2026</h1>
-      <p>Aktivitäten sammeln, filtern und gemeinsam im Kalender einplanen.</p>
-      <span class="cl-badge-range">19.07.2026 – 30.08.2026</span>
-    </div>
-    <div class="cl-header-actions">
-      <div class="cl-status" id="syncStatus"><span class="cl-syncdot" id="syncDot"></span><span id="syncLabel">Nur dieses Gerät</span></div>
-      <button class="cl-iconbtn" id="themeToggle" title="Hell/Dunkel">🌓</button>
-      <button class="cl-iconbtn" id="settingsBtn" title="Sync-Einstellungen">⚙️</button>
+<header class="cl-header">
+  <div class="cl-container fp-header__inner">
+    <a class="cl-brand" href="#">
+      <span style="font-size:1.6rem;line-height:1;">🌴</span>
+      <span class="cl-brand__name">Familien-<b>Ferienplaner</b></span>
+    </a>
+    <div class="fp-header__spacer">
+      <div class="fp-syncstatus"><span class="fp-syncdot" id="syncDot"></span><span id="syncLabel">Nur dieses Gerät</span></div>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="themeToggle" title="Hell/Dunkel">🌓</button>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="settingsBtn" title="Sync-Einstellungen">⚙️ Sync</button>
     </div>
   </div>
+</header>
 
-  <div class="cl-tabs">
-    <div class="cl-tab active" data-tab="list">📋 Aktivitäten-Liste</div>
-    <div class="cl-tab" data-tab="cal">🗓️ Kalender</div>
+<main class="cl-container">
+
+  <section class="fp-hero">
+    <span class="cl-eyebrow">19.07. – 30.08.2026</span>
+    <h1>Ferienaktivitäten planen</h1>
+    <p class="cl-lead">Sammelt Ideen, filtert nach Lust und Wetter, und plant sie gemeinsam im Kalender ein.</p>
+  </section>
+
+  <div class="fp-tabs">
+    <button class="cl-chip is-active" data-tab="list" aria-pressed="true">📋 Aktivitäten-Liste</button>
+    <button class="cl-chip" data-tab="cal" aria-pressed="false">🗓️ Kalender</button>
   </div>
 
   <!-- LIST TAB -->
   <div id="tab-list">
-    <div class="cl-panel">
-      <div class="cl-toolbar">
-        <input class="cl-input cl-search" id="searchInput" placeholder="🔍 Suche nach Titel, Ort, Tag ...">
+    <div class="cl-card cl-card--pad">
+      <div class="fp-toolbar">
+        <input class="cl-input" id="searchInput" placeholder="🔍 Suche nach Titel, Ort, Tag ...">
         <select class="cl-select" id="filterCat"><option value="">Alle Kategorien</option></select>
         <select class="cl-select" id="filterCost"><option value="">Alle Kosten</option></select>
         <select class="cl-select" id="filterWeather"><option value="">Jedes Wetter</option></select>
-        <button class="cl-btn" id="resetFilters">Filter zurücksetzen</button>
-        <button class="cl-btn cl-btn-primary" id="addActivityBtn">+ Neue Aktivität</button>
+        <button class="cl-btn cl-btn--ghost" id="resetFilters">Filter zurücksetzen</button>
+        <button class="cl-btn cl-btn--signal" id="addActivityBtn">+ Neue Aktivität</button>
       </div>
-      <div class="cl-grid" id="activityGrid"></div>
-      <div class="cl-empty" id="emptyState" style="display:none;">Noch keine Aktivitäten gefunden. Leg die erste an! 🎉</div>
+      <div class="cl-grid cl-grid--cards" id="activityGrid"></div>
+      <div class="fp-empty" id="emptyState" style="display:none;">Noch keine Aktivitäten gefunden. Leg die erste an! 🎉</div>
     </div>
   </div>
 
   <!-- CALENDAR TAB -->
   <div id="tab-cal" style="display:none;">
-    <div class="cl-panel">
-      <div class="cl-monthswitch">
-        <button class="cl-btn cl-btn-primary" data-month="6" id="monthJul">Juli 2026</button>
-        <button class="cl-btn" data-month="7" id="monthAug">August 2026</button>
+    <div class="cl-card cl-card--pad">
+      <div class="fp-monthswitch">
+        <button class="cl-chip is-active" data-month="6" id="monthJul" aria-pressed="true">Juli 2026</button>
+        <button class="cl-chip" data-month="7" id="monthAug" aria-pressed="false">August 2026</button>
       </div>
-      <div class="cl-cal" id="calGrid"></div>
+      <div class="fp-cal" id="calGrid"></div>
     </div>
   </div>
 
-</div>
+</main>
+
+<footer class="cl-footer">
+  <div class="cl-container">codeLAB365 · Familien-Ferienplaner 2026</div>
+</footer>
 
 <!-- Activity Modal -->
-<div class="cl-overlay" id="activityModalOverlay" style="display:none;">
-  <div class="cl-modal">
+<div class="fp-overlay" id="activityModalOverlay" style="display:none;">
+  <div class="cl-card cl-card--pad fp-modal">
     <h2 id="activityModalTitle">Neue Aktivität</h2>
     <input type="hidden" id="activityId">
-    <div class="cl-field">
-      <label>Titel *</label>
+    <div class="fp-field">
+      <label class="cl-label">Titel *</label>
       <input class="cl-input" id="f_title" placeholder="z.B. Baden am Pichlinger See">
     </div>
-    <div class="cl-row2">
-      <div class="cl-field">
-        <label>Kategorie</label>
+    <div class="fp-row2">
+      <div class="fp-field">
+        <label class="cl-label">Kategorie</label>
         <select class="cl-select" id="f_category"></select>
       </div>
-      <div class="cl-field">
-        <label>Dauer</label>
+      <div class="fp-field">
+        <label class="cl-label">Dauer</label>
         <input class="cl-input" id="f_duration" placeholder="z.B. halber Tag">
       </div>
     </div>
-    <div class="cl-row2">
-      <div class="cl-field">
-        <label>Kosten</label>
+    <div class="fp-row2">
+      <div class="fp-field">
+        <label class="cl-label">Kosten</label>
         <select class="cl-select" id="f_cost">
           <option value="Kostenlos">Kostenlos</option>
           <option value="Günstig (€)">Günstig (€)</option>
           <option value="Teuer (€€€)">Teuer (€€€)</option>
         </select>
       </div>
-      <div class="cl-field">
-        <label>Wetter</label>
+      <div class="fp-field">
+        <label class="cl-label">Wetter</label>
         <select class="cl-select" id="f_weather">
           <option value="Egal">Egal</option>
           <option value="Nur Schönwetter">Nur Schönwetter</option>
@@ -229,63 +155,63 @@
         </select>
       </div>
     </div>
-    <div class="cl-field">
-      <label>Ort</label>
+    <div class="fp-field">
+      <label class="cl-label">Ort</label>
       <input class="cl-input" id="f_location" placeholder="z.B. Linz, Mühlviertel ...">
     </div>
-    <div class="cl-field">
-      <label>Tags (Komma-getrennt)</label>
+    <div class="fp-field">
+      <label class="cl-label">Tags (Komma-getrennt)</label>
       <input class="cl-input" id="f_tags" placeholder="z.B. Kinder, drinnen, Sport">
     </div>
-    <div class="cl-field">
-      <label>Notizen / Link</label>
-      <textarea class="cl-input" id="f_notes" rows="3" placeholder="Details, Öffnungszeiten, Link ..."></textarea>
+    <div class="fp-field">
+      <label class="cl-label">Notizen / Link</label>
+      <textarea class="cl-textarea" id="f_notes" rows="3" placeholder="Details, Öffnungszeiten, Link ..."></textarea>
     </div>
-    <div class="cl-modal-actions">
-      <button class="cl-btn" id="cancelActivityBtn">Abbrechen</button>
-      <button class="cl-btn cl-btn-primary" id="saveActivityBtn">Speichern</button>
+    <div class="fp-modal-actions">
+      <button class="cl-btn cl-btn--ghost" id="cancelActivityBtn">Abbrechen</button>
+      <button class="cl-btn cl-btn--signal" id="saveActivityBtn">Speichern</button>
     </div>
   </div>
 </div>
 
 <!-- Assign to date modal -->
-<div class="cl-overlay" id="assignModalOverlay" style="display:none;">
-  <div class="cl-modal">
+<div class="fp-overlay" id="assignModalOverlay" style="display:none;">
+  <div class="cl-card cl-card--pad fp-modal">
     <h2>Für <span id="assignDateLabel"></span> einplanen</h2>
-    <div id="assignedList" style="margin-bottom:14px;"></div>
-    <div class="cl-field">
-      <label>Aktivität hinzufügen</label>
+    <div id="assignedList" style="margin-bottom:var(--cl-space-3);"></div>
+    <div class="fp-field">
+      <label class="cl-label">Aktivität hinzufügen</label>
       <select class="cl-select" id="assignPicker"></select>
     </div>
-    <div class="cl-modal-actions">
-      <button class="cl-btn" id="closeAssignBtn">Schließen</button>
-      <button class="cl-btn cl-btn-primary" id="addAssignBtn">Hinzufügen</button>
+    <div class="fp-modal-actions">
+      <button class="cl-btn cl-btn--ghost" id="closeAssignBtn">Schließen</button>
+      <button class="cl-btn cl-btn--signal" id="addAssignBtn">Hinzufügen</button>
     </div>
   </div>
 </div>
 
 <!-- Settings / Sync modal -->
-<div class="cl-overlay" id="settingsModalOverlay" style="display:none;">
-  <div class="cl-modal">
+<div class="fp-overlay" id="settingsModalOverlay" style="display:none;">
+  <div class="cl-card cl-card--pad fp-modal">
     <h2>Familien-Sync einrichten</h2>
-    <p class="cl-hint">
+    <p class="cl-lead" style="font-size:.88rem;">
       Standardmäßig werden alle Daten nur lokal in diesem Browser gespeichert. Damit die ganze Familie
       dieselbe Liste und denselben Kalender sieht, könnt ihr ein kostenloses
       <strong>Firebase-Projekt</strong> (Firestore) anlegen und die Konfiguration hier einfügen.
       Alle Geräte mit derselben Konfiguration sehen dann live dieselben Daten.
     </p>
-    <div class="cl-field">
-      <label>Firebase-Konfiguration (als JSON einfügen)</label>
-      <textarea class="cl-input" id="firebaseConfigInput" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...", ...}'></textarea>
+    <div class="fp-field">
+      <label class="cl-label">Firebase-Konfiguration (als JSON einfügen)</label>
+      <textarea class="cl-textarea" id="firebaseConfigInput" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...", ...}'></textarea>
     </div>
-    <p class="cl-hint">
+    <p class="cl-muted" style="font-size:.8rem;">
       Firestore-Sicherheitsregeln für den Familien-Modus (keine Anmeldung nötig, nur der Link/die Config ist der Schutz):<br>
-      <code>allow read, write: if true;</code> auf Collections <code>activities</code> und <code>calendarEntries</code>.
+      <code class="cl-mono">allow read, write: if true;</code> auf Collections <code class="cl-mono">activities</code> und <code class="cl-mono">calendarEntries</code>.
     </p>
-    <div class="cl-modal-actions">
-      <button class="cl-btn cl-btn-danger" id="clearSyncBtn">Nur lokal verwenden</button>
-      <button class="cl-btn" id="closeSettingsBtn">Schließen</button>
-      <button class="cl-btn cl-btn-primary" id="saveSyncBtn">Verbinden</button>
+    <div class="fp-modal-actions">
+      <button class="cl-btn cl-btn--ghost" id="clearSyncBtn">Nur lokal verwenden</button>
+      <button class="cl-btn cl-btn--ghost" id="closeSettingsBtn">Schließen</button>
+      <button class="cl-btn cl-btn--signal" id="saveSyncBtn">Verbinden</button>
     </div>
   </div>
 </div>
@@ -302,7 +228,7 @@ let state = {
   filters: {search:"", cat:"", cost:"", weather:""},
   activeTab: "list",
   activeMonth: 6, // 6=Jul, 7=Aug (0-indexed JS month)
-  theme: localStorage.getItem("fp_theme") || "dark"
+  theme: localStorage.getItem("fp_theme") || ""
 };
 
 let db = null;
@@ -421,22 +347,22 @@ function renderList(){
   const list = filteredActivities();
   document.getElementById("emptyState").style.display = list.length ? "none" : "block";
   grid.innerHTML = list.map(a=>`
-    <div class="cl-card">
-      <div class="cl-tagrow">
-        <span class="cl-badge cat">${a.category||"Sonstiges"}</span>
+    <div class="cl-card cl-card--pad fp-card">
+      <div class="cl-flex cl-flex-wrap">
+        <span class="cl-tag">${a.category||"Sonstiges"}</span>
         ${a.cost?`<span class="cl-badge">${a.cost}</span>`:""}
-        ${a.weather && a.weather!=="Egal"?`<span class="cl-badge">${a.weather}</span>`:""}
+        ${a.weather && a.weather!=="Egal"?`<span class="cl-badge cl-badge--warn">${a.weather}</span>`:""}
       </div>
       <h3>${escapeHtml(a.title)}</h3>
-      ${a.duration?`<div class="cl-notes">⏱ ${escapeHtml(a.duration)}</div>`:""}
-      ${a.location?`<div class="cl-notes">📍 ${escapeHtml(a.location)}</div>`:""}
-      ${a.notes?`<div class="cl-notes">${escapeHtml(a.notes)}</div>`:""}
-      ${(a.tags&&a.tags.length)?`<div class="cl-tagrow">${a.tags.map(t=>`<span class="cl-badge">#${escapeHtml(t)}</span>`).join("")}</div>`:""}
-      <div class="cl-cardfoot">
-        <button class="cl-btn cl-btn-sm" onclick="openAssignFromCard('${a.id}')">🗓️ Einplanen</button>
-        <div class="cl-btnrow">
-          <button class="cl-btn cl-btn-sm" onclick="openEditActivity('${a.id}')">✏️</button>
-          <button class="cl-btn cl-btn-sm cl-btn-danger" onclick="deleteActivity('${a.id}')">🗑️</button>
+      ${a.duration?`<p class="cl-lead">⏱ ${escapeHtml(a.duration)}</p>`:""}
+      ${a.location?`<p class="cl-lead">📍 ${escapeHtml(a.location)}</p>`:""}
+      ${a.notes?`<p class="cl-lead">${escapeHtml(a.notes)}</p>`:""}
+      ${(a.tags&&a.tags.length)?`<div class="cl-flex cl-flex-wrap">${a.tags.map(t=>`<span class="cl-badge">#${escapeHtml(t)}</span>`).join("")}</div>`:""}
+      <div class="fp-cardfoot">
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="openAssignFromCard('${a.id}')">🗓️ Einplanen</button>
+        <div class="fp-btnrow">
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="openEditActivity('${a.id}')">✏️</button>
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="deleteActivity('${a.id}')">🗑️</button>
         </div>
       </div>
     </div>
@@ -456,9 +382,9 @@ function renderCalendar(){
   const startOffset = (first.getDay()+6)%7; // Monday=0
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const dow = ["Mo","Di","Mi","Do","Fr","Sa","So"];
-  let html = dow.map(d=>`<div class="cl-dow">${d}</div>`).join("");
+  let html = dow.map(d=>`<div class="fp-dow">${d}</div>`).join("");
 
-  for(let i=0;i<startOffset;i++) html += `<div class="cl-day out-of-range"></div>`;
+  for(let i=0;i<startOffset;i++) html += `<div class="fp-day out-of-range"></div>`;
 
   for(let day=1; day<=daysInMonth; day++){
     const dateObj = new Date(year, month, day);
@@ -468,9 +394,9 @@ function renderCalendar(){
     const entries = state.calendar.filter(c=>c.date===dateStr);
     const chips = entries.map(e=>{
       const act = state.activities.find(a=>a.id===e.activityId);
-      return `<div class="cl-chip">${act?escapeHtml(act.title):"?"}</div>`;
+      return `<div class="fp-chip">${act?escapeHtml(act.title):"?"}</div>`;
     }).join("");
-    html += `<div class="cl-day ${inRange?"":"out-of-range"} ${isToday?"today":""}" ${inRange?`onclick="openDay('${dateStr}')"`:""}>
+    html += `<div class="fp-day ${inRange?"":"out-of-range"} ${isToday?"today":""}" ${inRange?`onclick="openDay('${dateStr}')"`:""}>
       <span class="num">${day}</span>
       <div class="chips">${chips}</div>
     </div>`;
@@ -545,12 +471,12 @@ function openAssignFromCard(activityId){
 function renderAssignedList(){
   const entries = state.calendar.filter(c=>c.date===currentAssignDate);
   const box = document.getElementById("assignedList");
-  if(!entries.length){ box.innerHTML = `<p class="cl-hint">Für diesen Tag ist noch nichts geplant.</p>`; return; }
+  if(!entries.length){ box.innerHTML = `<p class="cl-muted" style="font-size:.85rem;">Für diesen Tag ist noch nichts geplant.</p>`; return; }
   box.innerHTML = entries.map(e=>{
     const act = state.activities.find(a=>a.id===e.activityId);
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--cl-line);">
+    return `<div class="fp-assignedrow">
       <span>${act?escapeHtml(act.title):"Unbekannt"}</span>
-      <button class="cl-btn cl-btn-sm cl-btn-danger" onclick="removeAssignment('${e.id}');renderAssignedList();">Entfernen</button>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="removeAssignment('${e.id}');renderAssignedList();">Entfernen</button>
     </div>`;
   }).join("");
 }
@@ -566,7 +492,11 @@ function closeSettings(){ document.getElementById("settingsModalOverlay").style.
 // ---------- tabs ----------
 function setActiveTab(tab){
   state.activeTab = tab;
-  document.querySelectorAll(".cl-tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tab));
+  document.querySelectorAll(".fp-tabs .cl-chip").forEach(t=>{
+    const active = t.dataset.tab===tab;
+    t.classList.toggle("is-active", active);
+    t.setAttribute("aria-pressed", active ? "true":"false");
+  });
   document.getElementById("tab-list").style.display = tab==="list" ? "block":"none";
   document.getElementById("tab-cal").style.display = tab==="cal" ? "block":"none";
   if(tab==="cal") renderCalendar();
@@ -574,7 +504,8 @@ function setActiveTab(tab){
 
 // ---------- theme ----------
 function applyTheme(){
-  document.body.setAttribute("data-theme", state.theme);
+  if(state.theme){ document.documentElement.setAttribute("data-theme", state.theme); }
+  else { document.documentElement.removeAttribute("data-theme"); }
 }
 
 function renderAll(){
@@ -588,7 +519,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   loadLocal();
   applyTheme();
 
-  document.querySelectorAll(".cl-tab").forEach(t=>t.addEventListener("click", ()=>setActiveTab(t.dataset.tab)));
+  document.querySelectorAll(".fp-tabs .cl-chip").forEach(t=>t.addEventListener("click", ()=>setActiveTab(t.dataset.tab)));
   document.getElementById("addActivityBtn").addEventListener("click", openNewActivity);
   document.getElementById("cancelActivityBtn").addEventListener("click", closeActivityModal);
   document.getElementById("saveActivityBtn").addEventListener("click", saveActivityFromForm);
@@ -606,8 +537,18 @@ document.addEventListener("DOMContentLoaded", ()=>{
     renderList();
   });
 
-  document.getElementById("monthJul").addEventListener("click", ()=>{ state.activeMonth=6; document.getElementById("monthJul").classList.add("cl-btn-primary"); document.getElementById("monthAug").classList.remove("cl-btn-primary"); renderCalendar(); });
-  document.getElementById("monthAug").addEventListener("click", ()=>{ state.activeMonth=7; document.getElementById("monthAug").classList.add("cl-btn-primary"); document.getElementById("monthJul").classList.remove("cl-btn-primary"); renderCalendar(); });
+  document.getElementById("monthJul").addEventListener("click", ()=>{
+    state.activeMonth=6;
+    document.getElementById("monthJul").classList.add("is-active"); document.getElementById("monthJul").setAttribute("aria-pressed","true");
+    document.getElementById("monthAug").classList.remove("is-active"); document.getElementById("monthAug").setAttribute("aria-pressed","false");
+    renderCalendar();
+  });
+  document.getElementById("monthAug").addEventListener("click", ()=>{
+    state.activeMonth=7;
+    document.getElementById("monthAug").classList.add("is-active"); document.getElementById("monthAug").setAttribute("aria-pressed","true");
+    document.getElementById("monthJul").classList.remove("is-active"); document.getElementById("monthJul").setAttribute("aria-pressed","false");
+    renderCalendar();
+  });
 
   document.getElementById("closeAssignBtn").addEventListener("click", closeAssignModal);
   document.getElementById("addAssignBtn").addEventListener("click", ()=>{
@@ -636,13 +577,10 @@ document.addEventListener("DOMContentLoaded", ()=>{
   });
 
   document.getElementById("themeToggle").addEventListener("click", ()=>{
-    state.theme = state.theme === "dark" ? "light" : "dark";
+    state.theme = state.theme === "dark" ? "light" : (state.theme === "light" ? "" : "dark");
     localStorage.setItem("fp_theme", state.theme);
     applyTheme();
   });
-
-  // init calendar to current month view
-  document.getElementById("monthJul").classList.add("cl-btn-primary");
 
   loadFirebaseSdkThenInit();
   renderAll();
