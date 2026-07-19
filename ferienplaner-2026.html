@@ -84,6 +84,7 @@
   <div class="fp-tabs">
     <button class="cl-chip is-active" data-tab="list" aria-pressed="true">📋 Aktivitäten-Liste</button>
     <button class="cl-chip" data-tab="cal" aria-pressed="false">🗓️ Kalender</button>
+    <button class="cl-chip" data-tab="done" aria-pressed="false">✅ Erledigt</button>
   </div>
 
   <!-- LIST TAB -->
@@ -112,6 +113,15 @@
         <button class="cl-btn cl-btn--ghost cl-btn--sm" id="todayMonth">Heute</button>
       </div>
       <div class="fp-cal" id="calGrid"></div>
+    </div>
+  </div>
+
+  <!-- DONE TAB -->
+  <div id="tab-done" style="display:none;">
+    <div class="cl-card cl-card--pad">
+      <p class="cl-lead">Aktivitäten, die schon stattgefunden haben. Sie bleiben hier als Nachweis erhalten und können jederzeit erneut eingeplant werden.</p>
+      <div id="doneList" style="margin-top:var(--cl-space-2);"></div>
+      <div class="fp-empty" id="doneEmpty" style="display:none;">Noch nichts als erledigt markiert.</div>
     </div>
   </div>
 
@@ -226,7 +236,14 @@ let state = {
 };
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-function ymd(d){ return d.toISOString().slice(0,10); }
+function ymd(d){
+  // Lokale Datumsteile verwenden statt toISOString(), da UTC-Konvertierung
+  // in Zeitzonen östlich von UTC (z.B. Österreich) das Datum um einen Tag verschieben kann.
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
 
 function setSyncStatus(on){
   document.getElementById("syncDot").classList.toggle("on", on);
@@ -252,7 +269,15 @@ function deleteActivity(id){
   db.collection("activities").doc(id).delete();
   state.calendar.filter(c=>c.activityId===id).forEach(c=>db.collection("calendarEntries").doc(c.id).delete());
 }
-function addAssignment(date, activityId){ db.collection("calendarEntries").add({date, activityId}); }
+function addAssignment(date, activityId){ db.collection("calendarEntries").add({date, activityId, status:"geplant"}); }
+function markDone(id){ db.collection("calendarEntries").doc(id).update({status:"erledigt"}); }
+function reschedule(id){
+  // Aus der Erledigt-Liste erneut einplanen: der archivierte Eintrag bleibt als
+  // Nachweis erhalten, es wird nur der Kalender geöffnet, um ein neues Datum zu wählen.
+  const entry = state.calendar.find(c=>c.id===id);
+  if(!entry) return;
+  openAssignFromCard(entry.activityId);
+}
 function removeAssignment(id){ db.collection("calendarEntries").doc(id).delete(); }
 
 // ---------- rendering: list ----------
@@ -338,7 +363,7 @@ function renderCalendar(){
     const dateObj = new Date(year, month, day);
     const dateStr = ymd(dateObj);
     const isToday = todayStr === dateStr;
-    const entries = state.calendar.filter(c=>c.date===dateStr);
+    const entries = state.calendar.filter(c=>c.date===dateStr && c.status!=="erledigt");
     const chips = entries.map(e=>{
       const act = state.activities.find(a=>a.id===e.activityId);
       return `<div class="fp-chip">${act?escapeHtml(act.title):"?"}</div>`;
@@ -428,18 +453,39 @@ function openAssignFromCard(activityId){
   document.getElementById("assignPicker").value = activityId;
 }
 function renderAssignedList(){
-  const entries = state.calendar.filter(c=>c.date===currentAssignDate);
+  const entries = state.calendar.filter(c=>c.date===currentAssignDate && c.status!=="erledigt");
   const box = document.getElementById("assignedList");
   if(!entries.length){ box.innerHTML = `<p class="cl-muted" style="font-size:.85rem;">Für diesen Tag ist noch nichts geplant.</p>`; return; }
   box.innerHTML = entries.map(e=>{
     const act = state.activities.find(a=>a.id===e.activityId);
     return `<div class="fp-assignedrow">
       <span>${act?escapeHtml(act.title):"Unbekannt"}</span>
-      <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="removeAssignment('${e.id}');renderAssignedList();">Entfernen</button>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="markDone('${e.id}');setTimeout(renderAssignedList,50);">✅ Erledigt</button>
     </div>`;
   }).join("");
 }
 function closeAssignModal(){ document.getElementById("assignModalOverlay").style.display="none"; }
+
+// ---------- rendering: done list ----------
+function renderDoneList(){
+  const box = document.getElementById("doneList");
+  const entries = state.calendar
+    .filter(c=>c.status==="erledigt")
+    .sort((a,b)=> (a.date<b.date?1:-1));
+  document.getElementById("doneEmpty").style.display = entries.length ? "none" : "block";
+  box.innerHTML = entries.map(e=>{
+    const act = state.activities.find(a=>a.id===e.activityId);
+    const d = new Date(e.date+"T00:00:00");
+    const dateLabel = d.toLocaleDateString("de-AT",{day:"2-digit", month:"2-digit", year:"numeric"});
+    return `<div class="fp-assignedrow">
+      <span>${act?escapeHtml(act.title):"Unbekannt"} <span class="cl-muted">– ${dateLabel}</span></span>
+      <div class="fp-btnrow">
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="reschedule('${e.id}')">🔁 Erneut einplanen</button>
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="removeAssignment('${e.id}');renderDoneList();">🗑️</button>
+      </div>
+    </div>`;
+  }).join("");
+}
 
 // ---------- tabs ----------
 function setActiveTab(tab){
@@ -451,12 +497,15 @@ function setActiveTab(tab){
   });
   document.getElementById("tab-list").style.display = tab==="list" ? "block":"none";
   document.getElementById("tab-cal").style.display = tab==="cal" ? "block":"none";
+  document.getElementById("tab-done").style.display = tab==="done" ? "block":"none";
   if(tab==="cal") renderCalendar();
+  if(tab==="done") renderDoneList();
 }
 
 function renderAll(){
   renderList();
   renderCalendar();
+  renderDoneList();
 }
 
 // ---------- wire up ----------
