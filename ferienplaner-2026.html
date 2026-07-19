@@ -65,9 +65,9 @@
   .fp-menuitems{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.5rem;}
   .fp-menuitem{display:flex;justify-content:space-between;align-items:center;background:var(--cl-surface-2);
     border-radius:8px;padding:.35rem .6rem;font-size:.88rem;}
-  .fp-menuadd{display:flex;gap:.4rem;flex-wrap:wrap;}
-  .fp-menuadd input.cl-input{flex:1;min-width:120px;}
-  .fp-menuadd input.cl-input.fp-menuname{flex:0 0 130px;}
+  .fp-mealrow{display:flex;align-items:center;gap:.5rem;background:var(--cl-surface-2);border-radius:8px;padding:.35rem .5rem .35rem .7rem;}
+  .fp-mealname{flex:0 0 90px;font-weight:600;font-size:.85rem;}
+  .fp-mealrow .cl-input{flex:1;padding:.4rem .6rem;}
 </style>
 </head>
 <body>
@@ -142,6 +142,10 @@
     <div class="cl-card cl-card--pad">
       <p class="cl-lead">Die nächsten 10 Tage – jeder kann für jeden Tag Essensvorschläge eintragen.</p>
       <div id="menuList" style="margin-top:var(--cl-space-2);"></div>
+      <div class="fp-field" style="margin-top:var(--cl-space-3);">
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" id="toggleHistoryBtn">📜 Vergangene Vorschläge anzeigen</button>
+      </div>
+      <div id="menuHistory" style="display:none;margin-top:var(--cl-space-2);"></div>
     </div>
   </div>
 
@@ -287,11 +291,20 @@ db.collection("mealSuggestions").onSnapshot(snap=>{
   renderAll();
 }, err=>console.error(err));
 
+// ---------- Löschschutz ----------
+const DELETE_PASSWORD = "steuerung";
+function checkDeletePassword(){
+  const pw = prompt("Löschen ist geschützt. Bitte Passwort eingeben:");
+  if(pw === null) return false; // abgebrochen
+  if(pw !== DELETE_PASSWORD){ alert("Falsches Passwort – nichts wurde gelöscht."); return false; }
+  return true;
+}
+
 // ---------- CRUD ----------
 function addActivity(a){ db.collection("activities").add(a); }
 function updateActivity(id, a){ db.collection("activities").doc(id).update(a); }
 function deleteActivity(id){
-  if(!confirm("Diese Aktivität wirklich löschen?")) return;
+  if(!checkDeletePassword()) return;
   db.collection("activities").doc(id).delete();
   state.calendar.filter(c=>c.activityId===id).forEach(c=>db.collection("calendarEntries").doc(c.id).delete());
 }
@@ -304,13 +317,29 @@ function reschedule(id){
   if(!entry) return;
   openAssignFromCard(entry.activityId);
 }
-function removeAssignment(id){ db.collection("calendarEntries").doc(id).delete(); }
-
-function addMealSuggestion(date, author, text){
-  if(!text.trim()) return;
-  db.collection("mealSuggestions").add({date, author: author.trim(), text: text.trim()});
+function removeAssignment(id){
+  if(!checkDeletePassword()) return;
+  db.collection("calendarEntries").doc(id).delete();
 }
-function removeMealSuggestion(id){ db.collection("mealSuggestions").doc(id).delete(); }
+
+const MEAL_NAMES = ["Andreas","Marie","Ann-Sophie","Doris"];
+function mealDocId(date, name){ return `${date}_${name}`; }
+function saveMeal(date, name){
+  const input = document.getElementById(`meal_${date}_${name}`);
+  const text = input.value.trim();
+  if(!text) return;
+  // Jede Person hat pro Tag genau einen Eintrag (feste Dokument-ID date_name) –
+  // erneutes Speichern überschreibt den eigenen Vorschlag, kein Passwort nötig.
+  db.collection("mealSuggestions").doc(mealDocId(date, name)).set({date, author:name, text});
+}
+function deleteMeal(date, name){
+  if(!checkDeletePassword()) return;
+  db.collection("mealSuggestions").doc(mealDocId(date, name)).delete();
+}
+function removeMealSuggestion(id){
+  if(!checkDeletePassword()) return;
+  db.collection("mealSuggestions").doc(id).delete();
+}
 
 // ---------- rendering: list ----------
 function populateCategorySelects(){
@@ -529,33 +558,47 @@ function renderMenuList(){
     const dateStr = ymd(d);
     const isToday = i===0;
     const label = `${dow[d.getDay()]}, ${d.toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit"})}`;
-    const items = state.meals.filter(m=>m.date===dateStr);
-    const itemsHtml = items.length
-      ? items.map(m=>`
-          <div class="fp-menuitem">
-            <span>${m.author?`<strong>${escapeHtml(m.author)}:</strong> `:""}${escapeHtml(m.text)}</span>
-            <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="removeMealSuggestion('${m.id}')">🗑️</button>
-          </div>`).join("")
-      : `<p class="cl-muted" style="font-size:.85rem;margin:0 0 .3rem;">Noch kein Vorschlag.</p>`;
+    const rows = MEAL_NAMES.map(name=>{
+      const entry = state.meals.find(m=>m.date===dateStr && m.author===name);
+      const value = entry ? escapeHtml(entry.text) : "";
+      return `
+        <div class="fp-mealrow">
+          <span class="fp-mealname">${name}</span>
+          <input class="cl-input" id="meal_${dateStr}_${name}" value="${value}" placeholder="Vorschlag ..." onkeydown="if(event.key==='Enter') saveMeal('${dateStr}','${name}')">
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="saveMeal('${dateStr}','${name}')">💾</button>
+          ${entry?`<button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="deleteMeal('${dateStr}','${name}')">🗑️</button>`:""}
+        </div>`;
+    }).join("");
     html += `
       <div class="fp-menurow ${isToday?"today":""}">
         <div class="fp-menuhead"><strong>${isToday?"Heute – ":""}${label}</strong></div>
-        <div class="fp-menuitems">${itemsHtml}</div>
-        <div class="fp-menuadd">
-          <input class="cl-input fp-menuname" id="menuName_${dateStr}" placeholder="Name (optional)">
-          <input class="cl-input" id="menuText_${dateStr}" placeholder="Essensvorschlag ..." onkeydown="if(event.key==='Enter') submitMeal('${dateStr}')">
-          <button class="cl-btn cl-btn--signal cl-btn--sm" onclick="submitMeal('${dateStr}')">+ Hinzufügen</button>
-        </div>
+        <div class="fp-menuitems">${rows}</div>
       </div>`;
   }
   box.innerHTML = html;
+  renderMenuHistory();
 }
-function submitMeal(dateStr){
-  const nameEl = document.getElementById("menuName_"+dateStr);
-  const textEl = document.getElementById("menuText_"+dateStr);
-  addMealSuggestion(dateStr, nameEl.value, textEl.value);
-  nameEl.value = "";
-  textEl.value = "";
+
+function renderMenuHistory(){
+  const box = document.getElementById("menuHistory");
+  const todayStr = ymd(today);
+  const grouped = {};
+  state.meals.filter(m=>m.date < todayStr).forEach(m=>{ (grouped[m.date] = grouped[m.date]||[]).push(m); });
+  const dates = Object.keys(grouped).sort((a,b)=> a<b?1:-1);
+  if(!dates.length){
+    box.innerHTML = `<p class="cl-muted" style="font-size:.85rem;">Noch keine vergangenen Vorschläge.</p>`;
+    return;
+  }
+  box.innerHTML = dates.map(dateStr=>{
+    const d = new Date(dateStr+"T00:00:00");
+    const label = d.toLocaleDateString("de-AT",{weekday:"long", day:"2-digit", month:"2-digit", year:"numeric"});
+    const items = grouped[dateStr].map(m=>`
+      <div class="fp-menuitem">
+        <span>${m.author?`<strong>${escapeHtml(m.author)}:</strong> `:""}${escapeHtml(m.text)}</span>
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="removeMealSuggestion('${m.id}')">🗑️</button>
+      </div>`).join("");
+    return `<div class="fp-menurow"><div class="fp-menuhead"><strong>${label}</strong></div><div class="fp-menuitems">${items}</div></div>`;
+  }).join("");
 }
 
 // ---------- tabs ----------
@@ -607,6 +650,13 @@ document.addEventListener("DOMContentLoaded", ()=>{
   document.getElementById("prevMonth").addEventListener("click", ()=>changeMonth(-1));
   document.getElementById("nextMonth").addEventListener("click", ()=>changeMonth(1));
   document.getElementById("todayMonth").addEventListener("click", jumpToToday);
+
+  document.getElementById("toggleHistoryBtn").addEventListener("click", ()=>{
+    const box = document.getElementById("menuHistory");
+    const show = box.style.display === "none";
+    box.style.display = show ? "block" : "none";
+    document.getElementById("toggleHistoryBtn").textContent = show ? "📜 Historie ausblenden" : "📜 Vergangene Vorschläge anzeigen";
+  });
 
   document.getElementById("closeAssignBtn").addEventListener("click", closeAssignModal);
   document.getElementById("addAssignBtn").addEventListener("click", ()=>{
