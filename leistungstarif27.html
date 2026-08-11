@@ -484,7 +484,7 @@
 <div class="foot-note">
   <strong>Hinweis:</strong> Alle Preise sind vereinfachte Richtwerte auf Basis des Begutachtungsentwurfs der SNE-Grundsatzverordnung (Stand Juli 2026): Arbeitspreis in der Endstufe ≈ 4,53 ct/kWh, Leistungspreis ≈ 33,82 €/kW/Jahr bis 10 kW bzw. 67,64 €/kW/Jahr darüber, Mindestbemessungsgrundlage 2,0 kW, Zielverhältnis 50/50 (Startstufe 2027 ≈ 30/70, laut E-Control rechnerisch ≈15–26 €/kW Leistungspreis je nach Netzbereich). Werte für Start- und Übergangsstufe sind linear interpoliert und nicht offiziell bestätigt. Der Vergleichswert „heutiges Modell" nutzt ≈7,36 ct/kWh Arbeitspreis zzgl. 82,80 €/Jahr Pauschale (54 € Leistungspreis + 28,80 € Messentgelt) als heutige NE-7-Grundgebühr – tatsächliche Tarife unterscheiden sich je Netzbetreiber. Die verbindlichen Beträge legt erst die Tarifverordnung (SNE-T-V) Ende 2026 fest. Quellen: <a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info</a>, <a href="https://www.emcaustria.at/blog/wird-das-aufladen-des-e-autos-zu-hause-ab-jaenner-2027-teuer/" target="_blank" rel="noopener">EMC Austria</a> und die E-Control-Präsentation „Grundsatzverordnung – Auswirkungen auf die Kund:innen" (Karin Emberger, Fachveranstaltung 14.7.2026). Diese Seite ersetzt keine Beratung.
   <br><br><strong>Formel-Validierung gegen amtliche Musterkund:innen:</strong> Die E-Control hat auf Basis von Smart-Meter-Daten 2024 sechs Musterkund:innen mit fixer Jahresmenge und einer <em>konstanten</em> Monatsspitze durchgerechnet (Endstufe 50/50). Mit exakt dieser Konstant-Peak-Annahme trifft unsere Formel die dort genannten Δ-Netzentgelt-Werte auf 0,1–1,4 Prozentpunkte genau: Kleiner Haushalt 1.800 kWh/2,0 kW (E-Control −30,9 %), Haushalt 3.500 kWh/4,4 kW (−9,6 %), Wärmepumpe 8.700 kWh/7,0 kW (−12,4 %), E-Auto ohne Verhaltensanpassung 7.000 kWh/11 kW (+21,4 %), E-Auto mit 5 kW Flex-Vertrag (−8,5 %), Landwirt 50.000 kWh/27 kW (+1,1 %).
-  <br><br><strong>Presets zeigen stattdessen ein realistisches Saisonprofil:</strong> Eine konstante Monatsspitze ist unrealistisch – eine Wärmepumpe läuft im August praktisch nicht. Die sechs Presets im Lastprofil-Bereich verwenden daher ein plausibles saisonales Muster (Jahresverbrauch in kWh bleibt exakt auf dem amtlichen Wert, nur die Verteilung auf die Monate ändert sich). Dadurch weicht das hier berechnete Jahresergebnis vom amtlichen Prozentwert ab: Da der Leistungspreis monatlich abgerechnet wird, senkt eine stark saisonale Kurve mit sommerlichen Nahe-Null-Monaten (z. B. Wärmepumpe, Landwirt) das Jahresergebnis meist gegenüber der amtlichen Konstant-Peak-Rechnung, solange keine Monatsspitze die 10-kW-Schwelle überschreitet. Für flachere Profile (Kleiner Haushalt, Haushalt, E-Auto) bleibt die Abweichung gering. Wer die amtliche Rechnung exakt nachvollziehen will, kann im Monats-Raster alle 12 Werte manuell auf den jeweiligen konstanten Ø-Wert setzen.
+  <br><br><strong>Presets zeigen stattdessen ein realistisches Saisonprofil:</strong> Eine konstante Monatsspitze ist unrealistisch – eine Wärmepumpe läuft im August praktisch nicht. Die sechs Presets im Lastprofil-Bereich verwenden daher ein plausibles saisonales Muster: Jahresverbrauch (kWh) und der Jahresdurchschnitt der Monatsspitze (kW) entsprechen weiterhin exakt dem amtlichen Musterkund:innen-Wert, nur die Verteilung auf die einzelnen Monate ist jetzt realistisch statt konstant. Trotzdem weicht das Jahresergebnis leicht vom amtlichen Prozentwert ab – das liegt an der 10-kW-Schwelle: Sobald die Monatsspitzen zwischen deutlich unter und weit über der Schwelle wechseln, ist die Summe der monatlichen Leistungspreise wegen des doppelten Satzes über 10 kW nicht mehr identisch mit der Rechnung für einen konstanten Durchschnittspeak (Konvexität am Tarifknick). Am stärksten zeigt sich das bei der Wärmepumpe, deren Spitzen saisonal zwischen ca. 1 kW und 16 kW schwanken. Beim Landwirt, dessen Spitzen ganzjährig über der Schwelle liegen, bleibt die Abweichung dagegen minimal. Wer die amtliche Konstant-Peak-Rechnung exakt nachvollziehen will, kann im Monats-Raster alle 12 Spitzenwerte manuell auf den jeweiligen Ø-Wert setzen (z. B. Wärmepumpe: überall 7,0 kW).
   <br><br>Laut E-Control zahlen österreichweit rund 75 % der Zählpunkte künftig weniger (Ø −63 €/Jahr) und rund 23 % mehr (Ø +198 €/Jahr) – mit teils deutlicher regionaler Streuung je Netzbereich.
   <br><br><strong>Garantierte Leistung / flexible Entnahme:</strong> Das Modell rechnet die ersten „garantierten" kW zum vollen Satz, den Rest bis zur Monatsspitze mit 75 % Rabatt (25 % Satz) – konform mit der offiziellen Flex-Regelung (NE 5–7: Drosselung an zwei 4-Stunden-Fenstern pro Tag, nur in Bezugsrichtung).
   <br><br><strong>Typische Leistungswerte einzelner Geräte</strong> (laut EMC Austria): Wärmepumpe ca. 1–2 kW, E-Auto-Ladung bis 11 kW, Netz-Ladung eines Hausakkus ca. 3 kW, Heizlüfter ca. 2 kW, Sauna ca. 3,5–9 kW. Nicht abgebildet: die zeitabhängigen Rabatte SNAP (Apr–Sep, 10–16 Uhr) und WiNAP (Okt–März, 22–4 Uhr) auf den Arbeitspreis – Laden in diesen Fenstern senkt die reale Rechnung zusätzlich.
@@ -580,18 +580,20 @@
     // zum Original) – dadurch weicht das hier berechnete Δ-Netzentgelt leicht von den amtlichen
     // Prozentwerten ab, zeigt dafür aber die tatsächlich kritischen Monate (siehe Fußnote).
     hh_klein: {
-      peaks: [2.4,2.3,2.1,1.9,1.7,1.6,1.6,1.6,1.7,1.9,2.1,2.4],
+      peaks: [2.5,2.4,2.2,2.0,1.8,1.6,1.6,1.6,1.8,2.0,2.2,2.5],
       kwh:   [181,172,164,149,133,125,125,125,133,149,164,180], // 1.800 kWh/Jahr
       anschluss:4,
     },
     hh_basis: {
-      peaks: [5.2,5.0,4.6,4.0,3.7,3.5,3.5,3.5,3.7,4.0,4.6,5.2],
+      peaks: [5.4,5.2,4.8,4.2,3.9,3.7,3.7,3.7,3.9,4.2,4.8,5.4],
       kwh:   [350,335,320,289,259,243,243,243,259,289,320,350], // 3.500 kWh/Jahr
       anschluss:7,
     },
     hh_wp: {
       // Wärmepumpe läuft im Sommer praktisch nicht – Juli/August nur Grundlast des Hauses.
-      peaks: [9,8.5,6.5,3.5,1.5,1,1,1,1.5,3,6,8.5],
+      // Peaks so kalibriert, dass der Jahresdurchschnitt exakt der amtlichen Ø-Monatsspitze
+      // von 7,0 kW entspricht (nur die Verteilung auf die Monate ist jetzt realistisch).
+      peaks: [16,15,11,5,1.8,1.2,1,1,1.8,4.5,9,15.5],
       kwh:   [1924,1649,1191,458,137,37,14,9,73,367,1008,1833], // 8.700 kWh/Jahr
       anschluss:10,
     },
@@ -609,7 +611,9 @@
     },
     landwirt: {
       // Doppelspitze: Ernte/Trocknung im Spätsommer, Stallheizung/-lüftung im Winter.
-      peaks: [28,26,22,18,18,20,22,30,32,28,22,26],
+      // Peaks so kalibriert, dass der Jahresdurchschnitt exakt der amtlichen Ø-Monatsspitze
+      // von 27 kW entspricht (nur die Verteilung auf die Monate ist jetzt realistisch).
+      peaks: [31,28,24,20,20,23,25,34,36,31,24,28],
       kwh:   [5001,4615,3846,2692,2692,3077,3462,5385,5769,5000,3846,4615], // 50.000 kWh/Jahr
       anschluss:35,
     },
