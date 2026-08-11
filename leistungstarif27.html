@@ -164,11 +164,16 @@
   .status-crit{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
   .status-crit::before{background:var(--red);}
 
-  .chart-wrap{background:var(--screen-bg);border:2px solid var(--navy);border-radius:8px;padding:14px 10px 6px;position:relative;}
+  .chart-wrap{background:var(--bg-panel-raised);border:1px solid var(--border-strong);border-radius:8px;padding:14px 10px 6px;position:relative;cursor:crosshair;}
   svg.scope-svg{width:100%;height:auto;display:block;}
-  .axis-label{font-family:var(--mono);fill:var(--screen-text-dim);font-size:9.5px;}
-  .month-tick{font-family:var(--mono);fill:var(--screen-text-muted);font-size:10px;}
-  .threshold-label{font-family:var(--mono);fill:var(--trace-amber);font-size:9.5px;}
+  .axis-label{font-family:var(--mono);fill:var(--text-dim);font-size:9.5px;}
+  .month-tick{font-family:var(--mono);fill:var(--text-muted);font-size:10px;}
+  .threshold-label{font-family:var(--mono);fill:var(--amber);font-size:9.5px;font-weight:600;}
+  .cursor-line{stroke:var(--navy);stroke-width:1;stroke-dasharray:3,3;pointer-events:none;}
+  .cursor-dot{fill:var(--navy);stroke:#fff;stroke-width:1.5;pointer-events:none;}
+  .cursor-box{fill:var(--navy);pointer-events:none;}
+  .cursor-box-text{font-family:var(--mono);fill:#fff;font-size:10.5px;pointer-events:none;}
+  .cursor-box-title{font-family:var(--mono);fill:#9FC6FF;font-size:9px;letter-spacing:.05em;text-transform:uppercase;pointer-events:none;}
 
   .legend-row{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);}
   .legend-row span{display:inline-flex;align-items:center;gap:6px;}
@@ -254,9 +259,9 @@
       </label>
 
       <label class="field" style="margin-bottom:6px;">
-        <div class="field-row"><span class="fname">Regelbare Bezugsleistung</span><span class="fval" id="val-regelbar">0 %</span></div>
-        <input type="range" id="regelbar" min="0" max="100" step="5" value="0">
-        <div class="field-hint">Anteil der Leistung, den Sie dem Netzbetreiber zur kurzzeitigen Drosselung anbieten – kostet nur 25 % statt 100 % Leistungspreis.</div>
+        <div class="field-row"><span class="fname">Garantierte Leistung (flexible Entnahme)</span><span class="fval" id="val-garantiert">60 kW · kein Flex-Vertrag</span></div>
+        <input type="range" id="garantiert" min="0" max="60" step="1" value="60">
+        <div class="field-hint">Sie legen fest, wie viel kW immer verfügbar sein müssen ("garantiert"). Alles darüber ist "flexibel" – der Netzbetreiber darf es an zwei 4-Stunden-Fenstern pro Tag drosseln, kostet dafür nur 25 % des Leistungspreises. Regler ganz nach rechts = kein Flex-Vertrag.</div>
       </label>
     </div>
 
@@ -275,7 +280,7 @@
       <div class="preset-row">
         <button class="preset-btn" data-preset="hh_basis">Haushalt Basis</button>
         <button class="preset-btn" data-preset="hh_wp">+ Wärmepumpe</button>
-        <button class="preset-btn" data-preset="hh_ev">+ E-Auto (Spitzenladen)</button>
+        <button class="preset-btn" data-preset="hh_ev" title="Entspricht dem E-Control-Musterfall im EMC-Austria-Artikel">E-Auto (Spitzenladen)</button>
         <button class="preset-btn" data-preset="hh_wp_ev">+ Wärmepumpe + E-Auto</button>
       </div>
 
@@ -317,7 +322,7 @@
       <div class="scope-header">
         <div>
           <p class="scope-title">Monatliche Spitzenleistung vs. 10-kW-Schwelle</p>
-          <p class="scope-desc">Jedes Kilowatt oberhalb der Schwelle wird mit dem doppelten Leistungspreis abgerechnet. Balken über der gestrichelten Linie sind der teure Bereich.</p>
+          <p class="scope-desc">Jedes Kilowatt oberhalb der Schwelle wird mit dem doppelten Leistungspreis abgerechnet. Balken über der gestrichelten Linie sind der teure Bereich. Mit dem Cursor über das Diagramm fahren zeigt die Werte je Monat.</p>
         </div>
         <span class="status-chip" id="status-chip">–</span>
       </div>
@@ -396,8 +401,10 @@
 </div>
 
 <div class="foot-note">
-  <strong>Hinweis:</strong> Alle Preise sind vereinfachte Richtwerte auf Basis des Begutachtungsentwurfs der SNE-Grundsatzverordnung (Stand Juli 2026): Arbeitspreis in der Endstufe ≈ 4,53 ct/kWh, Leistungspreis ≈ 33,82 €/kW/Jahr bis 10 kW bzw. 67,64 €/kW/Jahr darüber, Zielverhältnis 50/50. Werte für Start- und Übergangsstufe sind linear interpoliert und nicht offiziell bestätigt. Der Vergleichswert „heutiges Modell" nutzt die im Artikel genannten Ist-Werte (≈7,36 ct/kWh zzgl. 54 €/Jahr Pauschale) als Näherung – tatsächliche Tarife unterscheiden sich je Netzbetreiber. Die verbindlichen Beträge legt erst die Tarifverordnung (SNE-T-V) Ende 2026 fest. Diese Seite ersetzt keine Beratung – Details siehe <a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info</a>.
-  <br><br><strong>Haushalts- und Batterie-Annahmen:</strong> Die Haushaltsszenarien sind typische Beispielwerte für Österreich, keine Messdaten – reale Profile weichen ab. Für Anschlüsse unter 8 kW plant die E-Control laut Artikel eine andere Bepreisung als für Anschlüsse darüber; die 10-kW-Schwelle in diesem Rechner gilt vereinfachend für beide Bereiche gleich. Für die Batteriesimulation wird angenommen, dass eine Monatsspitze im Schnitt rund 30 Minuten andauert (Energiebedarf = Kappungsleistung × 0,5 h) und dass die Batterie außerhalb der Spitzenzeiten langsam nachgeladen wird, ohne selbst eine neue Spitze zu erzeugen.
+  <strong>Hinweis:</strong> Alle Preise sind vereinfachte Richtwerte auf Basis des Begutachtungsentwurfs der SNE-Grundsatzverordnung (Stand Juli 2026): Arbeitspreis in der Endstufe ≈ 4,53 ct/kWh, Leistungspreis ≈ 33,82 €/kW/Jahr bis 10 kW bzw. 67,64 €/kW/Jahr darüber, Zielverhältnis 50/50 (Startstufe 2027 ≈ 30/70). Werte für Start- und Übergangsstufe sind linear interpoliert und nicht offiziell bestätigt. Der Vergleichswert „heutiges Modell" nutzt ≈7,36 ct/kWh Arbeitspreis zzgl. 82,80 €/Jahr Pauschale (54 € Leistungspreis + 28,80 € Messentgelt) als heutige NE-7-Grundgebühr – tatsächliche Tarife unterscheiden sich je Netzbetreiber. Die verbindlichen Beträge legt erst die Tarifverordnung (SNE-T-V) Ende 2026 fest. Quellen: <a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info</a> und <a href="https://www.emcaustria.at/blog/wird-das-aufladen-des-e-autos-zu-hause-ab-jaenner-2027-teuer/" target="_blank" rel="noopener">EMC Austria</a> (E-Control-Fachveranstaltung, Juli 2026). Diese Seite ersetzt keine Beratung.
+  <br><br><strong>Garantierte Leistung / flexible Entnahme:</strong> Das Modell rechnet die ersten „garantierten" kW zum vollen Satz, den Rest bis zur Monatsspitze mit 75 % Rabatt (25 % Satz) – analog zum EMC-Austria-Beispiel (Haushalt mit E-Auto, 11 kW Spitze, 7.000 kWh/Jahr, 5 kW garantiert). Mit den Werten dieses Rechners ergeben sich für diesen Musterfall rund +21 % Netzkosten ohne Flex-Vertrag und rund −8,5 % mit 5 kW garantierter Leistung gegenüber heute – das deckt sich mit den dort genannten Prozentwerten.
+  <br><br><strong>Typische Leistungswerte einzelner Geräte</strong> (laut EMC Austria): Wärmepumpe ca. 1–2 kW, E-Auto-Ladung bis 11 kW, Netz-Ladung eines Hausakkus ca. 3 kW, Heizlüfter ca. 2 kW, Sauna ca. 3,5–9 kW. Nicht abgebildet: die zeitabhängigen Rabatte SNAP (Apr–Sep, 10–16 Uhr) und WiNAP (Okt–März, 22–4 Uhr) auf den Arbeitspreis – Laden in diesen Fenstern senkt die reale Rechnung zusätzlich.
+  <br><br><strong>Haushalts- und Batterie-Annahmen:</strong> Die Haushaltsszenarien sind typische Beispielwerte für Österreich, keine Messdaten – reale Profile weichen ab. Für Anschlüsse unter 8 kW plant die E-Control eine andere Bepreisung als für Anschlüsse darüber; die 10-kW-Schwelle in diesem Rechner gilt vereinfachend für beide Bereiche gleich. Für die Batteriesimulation wird angenommen, dass eine Monatsspitze im Schnitt rund 30 Minuten andauert (Energiebedarf = Kappungsleistung × 0,5 h) und dass die Batterie außerhalb der Spitzenzeiten langsam nachgeladen wird, ohne selbst eine neue Spitze zu erzeugen.
 </div>
 
 <script>
@@ -410,16 +417,16 @@
   const LP2_END = 67.64;    // EUR/kW/year above 10kW at 50/50
   const THRESHOLD = 10;     // kW
 
-  // "Today" comparison model (simplified)
+  // "Today" comparison model (Quelle: EMC Austria, Juli 2026)
   const AP_OLD = 7.36;      // ct/kWh
-  const FLAT_OLD = 54;      // EUR/year pauschale
+  const FLAT_OLD = 82.80;   // EUR/year: Leistungspreis 54 € + Messentgelt 28,80 € (heutige Pauschale NE7)
 
   let peaks = [6,6,6,7,8,9,9,8,7,6,6,7]; // default gleichmäßig-ish
 
   const PEAK_DURATION_H = 0.5; // angenommene Dauer einer Monatsspitze für die Batteriesimulation
 
   const el = id => document.getElementById(id);
-  const anschlussEl = el('anschluss'), stufeEl = el('stufe'), regelbarEl = el('regelbar'),
+  const anschlussEl = el('anschluss'), stufeEl = el('stufe'), garantiertEl = el('garantiert'),
         verbrauchEl = el('verbrauch'), shavingEl = el('shaving'),
         batcapEl = el('batcap'), batpowerEl = el('batpower');
 
@@ -447,11 +454,14 @@
     baeckerei: {peaks:[12,12,13,13,14,13,12,12,13,14,13,14]},
     saisonal:  {peaks:[5,5,6,7,9,13,16,15,10,7,6,5]},
 
-    // Haushaltsszenarien – typische Beispielwerte, keine Messdaten
-    hh_basis:  {peaks:[4,4,3.5,3,3,3,3,3,3,3.5,4,4.5],      anschluss:10, verbrauch:290},
-    hh_wp:     {peaks:[11,11,8,6,4.5,4,4,4,4.5,6,8,11],     anschluss:15, verbrauch:580},
-    hh_ev:     {peaks:[15,15,14.5,14,14,14,14.5,14.5,14,14.5,15,15], anschluss:20, verbrauch:500},
-    hh_wp_ev:  {peaks:[20,20,17,15,14,14,14.5,14.5,14,15,17,20],     anschluss:25, verbrauch:830},
+    // Haushaltsszenarien – typische Beispielwerte, keine Messdaten.
+    // hh_ev entspricht dem E-Control-Musterfall aus dem EMC-Austria-Artikel
+    // (Spitze 11 kW ganzjährig, 7.000 kWh/Jahr) und ist damit gegen die dort
+    // genannten Prozentwerte (+21 % ohne Flex / −8,5 % mit 5 kW Flex-Vertrag) geprüft.
+    hh_basis:  {peaks:[4,4,3.5,3,3,3,3,3,3,3.5,4,4.5],           anschluss:10, verbrauch:290},
+    hh_wp:     {peaks:[8,8,6.5,5,4,3.5,3.5,3.5,4,5,6.5,8],       anschluss:12, verbrauch:480},
+    hh_ev:     {peaks:[11,11,11,11,11,11,11,11,11,11,11,11],    anschluss:15, verbrauch:583},
+    hh_wp_ev:  {peaks:[15,15,13,12,11.5,11,11,11,11.5,12,13,15], anschluss:20, verbrauch:770},
   };
   document.querySelectorAll('.preset-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -464,7 +474,7 @@
     });
   });
 
-  [anschlussEl, stufeEl, regelbarEl, verbrauchEl, shavingEl, batcapEl, batpowerEl].forEach(elm=>{
+  [anschlussEl, stufeEl, garantiertEl, verbrauchEl, shavingEl, batcapEl, batpowerEl].forEach(elm=>{
     elm.addEventListener('input', render);
   });
 
@@ -483,10 +493,22 @@
     return {lp1, lp2, ap};
   }
 
-  function tierCostAnnual(kw, lp1, lp2){
-    const base = Math.min(kw, THRESHOLD) * lp1;
-    const extra = Math.max(kw - THRESHOLD, 0) * lp2;
-    return base + extra;
+  // Kosten für ein kW-Intervall [a,b] unter Berücksichtigung der 10-kW-Staffel
+  function tierCostRange(a, b, lp1, lp2){
+    const lowPart = Math.max(0, Math.min(b, THRESHOLD) - Math.max(a, 0));
+    const highPart = Math.max(0, b - Math.max(a, THRESHOLD));
+    return lowPart*lp1 + highPart*lp2;
+  }
+
+  // Leistungspreis mit "flexibler Entnahme": die ersten `garantiert` kW zum vollen
+  // Satz, alles darüber (bis zur gemessenen Spitze) mit 75 % Rabatt (25 % Satz) –
+  // siehe EMC-Austria-Beispiel (5 kW garantiert von 11 kW Spitze).
+  function leistungspreisAnnual(kw, garantiert, lp1, lp2){
+    const g = Math.min(garantiert, kw);
+    const flex = Math.max(kw - garantiert, 0);
+    const costGuaranteed = tierCostRange(0, g, lp1, lp2);
+    const costFlex = tierCostRange(g, g+flex, lp1, lp2) * 0.25;
+    return costGuaranteed + costFlex;
   }
 
   // Wendet Lastmanagement (%) und danach die Batteriekappung auf einen Rohpeak an.
@@ -511,8 +533,9 @@
     const anschluss = +anschlussEl.value;
     el('val-anschluss').textContent = anschluss + ' kW';
     const f = +stufeEl.value;
-    const regelbarPct = +regelbarEl.value / 100;
-    el('val-regelbar').textContent = Math.round(regelbarPct*100) + ' %';
+    const garantiert = +garantiertEl.value;
+    const garantiertLabel = el('val-garantiert');
+    garantiertLabel.textContent = garantiert >= 60 ? '60 kW · kein Flex-Vertrag' : garantiert + ' kW garantiert';
     const verbrauchMonat = +verbrauchEl.value;
     el('val-verbrauch').textContent = verbrauchMonat.toLocaleString('de-AT') + ' kWh';
     const shavingPct = +shavingEl.value / 100;
@@ -530,8 +553,6 @@
     const {lp1, lp2, ap} = rates(f);
     const mindest = Math.max(0.2*anschluss, 2);
 
-    const discountFactor = (1-regelbarPct)*1.0 + regelbarPct*0.25;
-
     let rows = [];
     let totKwh=0, totAP=0, totLP=0, totSum=0;
     let overMonths = 0, worstMonth = null, worstPeak = -1, totalPenalty = 0;
@@ -544,12 +565,14 @@
       const isOver = finalPeak > THRESHOLD;
       if(limited) anyLimited = true;
 
-      const lpAnnual = tierCostAnnual(bemessen, lp1, lp2) * discountFactor;
+      const lpAnnual = leistungspreisAnnual(bemessen, garantiert, lp1, lp2);
       const lpMonth = lpAnnual/12;
       const apMonth = verbrauchMonat * ap/100;
       const sumMonth = lpMonth + apMonth;
 
-      const penalty = isOver ? (finalPeak-THRESHOLD)*(lp2-lp1)*discountFactor/12 : 0;
+      const penalty = isOver
+        ? (leistungspreisAnnual(finalPeak, garantiert, lp1, lp2) - leistungspreisAnnual(Math.min(finalPeak,THRESHOLD), garantiert, lp1, lp2))/12
+        : 0;
       totalPenalty += penalty;
       if(isOver) overMonths++;
       if(finalPeak > worstPeak){ worstPeak = finalPeak; worstMonth = i; }
@@ -593,7 +616,7 @@
       for(let i=0;i<12;i++){
         const {finalPeak} = applyMeasures(peaks[i], shavingP, capacity, power, mindest);
         const bemessen = Math.max(finalPeak, mindest);
-        s += tierCostAnnual(bemessen, lp1, lp2)*discountFactor/12 + verbrauchMonat*ap/100;
+        s += leistungspreisAnnual(bemessen, garantiert, lp1, lp2)/12 + verbrauchMonat*ap/100;
       }
       return s;
     }
@@ -634,14 +657,25 @@
     drawScope(rows, mindest);
   }
 
+  // gemeinsame Geometrie für Diagramm & Cursor
+  const CHART_W=940, CHART_H=300, CHART_PADL=44, CHART_PADR=16, CHART_PADT=18, CHART_PADB=34;
+  let lastRows = [], lastMaxKw = 1, lastMindest = 0;
+
+  function yScaleFor(v, maxKw){
+    const plotH = CHART_H-CHART_PADT-CHART_PADB;
+    return CHART_PADT + plotH - (v/maxKw)*plotH;
+  }
+
   function drawScope(rows, mindest){
     const svg = el('scope-svg');
-    const W=940, H=300, padL=44, padR=16, padT=18, padB=34;
+    const W=CHART_W, H=CHART_H, padL=CHART_PADL, padR=CHART_PADR, padT=CHART_PADT, padB=CHART_PADB;
     const plotW = W-padL-padR, plotH = H-padT-padB;
     const maxKw = Math.max(THRESHOLD*1.4, ...rows.map(r=>r.shavedPeak))*1.15;
-    const yScale = v => padT + plotH - (v/maxKw)*plotH;
+    const yScale = v => yScaleFor(v, maxKw);
     const barW = plotW/12*0.56;
     const slot = plotW/12;
+
+    lastRows = rows; lastMaxKw = maxKw; lastMindest = mindest;
 
     let svgParts = [];
 
@@ -650,18 +684,18 @@
     for(let g=0; g<=gridSteps; g++){
       const val = maxKw/gridSteps*g;
       const y = yScale(val);
-      svgParts.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--screen-grid-soft)" stroke-width="1"/>`);
+      svgParts.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
       svgParts.push(`<text x="${padL-8}" y="${y+3}" text-anchor="end" class="axis-label">${val.toFixed(0)}</text>`);
     }
 
     // mindestbemessung band
     const yMindest = yScale(mindest);
-    svgParts.push(`<rect x="${padL}" y="${yMindest}" width="${plotW}" height="${padT+plotH-yMindest}" fill="var(--trace-amber)" opacity="0.06"/>`);
-    svgParts.push(`<line x1="${padL}" y1="${yMindest}" x2="${W-padR}" y2="${yMindest}" stroke="var(--trace-amber)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/>`);
+    svgParts.push(`<rect x="${padL}" y="${yMindest}" width="${plotW}" height="${padT+plotH-yMindest}" fill="var(--amber)" opacity="0.07"/>`);
+    svgParts.push(`<line x1="${padL}" y1="${yMindest}" x2="${W-padR}" y2="${yMindest}" stroke="var(--amber)" stroke-width="1" stroke-dasharray="2,3" opacity="0.7"/>`);
 
     // threshold line
     const yThresh = yScale(THRESHOLD);
-    svgParts.push(`<line x1="${padL}" y1="${yThresh}" x2="${W-padR}" y2="${yThresh}" stroke="var(--trace-red)" stroke-width="1.4" stroke-dasharray="6,4" opacity="0.85"/>`);
+    svgParts.push(`<line x1="${padL}" y1="${yThresh}" x2="${W-padR}" y2="${yThresh}" stroke="var(--red)" stroke-width="1.4" stroke-dasharray="6,4" opacity="0.9"/>`);
     svgParts.push(`<text x="${W-padR}" y="${yThresh-6}" text-anchor="end" class="threshold-label">10 kW Schwelle</text>`);
 
     // bars
@@ -670,9 +704,8 @@
       const yTop = yScale(r.shavedPeak);
       const h = padT+plotH - yTop;
       const over = r.isOver;
-      const color = over ? 'var(--trace-red)' : 'var(--trace-cyan)';
-      const glow = over ? 'var(--trace-red)' : 'var(--trace-cyan)';
-      svgParts.push(`<rect x="${x}" y="${yTop}" width="${barW}" height="${Math.max(h,1)}" rx="2" fill="${color}" opacity="0.85" style="filter:drop-shadow(0 0 4px ${glow});"/>`);
+      const color = over ? 'var(--red)' : 'var(--teal)';
+      svgParts.push(`<rect x="${x}" y="${yTop}" width="${barW}" height="${Math.max(h,1)}" rx="2" fill="${color}" opacity="0.88"/>`);
       // month tick
       svgParts.push(`<text x="${x+barW/2}" y="${H-12}" text-anchor="middle" class="month-tick">${MONTHS[i]}</text>`);
       // value label
@@ -681,8 +714,76 @@
 
     svgParts.push(`<text x="${padL}" y="14" class="axis-label">kW</text>`);
 
+    // Cursor-Overlay (Linie, Punkt, Info-Box) – initial verborgen, wird per Maus/Touch aktualisiert
+    svgParts.push(`
+      <g id="cursor-group" style="display:none;">
+        <line id="cursor-line" class="cursor-line" x1="0" y1="${padT}" x2="0" y2="${padT+plotH}"/>
+        <circle id="cursor-dot" class="cursor-dot" r="4"/>
+        <g id="cursor-box-group">
+          <rect id="cursor-box" class="cursor-box" rx="5" width="118" height="54"/>
+          <text id="cursor-title" class="cursor-box-title" x="0" y="0"></text>
+          <text id="cursor-l1" class="cursor-box-text" x="0" y="0"></text>
+          <text id="cursor-l2" class="cursor-box-text" x="0" y="0"></text>
+        </g>
+      </g>
+    `);
+
     svg.innerHTML = svgParts.join('');
   }
+
+  // ---- interaktiver Cursor ----
+  function updateCursor(clientX, clientY){
+    const svg = el('scope-svg');
+    if(!svg || lastRows.length===0) return;
+    const rect = svg.getBoundingClientRect();
+    if(rect.width===0) return;
+    const scaleX = CHART_W / rect.width;
+    const xInViewBox = (clientX - rect.left) * scaleX;
+
+    const plotW = CHART_W-CHART_PADL-CHART_PADR;
+    const slot = plotW/12;
+    let idx = Math.round((xInViewBox - CHART_PADL - slot/2) / slot);
+    idx = Math.max(0, Math.min(11, idx));
+
+    const r = lastRows[idx];
+    if(!r) return;
+    const x = CHART_PADL + idx*slot + slot/2;
+    const y = yScaleFor(r.shavedPeak, lastMaxKw);
+
+    const line = el('cursor-line'), dot = el('cursor-dot'), group = el('cursor-group');
+    const box = el('cursor-box'), boxGroup = el('cursor-box-group');
+    const title = el('cursor-title'), l1 = el('cursor-l1'), l2 = el('cursor-l2');
+    if(!line || !group) return;
+
+    line.setAttribute('x1', x); line.setAttribute('x2', x);
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+
+    // Info-Box links oder rechts vom Cursor positionieren, damit sie im Bild bleibt
+    const boxW = 118, boxH = 54;
+    const flip = x > CHART_W - CHART_PADR - boxW - 8;
+    const boxX = flip ? x - boxW - 12 : x + 12;
+    const boxY = Math.max(CHART_PADT, Math.min(y - boxH/2, CHART_H-CHART_PADB-boxH));
+
+    boxGroup.setAttribute('transform', `translate(${boxX},${boxY})`);
+    box.setAttribute('x', 0); box.setAttribute('y', 0);
+    title.setAttribute('x', 12); title.setAttribute('y', 16); title.textContent = MONTHS[idx] + (r.isOver?' · kritisch':' · ok');
+    l1.setAttribute('x', 12); l1.setAttribute('y', 32); l1.textContent = `Peak: ${r.shavedPeak.toFixed(1)} kW`;
+    l2.setAttribute('x', 12); l2.setAttribute('y', 46); l2.textContent = `Rechnung: ${fmtEUR0(r.sumMonth)}`;
+
+    group.style.display = 'block';
+  }
+  function hideCursor(){
+    const group = el('cursor-group');
+    if(group) group.style.display = 'none';
+  }
+
+  const chartWrapEl = el('chart-wrap-el') || document.querySelector('.chart-wrap');
+  chartWrapEl.addEventListener('mousemove', e => updateCursor(e.clientX, e.clientY));
+  chartWrapEl.addEventListener('mouseleave', hideCursor);
+  chartWrapEl.addEventListener('touchmove', e => {
+    if(e.touches[0]){ updateCursor(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }
+  }, {passive:false});
+  chartWrapEl.addEventListener('touchend', hideCursor);
 
   buildMonthGrid();
   render();
