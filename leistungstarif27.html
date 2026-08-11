@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leistungstarif 2027 – Spitzenlast-Rechner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    /* -- helle Grundfläche (codeLAB365, Light Mode) -- */
+    --bg-page:#EEF1F6;
+    --bg-panel:#FFFFFF;
+    --bg-panel-raised:#F2F5FA;
+    --border:#DBE1EA;
+    --border-strong:#B9C4D6;
+    --text-primary:#16233B;
+    --text-muted:#5C6D88;
+    --text-dim:#94A2B8;
+
+    /* -- Markenfarbe: tiefes Navy als Trim/Header -- */
+    --navy:#123464;
+    --navy-deep:#0B2447;
+
+    /* -- Statusfarben, lesbar auf Weiß -- */
+    --teal:#0E8F82;
+    --teal-bg:#E3F5F2;
+    --teal-border:#BFE6E0;
+    --amber:#A8720C;
+    --amber-bg:#FBF0DD;
+    --amber-border:#F0DBAE;
+    --red:#C0413E;
+    --red-bg:#FBE8E7;
+    --red-border:#F0C4C2;
+
+    /* -- Instrumenten-Bildschirm bleibt dunkel (wie ein echtes Messgerät) -- */
+    --screen-bg:#0A1626;
+    --screen-grid:#1E3A5F;
+    --screen-grid-soft:#16304f;
+    --screen-text-dim:#5A7096;
+    --screen-text-muted:#8FA3C2;
+    --trace-cyan:#4FD1C5;
+    --trace-amber:#F0A93B;
+    --trace-red:#EF6461;
+
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 1200px 700px at 15% -10%, rgba(18,52,100,0.07) 0%, transparent 60%),
+      var(--bg-page);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    line-height:1.5;
+    padding:0 0 60px 0;
+  }
+
+  /* ---------- Header ---------- */
+  .top-bezel{
+    border-bottom:1px solid var(--navy-deep);
+    background:linear-gradient(180deg,var(--navy),var(--navy-deep));
+    padding:28px clamp(16px,4vw,48px) 24px;
+  }
+  .bezel-inner{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;}
+  .brand-tag{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--trace-cyan);margin:0 0 10px;display:flex;align-items:center;gap:8px;
+  }
+  .brand-tag::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--trace-cyan);box-shadow:0 0 8px 2px var(--trace-cyan);}
+  h1{font-family:var(--sans);font-weight:700;font-size:clamp(24px,3.4vw,34px);margin:0 0 6px;letter-spacing:-.01em;color:#FFFFFF;}
+  .subtitle{color:#B9C9E6;font-size:15px;max-width:640px;margin:0;}
+  .source-link{font-family:var(--mono);font-size:12px;color:#8FA3C2;text-align:right;}
+  .source-link a{color:var(--trace-amber);text-decoration:none;border-bottom:1px dotted var(--trace-amber);}
+  .source-link a:hover{color:#ffc670;}
+
+  /* ---------- Layout ---------- */
+  .layout{max-width:1280px;margin:32px auto 0;padding:0 clamp(16px,4vw,48px);display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start;}
+  @media (max-width:920px){.layout{grid-template-columns:1fr;}}
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:20px 20px 22px;
+    box-shadow:0 1px 2px rgba(16,35,64,.04), 0 8px 20px rgba(16,35,64,.04);
+  }
+  .panel + .panel{margin-top:20px;}
+  .panel-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--text-dim);margin:0 0 16px;display:flex;justify-content:space-between;align-items:center;
+  }
+
+  label.field{display:block;margin-bottom:16px;}
+  .field-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .field-row .fname{font-size:13.5px;color:var(--text-primary);font-weight:500;}
+  .field-row .fval{font-family:var(--mono);font-size:14px;color:var(--teal);font-weight:600;}
+  .field-hint{font-size:11.5px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
+
+  input[type=range]{
+    width:100%;height:4px;border-radius:2px;background:var(--border-strong);
+    -webkit-appearance:none;appearance:none;outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--teal);border:2px solid #fff;box-shadow:0 0 0 3px var(--teal-bg),0 1px 3px rgba(16,35,64,.25);cursor:pointer;margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--teal);border:2px solid #fff;box-shadow:0 0 0 3px var(--teal-bg);cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;}
+
+  select, input[type=number]{
+    width:100%;background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--text-primary);
+    font-family:var(--sans);font-size:13.5px;padding:9px 10px;border-radius:6px;outline:none;
+  }
+  select:focus, input[type=number]:focus{border-color:var(--teal);}
+
+  .toggle-group{display:flex;gap:6px;}
+  .toggle-btn{
+    flex:1;background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--text-muted);
+    font-family:var(--mono);font-size:11px;letter-spacing:.03em;padding:9px 4px;border-radius:6px;cursor:pointer;text-align:center;
+  }
+  .toggle-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-bg);box-shadow:inset 0 0 0 1px var(--teal);}
+  .toggle-btn:hover:not(.active){border-color:var(--text-dim);color:var(--text-primary);}
+
+  /* preset buttons */
+  .preset-group-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin:0 0 6px;}
+  .preset-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .preset-btn{
+    background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--text-muted);
+    font-family:var(--sans);font-size:11.5px;padding:6px 10px;border-radius:16px;cursor:pointer;
+  }
+  .preset-btn:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-bg);}
+
+  /* monthly grid */
+  .month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+  .month-cell{display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .month-cell .mlabel{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);letter-spacing:.05em;}
+  .month-cell input{
+    width:100%;background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--teal);
+    font-family:var(--mono);font-size:12px;text-align:center;padding:5px 2px;border-radius:5px;
+  }
+  .month-cell input:focus{outline:none;border-color:var(--teal);}
+  .month-cell.over input{color:var(--red);border-color:var(--red-border);background:var(--red-bg);}
+
+  /* ---------- Scope panel (right) ---------- */
+  .scope-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
+  .scope-title{font-size:15px;font-weight:600;margin:0 0 4px;color:var(--text-primary);}
+  .scope-desc{font-size:12.5px;color:var(--text-muted);max-width:520px;margin:0;}
+
+  .status-chip{
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:6px 12px;border-radius:20px;
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .status-chip::before{content:"";width:6px;height:6px;border-radius:50%;}
+  .status-ok{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border);}
+  .status-ok::before{background:var(--teal);}
+  .status-warn{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
+  .status-warn::before{background:var(--amber);}
+  .status-crit{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+  .status-crit::before{background:var(--red);}
+
+  .chart-wrap{background:var(--screen-bg);border:2px solid var(--navy);border-radius:8px;padding:14px 10px 6px;position:relative;}
+  svg.scope-svg{width:100%;height:auto;display:block;}
+  .axis-label{font-family:var(--mono);fill:var(--screen-text-dim);font-size:9.5px;}
+  .month-tick{font-family:var(--mono);fill:var(--screen-text-muted);font-size:10px;}
+  .threshold-label{font-family:var(--mono);fill:var(--trace-amber);font-size:9.5px;}
+
+  .legend-row{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);}
+  .legend-row span{display:inline-flex;align-items:center;gap:6px;}
+  .legend-row i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  /* callout box */
+  .callout{
+    margin-top:16px;border-left:3px solid var(--amber);background:var(--amber-bg);padding:12px 16px;border-radius:0 8px 8px 0;
+    font-size:13px;color:var(--text-primary);
+  }
+  .callout.crit{border-color:var(--red);background:var(--red-bg);}
+  .callout.ok{border-color:var(--teal);background:var(--teal-bg);}
+  .callout b{color:inherit;}
+  .callout .num{font-family:var(--mono);color:var(--amber);font-weight:600;}
+  .callout.crit .num{color:var(--red);}
+  .callout.ok .num{color:var(--teal);}
+
+  /* summary cards */
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px;}
+  @media (max-width:760px){.summary-grid{grid-template-columns:repeat(2,1fr);}}
+  .sum-card{background:var(--bg-panel-raised);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+  .sum-card .slabel{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+  .sum-card .sval{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text-primary);}
+  .sum-card .ssub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+  .sum-card.accent .sval{color:var(--teal);}
+  .sum-card.diff-up .sval{color:var(--red);}
+  .sum-card.diff-down .sval{color:var(--teal);}
+
+  /* table */
+  .table-wrap{margin-top:22px;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;}
+  th{
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);
+    text-align:right;padding:8px 10px;border-bottom:1px solid var(--border-strong);font-weight:500;
+  }
+  th:first-child, td:first-child{text-align:left;}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:var(--mono);color:var(--text-primary);}
+  tr.over-row td{color:var(--red);}
+  tr.over-row td:first-child::after{content:" ⚡";}
+  tr:hover td{background:var(--bg-panel-raised);}
+  tfoot td{border-top:1px solid var(--border-strong);border-bottom:none;font-weight:600;color:var(--teal);padding-top:12px;}
+
+  .foot-note{max-width:1280px;margin:32px auto 0;padding:16px clamp(16px,4vw,48px) 0;color:var(--text-dim);font-size:11.5px;line-height:1.6;border-top:1px solid var(--border);}
+  .foot-note a{color:var(--amber);}
+
+  h2.section-h{font-size:12px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin:26px 0 10px;}
+</style>
+</head>
+<body>
+
+<div class="top-bezel">
+  <div class="bezel-inner">
+    <div>
+      <p class="brand-tag">Netzentgelt-Messgerät · NE 7</p>
+      <h1>Leistungstarif 2027 – Spitzenlast-Rechner</h1>
+      <p class="subtitle">Simuliert, wie sich der neue Leistungspreis auf Ihre Netzkosten auswirkt – und zeigt, ab welcher Viertelstundenleistung es teuer wird.</p>
+    </div>
+    <div class="source-link">Datenbasis: Begutachtungsentwurf SNE-GV, Juli 2026<br><a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info – Leistungstarif ab 2027 ↗</a></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ============ CONTROL PANEL ============ -->
+  <aside>
+    <div class="panel">
+      <p class="panel-label">Anschluss</p>
+
+      <label class="field">
+        <div class="field-row"><span class="fname">Vereinbarte Anschlussleistung</span><span class="fval" id="val-anschluss">15 kW</span></div>
+        <input type="range" id="anschluss" min="2" max="60" step="1" value="15">
+        <div class="field-hint" id="anschluss-hint">Bestehende NE-7-Anschlüsse vor 1.1.2027 gelten automatisch mit 10 kW, sofern nicht mehr vereinbart war.</div>
+      </label>
+
+      <label class="field">
+        <div class="field-row"><span class="fname">Tarifstufe</span></div>
+        <select id="stufe">
+          <option value="0.30">2027 – Startstufe (≈30 % Leistung / 70 % Arbeit)</option>
+          <option value="0.40">2028 – Übergang (≈40 % / 60 %, geschätzt)</option>
+          <option value="0.50" selected>2029/30 – Endstufe (50 % / 50 %)</option>
+        </select>
+        <div class="field-hint">Ziel der E-Control: 50/50 in der Endstufe, schrittweise über drei Jahre erreicht. Beträge sind Richtwerte, noch nicht verbindlich.</div>
+      </label>
+
+      <label class="field" style="margin-bottom:6px;">
+        <div class="field-row"><span class="fname">Regelbare Bezugsleistung</span><span class="fval" id="val-regelbar">0 %</span></div>
+        <input type="range" id="regelbar" min="0" max="100" step="5" value="0">
+        <div class="field-hint">Anteil der Leistung, den Sie dem Netzbetreiber zur kurzzeitigen Drosselung anbieten – kostet nur 25 % statt 100 % Leistungspreis.</div>
+      </label>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Lastprofil <span style="font-weight:400;color:var(--text-dim);">Viertelstunden-Peak je Monat</span></p>
+
+      <div class="preset-group-label">Gewerbe · NE 7</div>
+      <div class="preset-row">
+        <button class="preset-btn" data-preset="gleich">Gleichmäßiger Betrieb</button>
+        <button class="preset-btn" data-preset="tischlerei">Tischlerei · 3 Kompressoren</button>
+        <button class="preset-btn" data-preset="baeckerei">Bäckerei · Ofen-Spitzen</button>
+        <button class="preset-btn" data-preset="saisonal">Saisonal (Sommer hoch)</button>
+      </div>
+
+      <div class="preset-group-label">Haushalt</div>
+      <div class="preset-row">
+        <button class="preset-btn" data-preset="hh_basis">Haushalt Basis</button>
+        <button class="preset-btn" data-preset="hh_wp">+ Wärmepumpe</button>
+        <button class="preset-btn" data-preset="hh_ev">+ E-Auto (Spitzenladen)</button>
+        <button class="preset-btn" data-preset="hh_wp_ev">+ Wärmepumpe + E-Auto</button>
+      </div>
+
+      <div class="month-grid" id="month-grid"></div>
+
+      <label class="field" style="margin-top:16px;margin-bottom:0;">
+        <div class="field-row"><span class="fname">Ø Verbrauch pro Monat</span><span class="fval" id="val-verbrauch">1800 kWh</span></div>
+        <input type="range" id="verbrauch" min="200" max="12000" step="100" value="1800">
+        <div class="field-hint">Vereinfachung: gleichmäßig auf alle Monate verteilt. Reale Betriebe haben oft saisonale Schwankungen.</div>
+      </label>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Lastmanagement</p>
+      <label class="field" style="margin-bottom:4px;">
+        <div class="field-row"><span class="fname">Entzerrter Betrieb</span><span class="fval" id="val-shaving">0 %</span></div>
+        <input type="range" id="shaving" min="0" max="60" step="5" value="0">
+        <div class="field-hint">Verschiebt Lasten zeitlich, z. B. versetztes Anlaufen von Maschinen oder Verbrauchern – ohne Speicher.</div>
+      </label>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Batteriespeicher <span style="font-weight:400;color:var(--text-dim);">netzgeladen, kappt Spitzen</span></p>
+      <label class="field">
+        <div class="field-row"><span class="fname">Speicherkapazität</span><span class="fval" id="val-batcap">0 kWh</span></div>
+        <input type="range" id="batcap" min="0" max="40" step="1" value="0">
+      </label>
+      <label class="field" style="margin-bottom:6px;">
+        <div class="field-row"><span class="fname">Entladeleistung zur Spitzenkappung</span><span class="fval" id="val-batpower">0 kW</span></div>
+        <input type="range" id="batpower" min="0" max="20" step="0.5" value="0">
+        <div class="field-hint">Die Batterie wird langsam über viele Stunden aus dem Netz geladen und erzeugt dadurch selbst keine neue Spitze. Bei der Monatsspitze springt sie ein und deckt die Differenz. Reicht die Kapazität nicht, wird die Kappung anteilig begrenzt (🔋-Symbol in der Tabelle).</div>
+      </label>
+    </div>
+  </aside>
+
+  <!-- ============ SCOPE / RESULTS ============ -->
+  <main>
+    <div class="panel">
+      <div class="scope-header">
+        <div>
+          <p class="scope-title">Monatliche Spitzenleistung vs. 10-kW-Schwelle</p>
+          <p class="scope-desc">Jedes Kilowatt oberhalb der Schwelle wird mit dem doppelten Leistungspreis abgerechnet. Balken über der gestrichelten Linie sind der teure Bereich.</p>
+        </div>
+        <span class="status-chip" id="status-chip">–</span>
+      </div>
+
+      <div class="chart-wrap">
+        <svg class="scope-svg" id="scope-svg" viewBox="0 0 940 300"></svg>
+      </div>
+
+      <div class="legend-row">
+        <span><i style="background:var(--trace-cyan);"></i>Peak unter Schwelle</span>
+        <span><i style="background:var(--trace-red);"></i>Peak über 10 kW (doppelter Satz)</span>
+        <span><i style="background:var(--trace-amber);opacity:.5;"></i>Mindestbemessung (20 % / min. 2 kW)</span>
+        <span style="color:var(--text-dim);">– – – 10-kW-Schwelle</span>
+        <span style="color:var(--text-dim);">🔋 = Batterie kappt nur teilweise (Kapazität reicht nicht)</span>
+      </div>
+
+      <div class="callout" id="callout-box"></div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Jahresbilanz</p>
+      <div class="summary-grid">
+        <div class="sum-card accent">
+          <div class="slabel">Jahreskosten Netz, neu (2027ff)</div>
+          <div class="sval" id="sum-new">–</div>
+          <div class="ssub" id="sum-new-sub">inkl. Arbeits- &amp; Leistungspreis</div>
+        </div>
+        <div class="sum-card">
+          <div class="slabel">Jahreskosten, heutiges Modell</div>
+          <div class="sval" id="sum-old">–</div>
+          <div class="ssub">Pauschale + Arbeitspreis, zum Vergleich</div>
+        </div>
+        <div class="sum-card" id="sum-diff-card">
+          <div class="slabel">Differenz neu vs. heute</div>
+          <div class="sval" id="sum-diff">–</div>
+          <div class="ssub" id="sum-diff-sub">–</div>
+        </div>
+        <div class="sum-card diff-down">
+          <div class="slabel">Ersparnis durch Lastmanagement</div>
+          <div class="sval" id="sum-shaving">–</div>
+          <div class="ssub">entzerrter Betrieb, ohne Speicher</div>
+        </div>
+        <div class="sum-card diff-down">
+          <div class="slabel">Ersparnis durch Batterie</div>
+          <div class="sval" id="sum-battery">–</div>
+          <div class="ssub" id="sum-battery-sub">zusätzlich zum Lastmanagement</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Monatsrechnungen</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Monat</th>
+              <th>Peak (kW)</th>
+              <th>Bemessen (kW)</th>
+              <th>Verbrauch (kWh)</th>
+              <th>Arbeitspreis (€)</th>
+              <th>Leistungspreis (€)</th>
+              <th>Summe (€)</th>
+            </tr>
+          </thead>
+          <tbody id="month-table-body"></tbody>
+          <tfoot>
+            <tr>
+              <td>Jahr</td><td></td><td></td><td id="tf-kwh"></td><td id="tf-ap"></td><td id="tf-lp"></td><td id="tf-sum"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="foot-note">
+  <strong>Hinweis:</strong> Alle Preise sind vereinfachte Richtwerte auf Basis des Begutachtungsentwurfs der SNE-Grundsatzverordnung (Stand Juli 2026): Arbeitspreis in der Endstufe ≈ 4,53 ct/kWh, Leistungspreis ≈ 33,82 €/kW/Jahr bis 10 kW bzw. 67,64 €/kW/Jahr darüber, Zielverhältnis 50/50. Werte für Start- und Übergangsstufe sind linear interpoliert und nicht offiziell bestätigt. Der Vergleichswert „heutiges Modell" nutzt die im Artikel genannten Ist-Werte (≈7,36 ct/kWh zzgl. 54 €/Jahr Pauschale) als Näherung – tatsächliche Tarife unterscheiden sich je Netzbetreiber. Die verbindlichen Beträge legt erst die Tarifverordnung (SNE-T-V) Ende 2026 fest. Diese Seite ersetzt keine Beratung – Details siehe <a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info</a>.
+  <br><br><strong>Haushalts- und Batterie-Annahmen:</strong> Die Haushaltsszenarien sind typische Beispielwerte für Österreich, keine Messdaten – reale Profile weichen ab. Für Anschlüsse unter 8 kW plant die E-Control laut Artikel eine andere Bepreisung als für Anschlüsse darüber; die 10-kW-Schwelle in diesem Rechner gilt vereinfachend für beide Bereiche gleich. Für die Batteriesimulation wird angenommen, dass eine Monatsspitze im Schnitt rund 30 Minuten andauert (Energiebedarf = Kappungsleistung × 0,5 h) und dass die Batterie außerhalb der Spitzenzeiten langsam nachgeladen wird, ohne selbst eine neue Spitze zu erzeugen.
+</div>
+
+<script>
+(function(){
+  const MONTHS = ["Jän","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+
+  // Endstufe reference values (illustrative, per SNE-GV Begutachtungsentwurf)
+  const AP_END = 4.53;      // ct/kWh at 50/50
+  const LP1_END = 33.82;    // EUR/kW/year up to 10kW at 50/50
+  const LP2_END = 67.64;    // EUR/kW/year above 10kW at 50/50
+  const THRESHOLD = 10;     // kW
+
+  // "Today" comparison model (simplified)
+  const AP_OLD = 7.36;      // ct/kWh
+  const FLAT_OLD = 54;      // EUR/year pauschale
+
+  let peaks = [6,6,6,7,8,9,9,8,7,6,6,7]; // default gleichmäßig-ish
+
+  const PEAK_DURATION_H = 0.5; // angenommene Dauer einer Monatsspitze für die Batteriesimulation
+
+  const el = id => document.getElementById(id);
+  const anschlussEl = el('anschluss'), stufeEl = el('stufe'), regelbarEl = el('regelbar'),
+        verbrauchEl = el('verbrauch'), shavingEl = el('shaving'),
+        batcapEl = el('batcap'), batpowerEl = el('batpower');
+
+  function buildMonthGrid(){
+    const grid = el('month-grid');
+    grid.innerHTML = '';
+    MONTHS.forEach((m,i)=>{
+      const cell = document.createElement('div');
+      cell.className = 'month-cell';
+      cell.innerHTML = `<span class="mlabel">${m}</span><input type="number" min="0" max="200" step="0.5" value="${peaks[i]}" data-idx="${i}">`;
+      grid.appendChild(cell);
+    });
+    grid.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', e=>{
+        const idx = +e.target.dataset.idx;
+        peaks[idx] = Math.max(0, parseFloat(e.target.value)||0);
+        render();
+      });
+    });
+  }
+
+  const PRESETS = {
+    gleich:    {peaks:[7,7,7,7,7,7,7,7,7,7,7,7]},
+    tischlerei:{peaks:[9,9,10,11,15,18,11,9,10,11,9,9]},
+    baeckerei: {peaks:[12,12,13,13,14,13,12,12,13,14,13,14]},
+    saisonal:  {peaks:[5,5,6,7,9,13,16,15,10,7,6,5]},
+
+    // Haushaltsszenarien – typische Beispielwerte, keine Messdaten
+    hh_basis:  {peaks:[4,4,3.5,3,3,3,3,3,3,3.5,4,4.5],      anschluss:10, verbrauch:290},
+    hh_wp:     {peaks:[11,11,8,6,4.5,4,4,4,4.5,6,8,11],     anschluss:15, verbrauch:580},
+    hh_ev:     {peaks:[15,15,14.5,14,14,14,14.5,14.5,14,14.5,15,15], anschluss:20, verbrauch:500},
+    hh_wp_ev:  {peaks:[20,20,17,15,14,14,14.5,14.5,14,15,17,20],     anschluss:25, verbrauch:830},
+  };
+  document.querySelectorAll('.preset-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const preset = PRESETS[btn.dataset.preset];
+      peaks = preset.peaks.slice();
+      if(preset.anschluss !== undefined){ anschlussEl.value = preset.anschluss; }
+      if(preset.verbrauch !== undefined){ verbrauchEl.value = preset.verbrauch; }
+      buildMonthGrid();
+      render();
+    });
+  });
+
+  [anschlussEl, stufeEl, regelbarEl, verbrauchEl, shavingEl, batcapEl, batpowerEl].forEach(elm=>{
+    elm.addEventListener('input', render);
+  });
+
+  function fmtEUR(v){
+    return v.toLocaleString('de-AT',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+  }
+  function fmtEUR0(v){
+    return Math.round(v).toLocaleString('de-AT') + ' €';
+  }
+
+  function rates(f){
+    // f = leistungsanteil (0.30 / 0.40 / 0.50). Linear scale from endstufe (f=0.5).
+    const lp1 = LP1_END * (f/0.5);
+    const lp2 = LP2_END * (f/0.5);
+    const ap  = AP_END  * ((1-f)/0.5);
+    return {lp1, lp2, ap};
+  }
+
+  function tierCostAnnual(kw, lp1, lp2){
+    const base = Math.min(kw, THRESHOLD) * lp1;
+    const extra = Math.max(kw - THRESHOLD, 0) * lp2;
+    return base + extra;
+  }
+
+  // Wendet Lastmanagement (%) und danach die Batteriekappung auf einen Rohpeak an.
+  function applyMeasures(rawPeak, shavingPct, batCap, batPower, mindest){
+    const afterLM = rawPeak * (1-shavingPct);
+    const desiredShave = Math.min(batPower, Math.max(afterLM - mindest, 0));
+    const energyNeeded = desiredShave * PEAK_DURATION_H;
+    let achievedShave = 0;
+    let limited = false;
+    if(batCap > 0 && batPower > 0 && desiredShave > 0){
+      if(energyNeeded <= batCap + 1e-9){
+        achievedShave = desiredShave;
+      } else {
+        achievedShave = batCap / PEAK_DURATION_H;
+        limited = achievedShave < desiredShave - 1e-9;
+      }
+    }
+    return { finalPeak: afterLM - achievedShave, afterLM, achievedShave, limited };
+  }
+
+  function render(){
+    const anschluss = +anschlussEl.value;
+    el('val-anschluss').textContent = anschluss + ' kW';
+    const f = +stufeEl.value;
+    const regelbarPct = +regelbarEl.value / 100;
+    el('val-regelbar').textContent = Math.round(regelbarPct*100) + ' %';
+    const verbrauchMonat = +verbrauchEl.value;
+    el('val-verbrauch').textContent = verbrauchMonat.toLocaleString('de-AT') + ' kWh';
+    const shavingPct = +shavingEl.value / 100;
+    el('val-shaving').textContent = Math.round(shavingPct*100) + ' %';
+    const batCap = +batcapEl.value;
+    el('val-batcap').textContent = batCap + ' kWh';
+    const batPower = +batpowerEl.value;
+    el('val-batpower').textContent = batPower + ' kW';
+
+    const anschlussHint = el('anschluss-hint');
+    anschlussHint.textContent = anschluss < 8
+      ? 'Unter 8 kW: typischer Haushaltsanschluss. Die E-Control plant hier eine andere Bepreisung als für größere Anschlüsse – Details siehe Fußnote.'
+      : 'Bestehende NE-7-Anschlüsse vor 1.1.2027 gelten automatisch mit 10 kW, sofern nicht mehr vereinbart war.';
+
+    const {lp1, lp2, ap} = rates(f);
+    const mindest = Math.max(0.2*anschluss, 2);
+
+    const discountFactor = (1-regelbarPct)*1.0 + regelbarPct*0.25;
+
+    let rows = [];
+    let totKwh=0, totAP=0, totLP=0, totSum=0;
+    let overMonths = 0, worstMonth = null, worstPeak = -1, totalPenalty = 0;
+    let anyLimited = false;
+
+    for(let i=0;i<12;i++){
+      const rawPeak = peaks[i];
+      const {finalPeak, limited} = applyMeasures(rawPeak, shavingPct, batCap, batPower, mindest);
+      const bemessen = Math.max(finalPeak, mindest);
+      const isOver = finalPeak > THRESHOLD;
+      if(limited) anyLimited = true;
+
+      const lpAnnual = tierCostAnnual(bemessen, lp1, lp2) * discountFactor;
+      const lpMonth = lpAnnual/12;
+      const apMonth = verbrauchMonat * ap/100;
+      const sumMonth = lpMonth + apMonth;
+
+      const penalty = isOver ? (finalPeak-THRESHOLD)*(lp2-lp1)*discountFactor/12 : 0;
+      totalPenalty += penalty;
+      if(isOver) overMonths++;
+      if(finalPeak > worstPeak){ worstPeak = finalPeak; worstMonth = i; }
+
+      totKwh += verbrauchMonat; totAP += apMonth; totLP += lpMonth; totSum += sumMonth;
+
+      rows.push({i, rawPeak, shavedPeak:finalPeak, bemessen, isOver, apMonth, lpMonth, sumMonth, limited});
+    }
+
+    // ---- table ----
+    const tbody = el('month-table-body');
+    tbody.innerHTML = rows.map(r=>`
+      <tr class="${r.isOver?'over-row':''}">
+        <td>${MONTHS[r.i]}${r.limited?' 🔋':''}</td>
+        <td>${r.shavedPeak.toFixed(1)}</td>
+        <td>${r.bemessen.toFixed(1)}</td>
+        <td>${verbrauchMonat.toLocaleString('de-AT')}</td>
+        <td>${fmtEUR(r.apMonth)}</td>
+        <td>${fmtEUR(r.lpMonth)}</td>
+        <td>${fmtEUR(r.sumMonth)}</td>
+      </tr>
+    `).join('');
+    el('tf-kwh').textContent = totKwh.toLocaleString('de-AT');
+    el('tf-ap').textContent = fmtEUR(totAP);
+    el('tf-lp').textContent = fmtEUR(totLP);
+    el('tf-sum').textContent = fmtEUR(totSum);
+
+    // ---- old model comparison ----
+    const oldAnnual = totKwh*(AP_OLD/100) + FLAT_OLD;
+    el('sum-new').textContent = fmtEUR0(totSum);
+    el('sum-old').textContent = fmtEUR0(oldAnnual);
+    const diff = totSum - oldAnnual;
+    const diffCard = el('sum-diff-card');
+    el('sum-diff').textContent = (diff>=0?'+':'') + fmtEUR0(diff);
+    diffCard.className = 'sum-card ' + (diff>0?'diff-up':'diff-down');
+    el('sum-diff-sub').textContent = diff>0 ? 'teurer als heute' : 'günstiger als heute';
+
+    // ---- isolierte Ersparnis: Baseline -> Lastmanagement -> + Batterie ----
+    function costFor(shavingP, capacity, power){
+      let s=0;
+      for(let i=0;i<12;i++){
+        const {finalPeak} = applyMeasures(peaks[i], shavingP, capacity, power, mindest);
+        const bemessen = Math.max(finalPeak, mindest);
+        s += tierCostAnnual(bemessen, lp1, lp2)*discountFactor/12 + verbrauchMonat*ap/100;
+      }
+      return s;
+    }
+    const sumBaseline = costFor(0, 0, 0);
+    const sumLastmanagementOnly = costFor(shavingPct, 0, 0);
+    const savingsLastmanagement = Math.max(0, sumBaseline - sumLastmanagementOnly);
+    const savingsBattery = Math.max(0, sumLastmanagementOnly - totSum);
+    el('sum-shaving').textContent = fmtEUR0(savingsLastmanagement);
+    el('sum-battery').textContent = fmtEUR0(savingsBattery);
+    el('sum-battery-sub').textContent = anyLimited ? 'in manchen Monaten kapazitätsbegrenzt (🔋)' : 'zusätzlich zum Lastmanagement';
+
+    // ---- status chip + callout ----
+    const chip = el('status-chip');
+    const callout = el('callout-box');
+    if(overMonths===0){
+      chip.className='status-chip status-ok'; chip.textContent='Unauffällig';
+      callout.className='callout ok';
+      callout.innerHTML = `Kein Monat überschreitet die 10-kW-Schwelle. Die höchste Spitze liegt im <b>${MONTHS[worstMonth]}</b> bei <span class="num">${worstPeak.toFixed(1)} kW</span> – der teure doppelte Satz greift hier nicht.`;
+    } else if(overMonths<=3){
+      chip.className='status-chip status-warn'; chip.textContent=overMonths+' Monat(e) kritisch';
+      callout.className='callout';
+      callout.innerHTML = `In <b>${overMonths} von 12 Monaten</b> liegt die Spitzenlast über 10 kW – am stärksten im <b>${MONTHS[worstMonth]}</b> mit <span class="num">${worstPeak.toFixed(1)} kW</span>. Dadurch entstehen zusätzlich rund <span class="num">${fmtEUR0(totalPenalty)}</span> pro Jahr allein durch den doppelten Satz oberhalb der Schwelle. Schon eine kleine Verschiebung von Lasten oder mehr Batterieleistung senkt die Kosten spürbar.`;
+    } else {
+      chip.className='status-chip status-crit'; chip.textContent=overMonths+' Monate kritisch';
+      callout.className='callout crit';
+      callout.innerHTML = `<b>${overMonths} von 12 Monaten</b> überschreiten die 10-kW-Schwelle – Spitzenreiter ist der <b>${MONTHS[worstMonth]}</b> mit <span class="num">${worstPeak.toFixed(1)} kW</span>. Das kostet zusätzlich rund <span class="num">${fmtEUR0(totalPenalty)}</span> pro Jahr. Prüfen Sie versetzte Maschinenstarts oder mehr Batterieleistung/-kapazität – links lässt sich der Effekt direkt simulieren.`;
+    }
+    if(anyLimited){
+      callout.innerHTML += ` <br><br><b>Batterie-Hinweis:</b> In mindestens einem Monat reicht die eingestellte Speicherkapazität nicht aus, um die volle gewünschte Leistung über die angenommene Spitzendauer von 30 Minuten zu liefern (🔋 in der Tabelle) – die Kappung wurde dort anteilig begrenzt.`;
+    }
+
+    // mindestbemessung hint appended if peaks are far below mindest
+    const avgPeak = peaks.reduce((a,b)=>a+b,0)/12;
+    if(avgPeak < mindest*0.6){
+      callout.innerHTML += ` <br><br><b>Zusatz-Hinweis:</b> Ihre Spitzen liegen meist deutlich unter der Mindestbemessung von <span class="num">${mindest.toFixed(1)} kW</span> (20 % von ${anschluss} kW). Sie zahlen also für ungenutzte Kapazität – eine niedrigere vereinbarte Anschlussleistung könnte sich lohnen.`;
+    }
+
+    drawScope(rows, mindest);
+  }
+
+  function drawScope(rows, mindest){
+    const svg = el('scope-svg');
+    const W=940, H=300, padL=44, padR=16, padT=18, padB=34;
+    const plotW = W-padL-padR, plotH = H-padT-padB;
+    const maxKw = Math.max(THRESHOLD*1.4, ...rows.map(r=>r.shavedPeak))*1.15;
+    const yScale = v => padT + plotH - (v/maxKw)*plotH;
+    const barW = plotW/12*0.56;
+    const slot = plotW/12;
+
+    let svgParts = [];
+
+    // grid lines (graticule)
+    const gridSteps = 5;
+    for(let g=0; g<=gridSteps; g++){
+      const val = maxKw/gridSteps*g;
+      const y = yScale(val);
+      svgParts.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--screen-grid-soft)" stroke-width="1"/>`);
+      svgParts.push(`<text x="${padL-8}" y="${y+3}" text-anchor="end" class="axis-label">${val.toFixed(0)}</text>`);
+    }
+
+    // mindestbemessung band
+    const yMindest = yScale(mindest);
+    svgParts.push(`<rect x="${padL}" y="${yMindest}" width="${plotW}" height="${padT+plotH-yMindest}" fill="var(--trace-amber)" opacity="0.06"/>`);
+    svgParts.push(`<line x1="${padL}" y1="${yMindest}" x2="${W-padR}" y2="${yMindest}" stroke="var(--trace-amber)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/>`);
+
+    // threshold line
+    const yThresh = yScale(THRESHOLD);
+    svgParts.push(`<line x1="${padL}" y1="${yThresh}" x2="${W-padR}" y2="${yThresh}" stroke="var(--trace-red)" stroke-width="1.4" stroke-dasharray="6,4" opacity="0.85"/>`);
+    svgParts.push(`<text x="${W-padR}" y="${yThresh-6}" text-anchor="end" class="threshold-label">10 kW Schwelle</text>`);
+
+    // bars
+    rows.forEach((r,i)=>{
+      const x = padL + i*slot + (slot-barW)/2;
+      const yTop = yScale(r.shavedPeak);
+      const h = padT+plotH - yTop;
+      const over = r.isOver;
+      const color = over ? 'var(--trace-red)' : 'var(--trace-cyan)';
+      const glow = over ? 'var(--trace-red)' : 'var(--trace-cyan)';
+      svgParts.push(`<rect x="${x}" y="${yTop}" width="${barW}" height="${Math.max(h,1)}" rx="2" fill="${color}" opacity="0.85" style="filter:drop-shadow(0 0 4px ${glow});"/>`);
+      // month tick
+      svgParts.push(`<text x="${x+barW/2}" y="${H-12}" text-anchor="middle" class="month-tick">${MONTHS[i]}</text>`);
+      // value label
+      svgParts.push(`<text x="${x+barW/2}" y="${yTop-6}" text-anchor="middle" class="axis-label" fill="${color}">${r.shavedPeak.toFixed(1)}</text>`);
+    });
+
+    svgParts.push(`<text x="${padL}" y="14" class="axis-label">kW</text>`);
+
+    svg.innerHTML = svgParts.join('');
+  }
+
+  buildMonthGrid();
+  render();
+})();
+</script>
+
+</body>
+</html>
