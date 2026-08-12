@@ -66,6 +66,78 @@
     padding:28px clamp(16px,4vw,48px) 24px;
   }
   .bezel-inner{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;}
+
+  /* ---------- Tab-Navigation ---------- */
+  .tab-nav{max-width:1280px;margin:20px auto 0;display:flex;gap:6px;}
+  .tab-btn{
+    background:transparent;border:1px solid transparent;border-bottom:none;color:#9FB4D8;
+    font-family:var(--sans);font-size:13.5px;font-weight:500;padding:9px 18px;border-radius:8px 8px 0 0;
+    cursor:pointer;
+  }
+  .tab-btn:hover{color:#fff;}
+  .tab-btn.active{background:var(--bg-page);color:var(--navy);border-color:var(--border);font-weight:600;}
+
+  /* ---------- Info & Hilfe Seite ---------- */
+  .info-wrap{max-width:880px;margin:36px auto 0;padding:0 clamp(16px,4vw,48px) 60px;}
+  .info-hero{margin-bottom:8px;}
+  .info-hero h2{font-size:clamp(22px,3vw,30px);font-weight:700;color:var(--text-primary);margin:0 0 6px;letter-spacing:-.01em;}
+  .info-hero p{color:var(--text-muted);font-size:14.5px;margin:0;}
+
+  .info-section{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 1px 2px rgba(16,35,64,.04),0 8px 20px rgba(16,35,64,.04);padding:22px clamp(16px,3vw,28px);margin-top:22px;}
+  .info-h{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:0 0 16px;}
+  .info-p{font-size:13.5px;line-height:1.65;color:var(--text-primary);margin:0 0 12px;}
+  .info-note{font-size:12px;line-height:1.6;color:var(--text-muted);background:var(--bg-panel-raised);
+    border-left:3px solid var(--border-strong);padding:10px 14px;border-radius:0 6px 6px 0;margin-top:14px;}
+
+  .info-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+  .info-card{background:var(--bg-panel-raised);border:1px solid var(--border);border-radius:8px;padding:16px;}
+  .info-card h4{font-size:14px;font-weight:600;color:var(--navy);margin:0 0 8px;}
+  .info-card p{font-size:12.5px;line-height:1.55;color:var(--text-muted);margin:0;}
+
+  .info-list{margin:0;padding-left:22px;}
+  .info-list li{font-size:13.5px;line-height:1.65;color:var(--text-primary);margin-bottom:12px;}
+  .info-list li b{color:var(--navy);}
+  .info-list li:last-child{margin-bottom:0;}
+
+  .stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  @media (max-width:560px){.stat-cards{grid-template-columns:1fr;}}
+  .stat-card{border-radius:8px;padding:18px;text-align:center;border:1px solid;}
+  .stat-teal{background:var(--teal-bg);border-color:var(--teal-border);}
+  .stat-amber{background:var(--amber-bg);border-color:var(--amber-border);}
+  .stat-num{font-family:var(--mono);font-size:32px;font-weight:700;}
+  .stat-teal .stat-num{color:var(--teal);}
+  .stat-amber .stat-num{color:var(--amber);}
+  .stat-label{font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.5;}
+
+  .timeline{position:relative;padding-left:28px;}
+  .timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--border-strong);}
+  .tl-item{position:relative;padding-bottom:22px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-dot{position:absolute;left:-28px;top:3px;width:12px;height:12px;border-radius:50%;
+    background:var(--bg-panel);border:2px solid var(--border-strong);}
+  .tl-dot-done{background:var(--text-dim);border-color:var(--text-dim);}
+  .tl-dot-accent{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-bg);}
+  .tl-dot-end{background:var(--amber);border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-bg);}
+  .tl-date{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.05em;text-transform:uppercase;}
+  .tl-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-top:2px;}
+  .tl-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+  .steps-list{display:flex;flex-direction:column;gap:14px;}
+  .step-item{display:flex;gap:14px;align-items:flex-start;}
+  .step-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;
+    font-family:var(--mono);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .step-body{font-size:13.5px;line-height:1.6;color:var(--text-primary);padding-top:3px;}
+  .step-body b{color:var(--navy);}
+
+  .glossary{margin:0;}
+  .glossary dt{font-size:13.5px;font-weight:700;color:var(--navy);margin-top:14px;}
+  .glossary dt:first-child{margin-top:0;}
+  .glossary dd{font-size:12.5px;line-height:1.6;color:var(--text-muted);margin:4px 0 0;}
+
+  .info-footer{font-size:11.5px;color:var(--text-dim);margin-top:24px;line-height:1.6;}
+  .info-footer a{color:var(--amber);}
+
   .brand-tag{
     font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
     color:var(--trace-cyan);margin:0 0 10px;display:flex;align-items:center;gap:8px;
@@ -282,8 +354,13 @@
     </div>
     <div class="source-link">Datenbasis: Begutachtungsentwurf SNE-GV, Juli 2026<br><a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info – Leistungstarif ab 2027 ↗</a></div>
   </div>
+  <div class="tab-nav">
+    <button type="button" class="tab-btn active" id="tab-btn-calc" data-view="calc">🖩 Rechner</button>
+    <button type="button" class="tab-btn" id="tab-btn-info" data-view="info">ℹ️ Info &amp; Hilfe</button>
+  </div>
 </div>
 
+<div id="view-calc">
 <div class="layout">
 
   <!-- ============ CONTROL PANEL ============ -->
@@ -490,6 +567,179 @@
   <br><br><strong>Typische Leistungswerte einzelner Geräte</strong> (laut EMC Austria): Wärmepumpe ca. 1–2 kW, E-Auto-Ladung bis 11 kW, Netz-Ladung eines Hausakkus ca. 3 kW, Heizlüfter ca. 2 kW, Sauna ca. 3,5–9 kW. Nicht abgebildet: die zeitabhängigen Rabatte SNAP (Apr–Sep, 10–16 Uhr) und WiNAP (Okt–März, 22–4 Uhr) auf den Arbeitspreis – Laden in diesen Fenstern senkt die reale Rechnung zusätzlich.
   <br><br><strong>Haushalts- und Batterie-Annahmen:</strong> Die amtlichen Musterkund:innen verteilen ihre Jahresmenge gleichmäßig auf 12 Monate mit konstanter Spitze, wie im Original gerechnet – reale Profile schwanken saisonal stärker. Das Kombi-Szenario „Wärmepumpe + E-Auto" ist keine amtliche Musterkundin, sondern eine eigene Schätzung. Für Anschlüsse unter 8 kW plant die E-Control eine andere Bepreisung als für Anschlüsse darüber; die 10-kW-Schwelle in diesem Rechner gilt vereinfachend für beide Bereiche gleich. Für die Batteriesimulation wird angenommen, dass eine Monatsspitze im Schnitt rund 30 Minuten andauert (Energiebedarf = Kappungsleistung × 0,5 h) und dass die Batterie außerhalb der Spitzenzeiten langsam nachgeladen wird, ohne selbst eine neue Spitze zu erzeugen.
 </div>
+</div><!-- /view-calc -->
+
+<div id="view-info" style="display:none;">
+<div class="info-wrap">
+
+  <section class="info-hero">
+    <h2>Warum kommt die neue Netzentgelt-Bepreisung?</h2>
+    <p>Hintergrund, Ziele und Zeitplan der SNE-Grundsatzverordnung der E-Control</p>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Warum braucht es diese Reform – warum jetzt?</h3>
+    <div class="info-cards">
+      <div class="info-card">
+        <h4>Energiewende</h4>
+        <p>Dezentrale Erzeugung, Wärmepumpen und E-Mobilität verändern das Stromnetz grundlegend – das alte, rein arbeitsbasierte Tarifmodell aus den 1990ern bildet diese neuen Lastspitzen nicht mehr ab.</p>
+      </div>
+      <div class="info-card">
+        <h4>Smart Meter</h4>
+        <p>Intelligente Zähler ermöglichen erstmals eine differenzierte, zeitnahe Verbrauchssteuerung – ohne Smart Meter (Viertelstundenwerte) wäre eine leistungsbasierte Abrechnung technisch gar nicht möglich.</p>
+      </div>
+      <div class="info-card">
+        <h4>Flexible Lasten</h4>
+        <p>Wärmepumpen, E-Mobilität und Batteriespeicher erfordern ein flexibles, anpassungsfähiges Tarifsystem – neue Anreize sollen den Netzausbau dämpfen, indem sie Lastspitzen gezielt entzerren.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Die 5 Kernelemente der Grundsatzverordnung</h3>
+    <ol class="info-list">
+      <li><b>Leistungspreis für alle</b> – Verursachungsgerechte Kostenverteilung auf Basis der tatsächlichen Netzbeanspruchung. Wer das Netz stärker beansprucht (hohe Spitzenleistung), trägt einen größeren Anteil der Netzkosten.</li>
+      <li><b>Zeitvariable Arbeitspreise</b> – SNAP und WiNAP lenken Verbrauch in Zeiten, in denen das Netz entlastet werden soll, z. B. in PV-Erzeugungsspitzen am Mittag.</li>
+      <li><b>Flexible Netznutzung</b> – Rabatte gegen Flexibilität: wer dem Netzbetreiber erlaubt, einen Teil der Leistung kurzzeitig zu drosseln ("garantierte" vs. "flexible" Leistung), zahlt für den flexiblen Anteil nur 25 % des Leistungspreises.</li>
+      <li><b>Neues Netzanschlussentgelt</b> – Anschlussentgelte nach tatsächlicher Inanspruchnahme und Gleichbehandlung: ein aufwandsorientierter Anteil für die reine Herstellung plus ein leistungsbezogener Pauschalanteil für den Netzausbau.</li>
+      <li><b>Kriterien für Systemdienlichkeit</b> – Gezielte Anreize für Speicher und andere netzdienliche Technologien, die dem Netz helfen statt es zusätzlich zu belasten (z. B. langsames, netzgeladenes Laden eines Batteriespeichers).</li>
+    </ol>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Was ändert sich – und wer profitiert?</h3>
+    <p class="info-p">Das Verhältnis Arbeitspreis zu Leistungspreis wird von heute stark arbeitslastig auf 50/50 umgestellt (Endstufe). Pauschale und Messentgelt entfallen. Das Gesamtaufkommen des Netzbetreibers bleibt unverändert – die Reform ist <b>erlösneutral</b>, es verschiebt sich nur die individuelle Zuordnung der Netzkosten zwischen den Kund:innen.</p>
+    <div class="stat-cards">
+      <div class="stat-card stat-teal">
+        <div class="stat-num">75&nbsp;%</div>
+        <div class="stat-label">der österreichischen Zählpunkte zahlen künftig weniger</div>
+      </div>
+      <div class="stat-card stat-amber">
+        <div class="stat-num">23&nbsp;%</div>
+        <div class="stat-label">zahlen mehr – meist wegen hoher Spitze relativ zum Verbrauch (z. B. ungesteuertes E-Auto-Laden)</div>
+      </div>
+    </div>
+    <p class="info-p">Entlastet werden vor allem Profile mit gleichmäßigem Bezug (niedrige Spitze relativ zum Verbrauch). Wer sehr ungleichmäßig, aber mit sehr hoher Spitze bezieht, zahlt mehr – dafür gibt es das Instrument der "flexiblen Entnahme" (siehe Glossar unten).</p>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Zeitvariable Arbeitspreise: SNAP &amp; WiNAP</h3>
+    <div class="info-cards">
+      <div class="info-card">
+        <h4>SNAP – Sommer-Nieder-Arbeitspreis</h4>
+        <p>NE 7, 1. April – 30. September, jeweils 10–16 Uhr: reduzierter Arbeitspreis in den typischen PV-Erzeugungsspitzen am Mittag.</p>
+      </div>
+      <div class="info-card">
+        <h4>WiNAP – Winter-Nieder-Arbeitspreis</h4>
+        <p>NE 7, 1. Oktober – 31. März, jeweils 22–4 Uhr: reduzierter Arbeitspreis zur Entlastung der Winterspitzen in der Nacht.</p>
+      </div>
+    </div>
+    <p class="info-note">Praktisch heißt das: Wer E-Auto oder Batteriespeicher gezielt in diesen Fenstern lädt, zahlt für die bezogene Energiemenge weniger Arbeitspreis. Dieser Effekt ist in diesem Rechner nicht mitgerechnet, da er zeitaufgelöste Stundenwerte statt Viertelstunden-Spitzenwerte erfordert.</p>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Zeitplan der Reform</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot tl-dot-done"></div>
+        <div class="tl-content">
+          <div class="tl-date">Juli 2026</div>
+          <div class="tl-title">Begutachtungsentwurf der SNE-Grundsatzverordnung veröffentlicht</div>
+          <div class="tl-sub">Basis dieser Berechnung · Entwurf, noch nicht verbindlich</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <div class="tl-date">Ende 2026</div>
+          <div class="tl-title">Verbindliche Tarifverordnung (SNE-T-V)</div>
+          <div class="tl-sub">Endgültige €-Beträge je Netzbereich · ausständig</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot tl-dot-accent"></div>
+        <div class="tl-content">
+          <div class="tl-date">1.1.2027</div>
+          <div class="tl-title">Inkrafttreten – Startstufe</div>
+          <div class="tl-sub">≈ 30 % Leistung / 70 % Arbeit</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <div class="tl-date">2028</div>
+          <div class="tl-title">Übergangsstufe</div>
+          <div class="tl-sub">≈ 40 % / 60 % (geschätzt)</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot tl-dot-end"></div>
+        <div class="tl-content">
+          <div class="tl-date">2029 / 2030</div>
+          <div class="tl-title">Endstufe erreicht</div>
+          <div class="tl-sub">50 % / 50 % · Zielbild</div>
+        </div>
+      </div>
+    </div>
+    <p class="info-note">Start- und Übergangsstufe (30 % / 40 % Leistungsanteil) sind in diesem Rechner linear zwischen heute und der Endstufe interpoliert und nicht amtlich bestätigt – die tatsächlichen Werte legt erst die Tarifverordnung (SNE-T-V) Ende 2026 fest und können sich je Netzbereich unterscheiden (kein einheitlicher nationaler Tarif).</p>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Anleitung: So verwenden Sie den Rechner</h3>
+    <div class="steps-list">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body"><b>Anschlussleistung einstellen.</b> Im Panel "Anschluss" die vereinbarte Anschlussleistung laut Netzbetreiber-Vertrag eintragen. Darunter sehen Sie sofort live, welche Mindestbemessung (20 % davon, mind. 2 kW) sich daraus ergibt.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body"><b>Lastprofil wählen oder selbst eintragen.</b> Über die Preset-Buttons ein Beispielprofil laden (eigene Gewerbe-Beispiele, amtliche E-Control-Musterkund:innen oder eigene Schätzungen) – oder in der Monatstabelle jeden Monat einzeln mit Spitzenlast (kW) und Verbrauch (kWh) befüllen. Der Schieberegler neben jedem Verbrauchswert lässt sich über die Checkbox oberhalb der Tabelle ein-/ausblenden.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body"><b>Diagramm lesen.</b> Balken über der roten gestrichelten Linie (10 kW) kosten den doppelten Leistungspreissatz. Die amber Linie zeigt Ihre aktuelle Mindestbemessung. Mit der Maus/dem Finger über das Diagramm fahren zeigt Details je Monat.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-body"><b>Tarifstufe und Ergebnis vergleichen.</b> Im Panel "Anschluss" zwischen 2027/2028/2029 wechseln und die Jahresbilanz unten (neu vs. heute) sowie die Monatsrechnungen in der Tabelle vergleichen.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">5</div>
+        <div class="step-body"><b>Optional: Erweiterte Regler nutzen.</b> Im Bereich "Erweitert" lassen sich ein Flex-Vertrag (garantierte Leistung), Lastmanagement (entzerrter Betrieb) und ein Batteriespeicher zur Spitzenkappung simulieren – für die meisten Nutzer:innen nicht nötig.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">6</div>
+        <div class="step-body"><b>Sitzung speichern.</b> Über "💾 Speichern (JSON)" ganz oben lässt sich der komplette Stand als Datei sichern und später über "📂 Laden (JSON)" wieder exakt herstellen.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="info-section">
+    <h3 class="info-h">Fachbegriffe erklärt</h3>
+    <dl class="glossary">
+      <dt>Leistungspreis</dt>
+      <dd>Jährlicher €/kW-Satz auf die höchste gemessene Viertelstundenleistung eines Monats. Wird anteilig (÷12) monatlich verrechnet. In der Endstufe 33,82 €/kW/Jahr bis 10 kW, darüber 67,64 €/kW/Jahr.</dd>
+      <dt>Arbeitspreis</dt>
+      <dd>Klassischer ct/kWh-Satz auf die tatsächlich bezogene Energiemenge. Sinkt in der Endstufe von heute ≈7,36 auf 4,53 ct/kWh.</dd>
+      <dt>10-kW-Schwelle / doppelter Satz</dt>
+      <dd>Der Leistungspreis ist zweistufig: bis 10 kW ein Satz, darüber der doppelte Satz. Ein einziger hoher Ausreißer (z. B. Durchlauferhitzer) kann den ganzen Monat teuer machen.</dd>
+      <dt>Mindestbemessungsgrundlage</dt>
+      <dd>Es werden mindestens 20 % der vereinbarten Anschlussleistung (min. 2 kW) abgerechnet – auch wenn die tatsächliche Spitze niedriger war.</dd>
+      <dt>Garantierte / flexible Leistung (Flex-Vertrag)</dt>
+      <dd>Optionaler Vertrag: Sie legen fest, wie viele kW "garantiert" verfügbar sein müssen. Der Rest ("flexibel") darf der Netzbetreiber zweimal täglich für 2–4 Stunden drosseln, kostet dafür nur 25 % des Leistungspreises.</dd>
+      <dt>SNAP / WiNAP</dt>
+      <dd>Zeitfenster mit reduziertem Arbeitspreis: SNAP im Sommer (10–16 Uhr), WiNAP im Winter (22–4 Uhr) – lenkt Verbrauch in netzschonende Zeiten.</dd>
+      <dt>Bemessungsgrundlage</dt>
+      <dd>Der Wert, der tatsächlich für den Leistungspreis herangezogen wird: das Maximum aus gemessener Spitze und Mindestbemessungsgrundlage.</dd>
+      <dt>Tarifstufe (Start/Übergang/Endstufe)</dt>
+      <dd>Die Reform wird 2027–2029/30 schrittweise eingeführt, damit sich Kund:innen an den steigenden Leistungspreisanteil gewöhnen können.</dd>
+    </dl>
+  </section>
+
+  <p class="info-footer">Quellen: <a href="https://www.bestconnect.info/blog/leistungstarif-2027-oesterreich/" target="_blank" rel="noopener">bestconnect.info</a>, <a href="https://www.emcaustria.at/blog/wird-das-aufladen-des-e-autos-zu-hause-ab-jaenner-2027-teuer/" target="_blank" rel="noopener">EMC Austria</a> und die E-Control-Präsentation „Grundsatzverordnung – Auswirkungen auf die Kund:innen" (Karin Emberger, Fachveranstaltung 14.7.2026). Diese Seite ersetzt keine Beratung.</p>
+
+</div>
+</div><!-- /view-info -->
 
 <script>
 (function(){
@@ -1039,6 +1289,22 @@
 
   buildMonthTable();
   render();
+
+  // ---- Tab-Umschaltung: Rechner <-> Info & Hilfe ----
+  const viewCalc = document.getElementById('view-calc');
+  const viewInfo = document.getElementById('view-info');
+  const tabBtnCalc = document.getElementById('tab-btn-calc');
+  const tabBtnInfo = document.getElementById('tab-btn-info');
+  function showView(name){
+    const isCalc = name === 'calc';
+    viewCalc.style.display = isCalc ? '' : 'none';
+    viewInfo.style.display = isCalc ? 'none' : '';
+    tabBtnCalc.classList.toggle('active', isCalc);
+    tabBtnInfo.classList.toggle('active', !isCalc);
+    window.scrollTo({top:0, behavior:'instant'});
+  }
+  tabBtnCalc.addEventListener('click', ()=> showView('calc'));
+  tabBtnInfo.addEventListener('click', ()=> showView('info'));
 })();
 </script>
 
