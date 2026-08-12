@@ -222,6 +222,8 @@
   }
   .toggle-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-bg);box-shadow:inset 0 0 0 1px var(--teal);}
   .toggle-btn:hover:not(.active){border-color:var(--text-dim);color:var(--text-primary);}
+  .module-row .toggle-btn{flex:none;border-radius:16px;padding:6px 12px;font-family:var(--sans);font-size:11.5px;}
+  .module-row .toggle-btn.active::before{content:"✓ ";}
 
   /* preset buttons */
   .preset-group-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin:0 0 6px;}
@@ -423,6 +425,19 @@
         <button class="preset-btn" data-preset="hh_wp_ev">Wärmepumpe + E-Auto</button>
         <button class="preset-btn" data-preset="einzelhaus_speicher" title="Eigene Schätzung: PV + Speicher, Winter grid-abhängig, Sommer nahezu autark">Einzelhaus mit PV-Speicher</button>
       </div>
+
+      <div class="preset-group-label">Baukasten <span style="font-weight:400;text-transform:none;">(eigene Schätzung, frei kombinierbar)</span></div>
+      <div class="preset-row">
+        <button class="preset-btn" data-preset="hh_basis" title="Startpunkt für den Baukasten – setzt alle Module unten zurück">🏠 Haus (Median)</button>
+      </div>
+      <div class="preset-row module-row" id="module-row">
+        <button class="toggle-btn" data-module="waermepumpe" title="+8 kW Anschluss-Empfehlung, +5.200 kWh/Jahr, Heizsaison-Kurve (Sommer ≈0)">+ Wärmepumpe</button>
+        <button class="toggle-btn" data-module="durchlauferhitzer" title="Geräte-Nennleistung 18 kW als Worst-Case-Spitze – reale 15-Min-Spitze oft niedriger, siehe Info-Tab">+ Durchlauferhitzer</button>
+        <button class="toggle-btn" data-module="boiler" title="Langsamer Warmwasserspeicher statt Durchlauferhitzer: nur 2 kW Spitze, gleicher Energiebedarf">+ Boiler</button>
+        <button class="toggle-btn" data-module="wallbox" title="11 kW Ladeleistung ganzjährig, +7.000 kWh/Jahr">+ Wallbox E-Auto</button>
+        <button class="toggle-btn" data-module="balkonkraftwerk" title="Reduziert den Verbrauch (−577 kWh/Jahr, sommerlastig), aber NICHT die Spitzenlast">+ Balkonkraftwerk</button>
+      </div>
+      <div class="field-hint" id="module-hint" style="margin-bottom:14px;">Module addieren sich zum Basishaus. Bei mehreren Geräten wird die Spitzenlast als Worst Case addiert (alle gleichzeitig aktiv) – in der Praxis oft niedriger, wenn Lasten zeitlich versetzt laufen (siehe „Erweitert" → Lastmanagement).</div>
 
       <div class="field-row" style="margin:18px 0 8px;">
         <span class="fname">Monatswerte <span style="font-weight:400;color:var(--text-dim);">Spitzenlast &amp; Verbrauch</span></span>
@@ -884,6 +899,79 @@
       anschluss:15,
     },
   };
+
+  // ---- Baukastensystem: Basishaus + frei kombinierbare Zusatzmodule ----
+  // Jedes Modul liefert einen ZUSATZ-Peak und -Verbrauch je Monat (kein Vollprofil),
+  // der zum aktuellen Basisprofil addiert wird. Eigene Schätzungen, keine amtlichen Werte.
+  const MODULES = {
+    waermepumpe: {
+      label: 'Wärmepumpe',
+      peaks_add: [11,10,7,3,1,0.3,0.1,0.1,0.3,2.5,6,10.5],
+      kwh_add:   [1151,986,712,274,82,22,8,5,44,219,602,1095], // 5.200 kWh/Jahr, Heizsaison-Kurve
+      anschluss_add: 8,
+    },
+    durchlauferhitzer: {
+      label: 'Durchlauferhitzer',
+      peaks_add: Array(12).fill(18), // Geräte-Nennleistung, siehe Info-Tab: reale Spitze oft niedriger (15-Min-Mittelwert)
+      kwh_add:   [190,180,160,140,120,110,110,110,120,140,160,185], // ~1.745 kWh/Jahr
+      anschluss_add: 10,
+    },
+    boiler: {
+      label: 'Boiler',
+      peaks_add: Array(12).fill(2.0), // langsam heizender Warmwasserspeicher statt Durchlauferhitzer
+      kwh_add:   [190,180,160,140,120,110,110,110,120,140,160,185], // gleicher Warmwasserbedarf wie Durchlauferhitzer
+      anschluss_add: 2,
+    },
+    wallbox: {
+      label: 'Wallbox E-Auto',
+      peaks_add: Array(12).fill(11), // Wallbox-Nennleistung, ganzjährig gleich (Hardware-Grenze)
+      kwh_add:   [641,630,595,572,548,525,525,537,560,583,613,671], // 7.000 kWh/Jahr
+      anschluss_add: 11,
+    },
+    balkonkraftwerk: {
+      label: 'Balkonkraftwerk',
+      peaks_add: Array(12).fill(0), // reduziert die Spitze i. d. R. NICHT (PV-Ertrag selten exakt zur Abendspitze)
+      kwh_add:   [-9,-17,-34,-58,-80,-92,-92,-80,-58,-34,-14,-9], // −577 kWh/Jahr Netzbezug, sommerlastig
+      anschluss_add: 0,
+    },
+  };
+  let baseProfile = { peaks: PRESETS.hh_basis.peaks.slice(), kwh: PRESETS.hh_basis.kwh.slice(), anschluss: PRESETS.hh_basis.anschluss };
+  let activeModules = new Set();
+
+  function resetModuleUI(){
+    activeModules.clear();
+    document.querySelectorAll('.module-row .toggle-btn').forEach(b=> b.classList.remove('active'));
+  }
+
+  function recomputeFromModules(){
+    const combinedPeaks = baseProfile.peaks.map((p,i)=>{
+      let v = p;
+      activeModules.forEach(key=> v += MODULES[key].peaks_add[i]);
+      return Math.round(v*10)/10;
+    });
+    const combinedKwh = baseProfile.kwh.map((k,i)=>{
+      let v = k;
+      activeModules.forEach(key=> v += MODULES[key].kwh_add[i]);
+      return Math.max(0, Math.round(v));
+    });
+    let combinedAnschluss = baseProfile.anschluss;
+    activeModules.forEach(key=> combinedAnschluss += MODULES[key].anschluss_add);
+    peaks = combinedPeaks;
+    kwh = combinedKwh;
+    anschlussEl.value = combinedAnschluss;
+    buildMonthTable();
+    render();
+  }
+
+  document.querySelectorAll('.module-row .toggle-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.module;
+      if(activeModules.has(key)){ activeModules.delete(key); btn.classList.remove('active'); }
+      else { activeModules.add(key); btn.classList.add('active'); }
+      recomputeFromModules();
+    });
+  });
+
   document.querySelectorAll('.preset-btn[data-preset]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const preset = PRESETS[btn.dataset.preset];
@@ -895,6 +983,10 @@
         kwh = Array(12).fill(preset.verbrauch);
       }
       garantiertEl.value = preset.garantiert !== undefined ? preset.garantiert : 60;
+      // Baukasten-Basis aktualisieren + Module zurücksetzen, damit der Baukasten
+      // immer vom zuletzt gewählten Preset aus weiterbaut.
+      baseProfile = { peaks: peaks.slice(), kwh: kwh.slice(), anschluss: +anschlussEl.value };
+      resetModuleUI();
       buildMonthTable();
       render();
     });
