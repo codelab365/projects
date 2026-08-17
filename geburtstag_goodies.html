@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geburtstags-Goodies & KI-Prompts</title>
+    <style>
+/* =========================================================================
+   codeLAB365 · Design System
+   Ein gemeinsames Stylesheet für alle Projektseiten.
+   Einbinden mit:  <link rel="stylesheet" href="codelab365.css">
+   Alle Klassen sind mit  cl-  präfixiert und lassen sich gefahrlos
+   in bestehende Seiten einfügen.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+/* ---------- 1. Design-Tokens ---------------------------------------------- */
+:root {
+  color-scheme: light dark;
+
+  /* Marke */
+  --cl-navy:      #002E59;   /* Logo-Blau           */
+  --cl-navy-600:  #003F78;   /* Hover / heller      */
+  --cl-navy-700:  #001F42;   /* dunkler             */
+  --cl-signal:    #0BA9CC;   /* „Schaltkreis"-Cyan  */
+  --cl-signal-600:#0894B4;
+
+  /* Neutrale Flächen (hell) */
+  --cl-bg:        #F5F8FC;
+  --cl-surface:   #FFFFFF;
+  --cl-surface-2: #EEF3F9;
+  --cl-line:      #DCE4EE;
+  --cl-text:      #0E2136;
+  --cl-muted:     #5A6B80;
+
+  /* Semantisch */
+  --cl-primary:      var(--cl-navy);
+  --cl-primary-hover:var(--cl-navy-600);
+  --cl-on-primary:   #FFFFFF;
+  --cl-accent:       var(--cl-signal);
+  --cl-link:         var(--cl-navy-600);
+  --cl-focus:        var(--cl-signal);
+
+  /* Status */
+  --cl-ok:   #1F9D6B;
+  --cl-warn: #C9840E;
+  --cl-err:  #C43D3D;
+
+  /* Typografie */
+  --cl-font-display: 'Space Grotesk', system-ui, sans-serif;
+  --cl-font-body:    'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --cl-font-mono:    'Space Mono', ui-monospace, 'JetBrains Mono', monospace;
+
+  /* Radius / Schatten / Layout */
+  --cl-radius:    14px;
+  --cl-radius-sm: 10px;
+  --cl-radius-pill: 999px;
+  --cl-shadow:    0 1px 2px rgba(0,35,66,.06), 0 10px 30px -16px rgba(0,46,89,.28);
+  --cl-shadow-lg: 0 4px 10px rgba(0,35,66,.08), 0 24px 48px -20px rgba(0,46,89,.35);
+  --cl-ring:      0 0 0 3px color-mix(in srgb, var(--cl-focus) 45%, transparent);
+  --cl-maxw:      1160px;
+
+  /* Abstände */
+  --cl-space-1: .375rem;
+  --cl-space-2: .75rem;
+  --cl-space-3: 1.25rem;
+  --cl-space-4: 2rem;
+  --cl-space-5: 3.25rem;
+  --cl-space-6: 5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cl-bg:        #0A1622;
+    --cl-surface:   #0F1E2E;
+    --cl-surface-2: #13273A;
+    --cl-line:      #21374D;
+    --cl-text:      #E7EEF6;
+    --cl-muted:     #96A9BF;
+
+    --cl-primary:      #1C4B7A;
+    --cl-primary-hover:#245F97;
+    --cl-on-primary:   #F2F8FF;
+    --cl-link:         #6FC7E2;
+    --cl-signal:       #34C0DF;
+    --cl-shadow:    0 1px 2px rgba(0,0,0,.4), 0 12px 34px -18px rgba(0,0,0,.7);
+    --cl-shadow-lg: 0 4px 12px rgba(0,0,0,.45), 0 26px 54px -22px rgba(0,0,0,.75);
+  }
+}
+
+/* Manuelles Umschalten möglich:  <html data-theme="dark">  */
+[data-theme="dark"] {
+  --cl-bg:#0A1622; --cl-surface:#0F1E2E; --cl-surface-2:#13273A;
+  --cl-line:#21374D; --cl-text:#E7EEF6; --cl-muted:#96A9BF;
+  --cl-primary:#1C4B7A; --cl-primary-hover:#245F97; --cl-on-primary:#F2F8FF;
+  --cl-link:#6FC7E2; --cl-signal:#34C0DF;
+}
+[data-theme="light"] {
+  --cl-bg:#F5F8FC; --cl-surface:#FFFFFF; --cl-surface-2:#EEF3F9;
+  --cl-line:#DCE4EE; --cl-text:#0E2136; --cl-muted:#5A6B80;
+  --cl-primary:#002E59; --cl-primary-hover:#003F78; --cl-on-primary:#FFFFFF;
+  --cl-link:#003F78; --cl-signal:#0BA9CC;
+}
+
+/* ---------- 2. Reset & Grundlagen ---------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--cl-font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--cl-text);
+  background: var(--cl-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img, svg, video { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--cl-font-display);
+  color: var(--cl-text);
+  line-height: 1.15;
+  margin: 0 0 .5em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+h1 { font-size: clamp(2rem, 1.4rem + 2.6vw, 3.15rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.05rem; }
+p  { margin: 0 0 1rem; }
+
+a { color: var(--cl-link); text-decoration-color: color-mix(in srgb, var(--cl-link) 40%, transparent); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+
+hr { border: none; border-top: 1px solid var(--cl-line); margin: var(--cl-space-4) 0; }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--cl-ring);
+  border-radius: var(--cl-radius-sm);
+}
+
+::selection { background: color-mix(in srgb, var(--cl-signal) 30%, transparent); }
+
+/* ---------- 3. Layout ----------------------------------------------------- */
+.cl-container { width: 100%; max-width: var(--cl-maxw); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+.cl-section   { padding-block: var(--cl-space-5); }
+.cl-stack > * + * { margin-top: var(--cl-space-3); }
+
+.cl-grid { display: grid; gap: var(--cl-space-3); }
+.cl-grid--cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+/* ---------- 4. Kopf- & Fußzeile ------------------------------------------ */
+.cl-header {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--cl-surface) 85%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--cl-line);
+}
+.cl-header__inner {
+  display: flex; align-items: center; gap: var(--cl-space-3);
+  min-height: 64px;
+}
+.cl-brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--cl-text); font-weight: 600; }
+.cl-brand svg, .cl-brand img { width: 34px; height: 34px; }
+.cl-brand__name { font-family: var(--cl-font-display); font-size: 1.15rem; letter-spacing: -0.01em; }
+.cl-brand__name b { color: var(--cl-navy-600); }
+@media (prefers-color-scheme: dark){ .cl-brand__name b { color: var(--cl-signal); } }
+.cl-header__spacer { margin-left: auto; }
+
+.cl-footer {
+  border-top: 1px solid var(--cl-line);
+  color: var(--cl-muted);
+  font-size: .9rem;
+  padding-block: var(--cl-space-4);
+  margin-top: var(--cl-space-5);
+}
+.cl-footer a { color: inherit; }
+
+/* ---------- 5. Eyebrow / Labels ------------------------------------------ */
+.cl-eyebrow {
+  font-family: var(--cl-font-mono);
+  font-size: .74rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--cl-muted);
+  display: inline-flex; align-items: center; gap: .55rem;
+}
+.cl-eyebrow::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--cl-signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cl-signal) 22%, transparent);
+}
+.cl-muted { color: var(--cl-muted); }
+.cl-lead  { font-size: 1.12rem; color: var(--cl-muted); max-width: 60ch; }
+
+/* ---------- 6. Buttons ---------------------------------------------------- */
+.cl-btn {
+  --_bg: var(--cl-primary); --_fg: var(--cl-on-primary); --_bd: transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  font-family: var(--cl-font-body); font-weight: 600; font-size: .95rem; line-height: 1;
+  padding: .72rem 1.15rem; border-radius: var(--cl-radius-pill);
+  background: var(--_bg); color: var(--_fg); border: 1.5px solid var(--_bd);
+  text-decoration: none; cursor: pointer;
+  transition: transform .12s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.cl-btn:hover { background: var(--cl-primary-hover); transform: translateY(-1px); }
+.cl-btn:active { transform: translateY(0); }
+.cl-btn--ghost  { --_bg: transparent; --_fg: var(--cl-text); --_bd: var(--cl-line); }
+.cl-btn--ghost:hover { --_bg: var(--cl-surface-2); background: var(--cl-surface-2); border-color: var(--cl-navy-600); }
+.cl-btn--signal { --_bg: var(--cl-signal); --_fg: #04222B; }
+.cl-btn--signal:hover { background: var(--cl-signal-600); }
+.cl-btn--sm { padding: .48rem .85rem; font-size: .85rem; }
+
+/* ---------- 7. Chips / Tags / Badges ------------------------------------- */
+.cl-tag {
+  font-family: var(--cl-font-mono); font-size: .68rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--cl-navy-600);
+  background: color-mix(in srgb, var(--cl-signal) 12%, var(--cl-surface));
+  border: 1px solid color-mix(in srgb, var(--cl-signal) 30%, transparent);
+  padding: .2rem .5rem; border-radius: 6px; display: inline-block;
+}
+@media (prefers-color-scheme: dark){ .cl-tag { color: var(--cl-signal); } }
+
+.cl-badge {
+  font-size: .75rem; font-weight: 600; padding: .15rem .55rem; border-radius: var(--cl-radius-pill);
+  background: var(--cl-surface-2); color: var(--cl-muted);
+}
+.cl-badge--ok   { background: color-mix(in srgb, var(--cl-ok) 15%, transparent);   color: var(--cl-ok); }
+
+/* ---------- 8. Karten ---------------------------------------------------- */
+.cl-card {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-radius);
+  padding: var(--cl-space-3);
+  box-shadow: var(--cl-shadow);
+}
+.cl-card--pad { padding: var(--cl-space-4); }
+
+/* ---------- 11. Utilities ------------------------------------------------- */
+.cl-center     { text-align: center; }
+.cl-flex       { display: flex; gap: var(--cl-space-2); align-items: center; justify-content: center;}
+.cl-flex-wrap  { flex-wrap: wrap; }
+.cl-mono       { font-family: var(--cl-font-mono); }
+    </style>
+</head>
+<body>
+    <header class="cl-header">
+        <div class="cl-container cl-header__inner">
+            <a href="#" class="cl-brand">
+                <span class="cl-brand__name">codeLAB<b>365</b></span>
+            </a>
+        </div>
+    </header>
+
+    <main class="cl-container cl-section cl-stack">
+        <!-- Hero Section -->
+        <div class="cl-center">
+            <img src="https://codelab365.github.io/projects/cover.png" alt="Cover" style="max-width: 100%; width: 450px; border-radius: var(--cl-radius); box-shadow: var(--cl-shadow-lg); margin: 0 auto var(--cl-space-4);">
+            <h1>Geburtstag, Kuchen &amp; KI-Magie</h1>
+            <p class="cl-lead" style="margin: 0 auto;">Zur Feier des Tages gibt es nicht nur Kuchen im Büro, sondern auch ein kleines Goodie für alle: Ein bewährtes Rezept, 10 smarte KI-Prompts und ein paar spielerische Highlights.</p>
+        </div>
+
+        <hr>
+
+        <!-- Rezept Section -->
+        <div class="cl-card cl-card--pad">
+            <span class="cl-eyebrow" style="margin-bottom: 1rem;">Kuchen-Klassiker</span>
+            <h2>Rezept: Ameisenkuchen / Marmorkuchen</h2>
+            <p><span class="cl-badge cl-badge--ok">Zubereitungszeit: 60 Minuten</span></p>
+            
+            <div class="cl-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top: 1.5rem;">
+                <div>
+                    <h4>Zutaten (für 1 Kuchen)</h4>
+                    <ul>
+                        <li>4 Eier</li>
+                        <li>25 dag Rama</li>
+                        <li>25 dag Kristallzucker</li>
+                        <li>25 dag Mehl (glatt oder griffig)</li>
+                        <li>1 Pkg Backpulver</li>
+                        <li>1 Pkg Vanillezucker</li>
+                        <li>1/2 Kaffeetasse Schokostreusel</li>
+                        <li>1 Kaffeetasse Eierlikör</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Zubereitung</h4>
+                    <ol style="line-height: 1.8;">
+                        <li>Eier, Zucker und die in der Mikrowelle zerlassene Rama schaumig rühren.</li>
+                        <li>Restliche Zutaten dazugeben und zu einem glatten Teig verarbeiten.</li>
+                        <li>Den Teig in eine gefettete und bemehlte Form geben.</li>
+                        <li>Bei 180°C ca. 50 Minuten auf mittlerer Schiene backen.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Prompts Section -->
+        <div class="cl-center" style="margin-bottom: var(--cl-space-4);">
+            <span class="cl-eyebrow">KI-Werkzeugkasten</span>
+            <h2>10 smarte Prompts für Feiern &amp; Events</h2>
+            <p class="cl-muted">Jeder Prompt ist nach der goldenen Regel aufgebaut: <br><strong>Rolle + Kontext + Aufgabe + Vorgaben/Format</strong>.</p>
+        </div>
+
+        <div class="cl-grid cl-grid--cards">
+            <!-- Prompt 1 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Einladung</span>
+                    <h3 style="margin-top: 10px;">Büro-Geburtstag</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als humorvoller Kollege. Ich habe heute Geburtstag und einen Kuchen mitgebracht. Verfasse eine lockere E-Mail an das Team (ca. 15 Personen), um sie in die Kaffeeküche einzuladen. Erwähne zwingend, dass der Kuchen Spuren von Eierlikör enthält. Format: Kurze E-Mail, maximal 4 Sätze, mit kreativem Betreff."
+                </p>
+            </div>
+
+            <!-- Prompt 2 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Backen</span>
+                    <h3 style="margin-top: 10px;">Kreative Resteverwertung</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als professioneller Konditor. Ich habe noch Schokostreusel und Eierlikör von meinem letzten Ameisenkuchen übrig. Erstelle ein kreatives und einfaches Dessert-Rezept zur Resteverwertung. Vorgabe: Ohne Backen (No-Bake) und maximal 5 zusätzliche Zutaten. Format: Übersichtliche Schritt-für-Schritt-Anleitung."
+                </p>
+            </div>
+
+            <!-- Prompt 3 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Hochzeitsplanung</span>
+                    <h3 style="margin: 10px 0;">Der perfekte Zeitplan</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als erfahrener Wedding-Planner. Ich plane eine Hochzeit mit 80 Gästen im Freien. Erstelle einen detaillierten Ablaufplan für den Tag. Vorgabe: Beginn ist um 14 Uhr, Ende offen. Baue sinnvolle Pufferzeiten zwischen den Programmpunkten ein. Format: Tabellarische Zeitleiste."
+                </p>
+            </div>
+
+            <!-- Prompt 4 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Rede</span>
+                    <h3 style="margin: 10px 0;">Die Trauzeugen-Rede</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als sympathischer Stand-up Comedian. Ich muss eine Trauzeugenrede für meinen besten Freund halten. Schreibe einen charmanten und witzigen Entwurf. Vorgabe: Erwähne seinen notorisch schlechten Orientierungssinn, aber verzichte auf peinliche Geschichten über Ex-Partnerinnen. Format: Fließtext, ca. 250 Wörter."
+                </p>
+            </div>
+
+            <!-- Prompt 5 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Event</span>
+                    <h3 style="margin: 10px 0;">Motto-Party Ideen</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als kreativer Event-Manager. Ich plane meinen 30. Geburtstag und suche nach einem originellen Party-Motto. Generiere unkonventionelle Ideen. Vorgabe: Keine Standard-Themen wie '80er Jahre' oder 'Casino'. Die Umsetzung muss budgetfreundlich sein. Format: Bullet-Point Liste mit 5 Konzepten inklusive Deko-Tipps."
+                </p>
+            </div>
+
+            <!-- Prompt 6 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Backen</span>
+                    <h3 style="margin: 10px 0;">Allergiker-Alternativen</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als Experte für alternative Ernährungsformen. Ich erwarte Gäste, die sich vegan ernähren und eine Glutenunverträglichkeit haben. Wandle ein klassisches Marmorkuchen-Rezept entsprechend ab. Vorgabe: Die Ersatzzutaten müssen in einem herkömmlichen Supermarkt erhältlich sein. Format: Zutatenliste und Backanleitung."
+                </p>
+            </div>
+
+            <!-- Prompt 7 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Rede</span>
+                    <h3 style="margin: 10px 0;">Ansprache für den Chef</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als professioneller Redenschreiber. Ich muss eine kurze Ansprache zum Firmenjubiläum unseres Geschäftsführers halten. Schreibe einen charmanten Text. Vorgabe: Der Tonfall soll respektvoll, aber locker sein. Baue einen kleinen humorvollen Seitenhieb auf seine Kaffeesucht ein. Format: Lesbarer Text, Dauer ca. 2 Minuten."
+                </p>
+            </div>
+
+            <!-- Prompt 8 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Hochzeitsplanung</span>
+                    <h3 style="margin: 10px 0;">Budgetkalkulation</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als Finanzberater für Paare. Unser Hochzeitsbudget beträgt 15.000 Euro. Erstelle eine realistische Budgetkalkulation. Vorgabe: Setze den Fokus auf hochwertiges Catering und einen guten Fotografen. Zeige Einsparpotenziale bei der Blumendeko auf. Format: Übersichtliche Tabelle mit Kategorien, Prozent- und Euro-Angaben."
+                </p>
+            </div>
+
+            <!-- Prompt 9 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Rede</span>
+                    <h3 style="margin: 10px 0;">Kurze Danksagung</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als dankbarer Jubilar. Meine Geburtstagsfeier neigt sich dem Ende zu und ich möchte mich bei den Gästen verabschieden. Formuliere eine herzliche Danksagung. Vorgabe: Erwähne die gute Stimmung und die großzügigen Geschenke. Halte es kurz und prägnant. Format: Kurze Ansprache von maximal 5 Sätzen."
+                </p>
+            </div>
+
+            <!-- Prompt 10 -->
+            <div class="cl-card cl-stack">
+                <div>
+                    <span class="cl-tag">Humor</span>
+                    <h3 style="margin: 10px 0;">Ausreden für mehr Kuchen</h3>
+                </div>
+                <p class="cl-muted cl-mono" style="font-size: 0.85rem;">
+                    "Agiere als schlagfertiger Kollege. Ich habe gerade das dritte Stück vom Büro-Kuchen gegessen und brauche gute Argumente. Liefere witzige Ausreden, warum das absolut legitim ist. Vorgabe: Die Argumente sollen ironisch und leicht absurd sein, ohne unhöflich zu wirken. Format: Eine Liste mit 5 kurzen One-Linern."
+                </p>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Goodies Section -->
+        <div class="cl-center">
+            <span class="cl-eyebrow">Pausen-Highlights</span>
+            <h2>Lust auf eine Runde spielen?</h2>
+            <p class="cl-muted">Fordert eure Kollegen nach dem Kuchen zu einer strategischen Partie heraus.</p>
+            <div class="cl-flex cl-flex-wrap" style="margin-top: 1.5rem;">
+                <a href="https://codelab365.github.io/projects/dreier-schach" class="cl-btn cl-btn--signal" target="_blank">
+                    3-Spieler Schach
+                </a>
+                <a href="https://codelab365.github.io/projects/go" class="cl-btn cl-btn--ghost" target="_blank">
+                    Klassisches Go
+                </a>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Buch Werbung -->
+        <div class="cl-card cl-center cl-card--pad" style="background: var(--cl-surface-2); margin-top: 2rem;">
+            <span class="cl-eyebrow">Buchempfehlung</span>
+            <h3 style="margin-top: 10px;">KI im Verein</h3>
+            <p class="cl-muted" style="max-width: 600px; margin: 0 auto 1.5rem;">Entdecke, wie du Künstliche Intelligenz effektiv, ressourcenschonend und zukunftsorientiert in deinem Verein einsetzen kannst.</p>
+            <a href="https://amzn.eu/d/01f2bjK9" class="cl-btn" target="_blank">Jetzt auf Amazon ansehen</a>
+        </div>
+
+    </main>
+
+    <footer class="cl-footer cl-center">
+        <div class="cl-container">
+            <p>© 2026 codeLAB365. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+</body>
+</html>
