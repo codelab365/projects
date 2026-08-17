@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>codeLAB365 - Ausgabenanalyse & Sankey-Diagramm</title>
+  <style>
+/* =========================================================================
+   codeLAB365 · Design System
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  color-scheme: light dark;
+  --cl-navy:      #002E59;
+  --cl-navy-600:  #003F78;
+  --cl-navy-700:  #001F42;
+  --cl-signal:    #0BA9CC;
+  --cl-signal-600:#0894B4;
+  --cl-bg:        #F5F8FC;
+  --cl-surface:   #FFFFFF;
+  --cl-surface-2: #EEF3F9;
+  --cl-line:      #DCE4EE;
+  --cl-text:      #0E2136;
+  --cl-muted:     #5A6B80;
+  --cl-primary:      var(--cl-navy);
+  --cl-primary-hover:var(--cl-navy-600);
+  --cl-on-primary:   #FFFFFF;
+  --cl-accent:       var(--cl-signal);
+  --cl-link:         var(--cl-navy-600);
+  --cl-focus:        var(--cl-signal);
+  --cl-ok:   #1F9D6B;
+  --cl-warn: #C9840E;
+  --cl-err:  #C43D3D;
+  --cl-font-display: 'Space Grotesk', system-ui, sans-serif;
+  --cl-font-body:    'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --cl-font-mono:    'Space Mono', ui-monospace, 'JetBrains Mono', monospace;
+  --cl-radius:    14px;
+  --cl-radius-sm: 10px;
+  --cl-radius-pill: 999px;
+  --cl-shadow:    0 1px 2px rgba(0,35,66,.06), 0 10px 30px -16px rgba(0,46,89,.28);
+  --cl-shadow-lg: 0 4px 10px rgba(0,35,66,.08), 0 24px 48px -20px rgba(0,46,89,.35);
+  --cl-ring:      0 0 0 3px color-mix(in srgb, var(--cl-focus) 45%, transparent);
+  --cl-maxw:      1160px;
+  --cl-space-1: .375rem;
+  --cl-space-2: .75rem;
+  --cl-space-3: 1.25rem;
+  --cl-space-4: 2rem;
+  --cl-space-5: 3.25rem;
+  --cl-space-6: 5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cl-bg:        #0A1622;
+    --cl-surface:   #0F1E2E;
+    --cl-surface-2: #13273A;
+    --cl-line:      #21374D;
+    --cl-text:      #E7EEF6;
+    --cl-muted:     #96A9BF;
+    --cl-primary:      #1C4B7A;
+    --cl-primary-hover:#245F97;
+    --cl-on-primary:   #F2F8FF;
+    --cl-link:         #6FC7E2;
+    --cl-signal:       #34C0DF;
+    --cl-shadow:    0 1px 2px rgba(0,0,0,.4), 0 12px 34px -18px rgba(0,0,0,.7);
+    --cl-shadow-lg: 0 4px 12px rgba(0,0,0,.45), 0 26px 54px -22px rgba(0,0,0,.75);
+  }
+}
+
+[data-theme="dark"] {
+  --cl-bg:#0A1622; --cl-surface:#0F1E2E; --cl-surface-2:#13273A;
+  --cl-line:#21374D; --cl-text:#E7EEF6; --cl-muted:#96A9BF;
+  --cl-primary:#1C4B7A; --cl-primary-hover:#245F97; --cl-on-primary:#F2F8FF;
+  --cl-link:#6FC7E2; --cl-signal:#34C0DF;
+}
+[data-theme="light"] {
+  --cl-bg:#F5F8FC; --cl-surface:#FFFFFF; --cl-surface-2:#EEF3F9;
+  --cl-line:#DCE4EE; --cl-text:#0E2136; --cl-muted:#5A6B80;
+  --cl-primary:#002E59; --cl-primary-hover:#003F78; --cl-on-primary:#FFFFFF;
+  --cl-link:#003F78; --cl-signal:#0BA9CC;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--cl-font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--cl-text);
+  background: var(--cl-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img, svg, video { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--cl-font-display);
+  color: var(--cl-text);
+  line-height: 1.15;
+  margin: 0 0 .5em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+h1 { font-size: clamp(2rem, 1.4rem + 2.6vw, 3.15rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.05rem; }
+p  { margin: 0 0 1rem; }
+
+a { color: var(--cl-link); text-decoration-color: color-mix(in srgb, var(--cl-link) 40%, transparent); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+
+hr { border: none; border-top: 1px solid var(--cl-line); margin: var(--cl-space-4) 0; }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--cl-ring);
+  border-radius: var(--cl-radius-sm);
+}
+
+.cl-container { width: 100%; max-width: var(--cl-maxw); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+.cl-section   { padding-block: var(--cl-space-5); }
+.cl-stack > * + * { margin-top: var(--cl-space-3); }
+
+.cl-header {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--cl-surface) 85%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--cl-line);
+}
+.cl-header__inner {
+  display: flex; align-items: center; gap: var(--cl-space-3);
+  min-height: 64px;
+}
+.cl-brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--cl-text); font-weight: 600; }
+.cl-brand__name { font-family: var(--cl-font-display); font-size: 1.15rem; letter-spacing: -0.01em; }
+.cl-brand__name b { color: var(--cl-navy-600); }
+@media (prefers-color-scheme: dark){ .cl-brand__name b { color: var(--cl-signal); } }
+
+.cl-footer {
+  border-top: 1px solid var(--cl-line);
+  color: var(--cl-muted);
+  font-size: .9rem;
+  padding-block: var(--cl-space-4);
+  margin-top: var(--cl-space-5);
+}
+
+.cl-eyebrow {
+  font-family: var(--cl-font-mono);
+  font-size: .74rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--cl-muted);
+  display: inline-flex; align-items: center; gap: .55rem;
+}
+.cl-eyebrow::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--cl-signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cl-signal) 22%, transparent);
+}
+
+.cl-card {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-radius);
+  padding: var(--cl-space-3);
+  box-shadow: var(--cl-shadow);
+}
+.cl-card--pad { padding: var(--cl-space-4); }
+
+.cl-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.cl-table th, .cl-table td { text-align: left; padding: .7rem .85rem; border-bottom: 1px solid var(--cl-line); }
+.cl-table thead th {
+  font-family: var(--cl-font-mono); font-size: .74rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--cl-muted); font-weight: 700;
+}
+.cl-table tbody tr:hover { background: var(--cl-surface-2); }
+
+.cl-badge {
+  font-size: .75rem; font-weight: 600; padding: .25rem .65rem; border-radius: var(--cl-radius-pill);
+  background: var(--cl-surface-2); color: var(--cl-text); display: inline-block; margin-bottom: 1rem;
+}
+.cl-badge--warn { background: color-mix(in srgb, var(--cl-warn) 15%, transparent); color: var(--cl-warn); border: 1px solid color-mix(in srgb, var(--cl-warn) 30%, transparent); }
+
+.cl-btn {
+  --_bg: var(--cl-primary); --_fg: var(--cl-on-primary); --_bd: transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  font-family: var(--cl-font-body); font-weight: 600; font-size: .95rem; line-height: 1;
+  padding: .72rem 1.15rem; border-radius: var(--cl-radius-pill);
+  background: var(--_bg); color: var(--_fg); border: 1.5px solid var(--_bd);
+  text-decoration: none; cursor: pointer;
+  transition: transform .12s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.cl-btn:hover { background: var(--cl-primary-hover); transform: translateY(-1px); }
+.cl-btn:active { transform: translateY(0); }
+.cl-btn--ghost  { --_bg: transparent; --_fg: var(--cl-text); --_bd: var(--cl-line); }
+.cl-btn--ghost:hover { --_bg: var(--cl-surface-2); background: var(--cl-surface-2); border-color: var(--cl-navy-600); }
+.cl-btn--sm { padding: .48rem .85rem; font-size: .85rem; }
+
+.header-flex { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.header-flex h2 { margin-bottom: 0; }
+  </style>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <!-- SheetJS für Excel Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <header class="cl-header">
+    <div class="cl-container cl-header__inner">
+      <a href="#" class="cl-brand">
+        <span class="cl-brand__name"><b>codeLAB</b>365</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="cl-container cl-section">
+    <div class="cl-stack">
+      <span class="cl-eyebrow">Visualisierung & Analyse</span>
+      <h1>Haushaltsbudget im Fokus</h1>
+      <span class="cl-badge cl-badge--warn">Hinweis: Bei den folgenden Zahlen handelt es sich um fiktive Einnahmen und Ausgaben zu Veranschaulichungszwecken.</span>
+
+      <h2>Warum Einnahmen und Ausgaben transparent erfassen?</h2>
+      <p>Wer seine Finanzen im Blick behält, trifft fundiertere wirtschaftliche Entscheidungen. Eine strukturierte Einnahmen-Ausgaben-Rechnung macht verborgene Kostenfresser sichtbar und zeigt das tatsächliche Potenzial für Investitionen oder Sparziele auf. Transparenz ist das Fundament jeder soliden Haushaltsplanung – sie schützt vor unbemerkter Überschuldung und ermöglicht einen bewussteren, stressfreieren Umgang mit Geld.</p>
+
+      <h2>Finanzbildung in der Schule</h2>
+      <p>Gerade in jungen Jahren wird der entscheidende Grundstein für eine gesunde finanzielle Zukunft gelegt. Finanzbildung in der Schule ist essenziell, um Heranwachsenden Kernkompetenzen wie Budgetierung, Zinseszins-Effekte und den kritischen Umgang mit Konsumausgaben zu vermitteln. Praxisnahe Werkzeuge und grafische Auswertungen im Unterricht bereiten optimal auf die finanzielle und technische Eigenverantwortung vor.</p>
+      <p>Weitere Informationen und Angebote zu diesem wichtigen Thema finden Sie hier:<br> 
+      <a href="https://finanznavi.gv.at/bildungsangebote" target="_blank" rel="noopener noreferrer">https://finanznavi.gv.at/bildungsangebote</a></p>
+
+      <hr>
+
+      <div class="header-flex">
+        <h2>1. Datenbasis: Monatliche Ausgaben</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="exportTableToCSV('budgetTable', 'budget_export.csv')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            CSV Export
+          </button>
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="exportTableToExcel('budgetTable', 'budget_export')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Excel Export
+          </button>
+        </div>
+      </div>
+      
+      <div class="cl-card cl-card--pad">
+        <table class="cl-table" id="budgetTable">
+          <thead>
+            <tr>
+              <th>Kategorie</th>
+              <th style="text-align: right;">Betrag (€)</th>
+              <th style="text-align: right;">Anteil (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sparrate</td>
+              <td style="text-align: right;">1.700,00</td>
+              <td style="text-align: right;">31,5</td>
+            </tr>
+            <tr>
+              <td>Kredit</td>
+              <td style="text-align: right;">1.200,00</td>
+              <td style="text-align: right;">22,2</td>
+            </tr>
+            <tr>
+              <td>Hygiene, Urlaub, Kleidung, Ausgaben fürs Haus</td>
+              <td style="text-align: right;">1.000,00</td>
+              <td style="text-align: right;">18,5</td>
+            </tr>
+            <tr>
+              <td>Essen</td>
+              <td style="text-align: right;">800,00</td>
+              <td style="text-align: right;">14,8</td>
+            </tr>
+            <tr>
+              <td>Versicherungen (Unfall, Leben, Haushalt, Rechtsschutz, Kasko)</td>
+              <td style="text-align: right;">300,00</td>
+              <td style="text-align: right;">5,6</td>
+            </tr>
+            <tr>
+              <td>Strom (inkl. Auto, Heizen, Warmwasser)</td>
+              <td style="text-align: right;">220,00</td>
+              <td style="text-align: right;">4,1</td>
+            </tr>
+            <tr>
+              <td>Medien</td>
+              <td style="text-align: right;">100,00</td>
+              <td style="text-align: right;">1,9</td>
+            </tr>
+            <tr>
+              <td>Gemeinde</td>
+              <td style="text-align: right;">50,00</td>
+              <td style="text-align: right;">0,9</td>
+            </tr>
+            <tr>
+              <td>Konten</td>
+              <td style="text-align: right;">30,00</td>
+              <td style="text-align: right;">0,6</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th><strong>Gesamt</strong></th>
+              <th style="text-align: right;"><strong>5.400,00</strong></th>
+              <th style="text-align: right;"><strong>100,0</strong></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <hr>
+
+      <div class="header-flex">
+        <h2>2. Visualisierung: Sankey-Diagramm</h2>
+        <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="exportSankey()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Grafikexport (PNG)
+        </button>
+      </div>
+      <p>Ein Sankey-Diagramm ist eine Form der Flussdarstellung, bei der die Breite der Pfeile oder Linien proportional zur dargestellten Menge ist. Es eignet sich hervorragend, um Finanzströme – wie in diesem Fall das Aufteilen des Gesamteinkommens auf verschiedene Ausgabenkategorien – auf einen Blick erfassbar zu machen. Man erkennt sofort, welche Posten die größten Volumen einnehmen.</p>
+      
+      <div class="cl-card" style="padding: 0; overflow: hidden;">
+        <div id="sankey-plot" style="width:100%; height:600px;"></div>
+      </div>
+
+      <hr>
+
+      <div class="header-flex">
+        <h2>3. Gegenüberstellung: Modellfamilie vs. Vorliegende Ausgaben</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="exportTableToCSV('compareTable', 'vergleich_export.csv')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            CSV Export
+          </button>
+          <button class="cl-btn cl-btn--ghost cl-btn--sm" onclick="exportTableToExcel('compareTable', 'vergleich_export')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Excel Export
+          </button>
+        </div>
+      </div>
+
+      <p>Um unsere Ausgaben besser einordnen zu können, vergleichen wir diese mit der <strong>Konsumerhebung 2024/25 der Statistik Austria</strong> [cite: 1, 2]. Laut dieser aktuellen Datenerhebung gibt ein durchschnittlicher Haushalt in Österreich im Monat <strong>4.170 €</strong> aus [cite: 1, 2]. Unser fiktiver Haushalt hat im Gegensatz dazu deutlich höhere monatliche Einnahmen/Ausgaben (5.400 €) und weist bei der Zusammensetzung starke Besonderheiten auf.</p>
+
+      <div class="cl-card cl-card--pad">
+        <table class="cl-table" id="compareTable">
+          <thead>
+            <tr>
+              <th>Kategorie</th>
+              <th style="text-align: right;">Unser Betrag (€)</th>
+              <th style="text-align: right;">Durchschnittsfamilie (€)</th>
+              <th style="text-align: right;">Abweichung (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sparrate</td>
+              <td style="text-align: right;">1700,00</td>
+              <td style="text-align: right;">400,00</td>
+              <td style="text-align: right; color: var(--cl-ok); font-weight: 500;">+325,0 %</td>
+            </tr>
+            <tr>
+              <td>Kredit</td>
+              <td style="text-align: right;">1200,00</td>
+              <td style="text-align: right;">1100,00</td>
+              <td style="text-align: right; color: var(--cl-err); font-weight: 500;">+9,1 %</td>
+            </tr>
+            <tr>
+              <td>Hygiene, Urlaub, Kleidung, Ausgaben fürs Haus</td>
+              <td style="text-align: right;">1000,00</td>
+              <td style="text-align: right;">1400,00</td>
+              <td style="text-align: right; color: var(--cl-ok); font-weight: 500;">-28,6 %</td>
+            </tr>
+            <tr>
+              <td>Essen</td>
+              <td style="text-align: right;">800,00</td>
+              <td style="text-align: right;">500,00</td>
+              <td style="text-align: right; color: var(--cl-err); font-weight: 500;">+60,0 %</td>
+            </tr>
+            <tr>
+              <td>Versicherungen (Unfall, Leben, Haushalt, Rechtsschutz, Kasko)</td>
+              <td style="text-align: right;">300,00</td>
+              <td style="text-align: right;">250,00</td>
+              <td style="text-align: right; color: var(--cl-err); font-weight: 500;">+20,0 %</td>
+            </tr>
+            <tr>
+              <td>Strom (inkl, Auto, Heizen, Warmwasser)</td>
+              <td style="text-align: right;">220,00</td>
+              <td style="text-align: right;">750,00</td>
+              <td style="text-align: right; color: var(--cl-ok); font-weight: 500;">-70,7 %</td>
+            </tr>
+            <tr>
+              <td>Medien</td>
+              <td style="text-align: right;">100,00</td>
+              <td style="text-align: right;">100,00</td>
+              <td style="text-align: right; color: inherit; font-weight: 500;">0,0 %</td>
+            </tr>
+            <tr>
+              <td>Gemeinde</td>
+              <td style="text-align: right;">50,00</td>
+              <td style="text-align: right;">50,00</td>
+              <td style="text-align: right; color: inherit; font-weight: 500;">0,0 %</td>
+            </tr>
+            <tr>
+              <td>Konten</td>
+              <td style="text-align: right;">30,00</td>
+              <td style="text-align: right;">20,00</td>
+              <td style="text-align: right; color: var(--cl-err); font-weight: 500;">+50,0 %</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th><strong>Gesamt</strong></th>
+              <th style="text-align: right;"><strong>5400,00</strong></th>
+              <th style="text-align: right;"><strong>4570,00</strong></th>
+              <th style="text-align: right;"><strong>+18,2 %</strong></th>
+            </tr>
+          </tfoot>
+        </table>
+        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--cl-muted);">
+          *Quelle: Statistik Austria, Konsumerhebung 2024/25. Durchschnittliche monatliche Haushaltsausgaben in Österreich [cite: 1, 2].
+        </p>
+      </div>
+
+      <p style="margin-top: 1.5rem;">Mit einem monatlichen Netto-Budget von 5.400 € und einer extrem hohen Sparrate von 1.700 € (über 31 %) liegt dieser fiktive Haushalt deutlich über dem österreichischen Durchschnitt. Eine Sparrate in dieser Höhe deutet auf ein überdurchschnittliches Einkommen eines Paares (Doppelverdiener) oder eines sehr gut verdienenden Single-Haushalts hin. Die Kreditrate von 1.200 € deckt sich prozentual recht gut mit dem Posten „Wohnen & Energie“ der Statistik Austria (26,4 %) [cite: 1, 2], spricht aber für eine gezielte Finanzierung von Eigentum statt Miete.</p>
+      
+      <p>Bei den vorliegenden Zahlen fällt zudem auf, dass die Kosten für "Essen" (800 €) mit knapp 15 % merklich über dem Durchschnitt von 11,6 % [cite: 1, 2] liegen. Dieser Haushalt fokussiert sich insgesamt massiv auf Vermögensaufbau (Kredittilgung + Sparen machen zusammen über 53 % aus), während reguläre Konsumausgaben dafür stark rationalisiert wurden.</p>
+
+    </div>
+  </main>
+
+  <footer class="cl-footer">
+    <div class="cl-container">
+      &copy; 2026 codeLAB365. Alle Rechte vorbehalten.
+    </div>
+  </footer>
+
+  <script>
+    // --- Sankey Diagramm ---
+    var data = {
+      type: "sankey",
+      orientation: "h",
+      node: {
+        pad: 15,
+        thickness: 30,
+        line: { color: "black", width: 0.5 },
+        label: [
+          "Einkommen (5.400 €)", 
+          "Sparrate (1.700 €)", 
+          "Kredit (1.200 €)", 
+          "Hygiene/Urlaub/Haus (1.000 €)", 
+          "Essen (800 €)", 
+          "Versicherungen (300 €)", 
+          "Strom/Auto/Heizen (220 €)", 
+          "Medien (100 €)", 
+          "Gemeinde (50 €)", 
+          "Konten (30 €)"
+        ],
+        color: [
+          "#002E59", "#1F9D6B", "#C43D3D", "#0BA9CC", 
+          "#C9840E", "#5A6B80", "#5A6B80", "#5A6B80", 
+          "#5A6B80", "#5A6B80"
+        ]
+      },
+      link: {
+        source: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        target: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        value:  [1700, 1200, 1000, 800, 300, 220, 100, 50, 30],
+        color: "rgba(11, 169, 204, 0.2)"
+      }
+    };
+
+    var layout = {
+      title: "",
+      font: { family: "'Inter', sans-serif", size: 13, color: "#0E2136" },
+      margin: { t: 20, l: 20, r: 20, b: 20 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('sankey-plot', [data], layout, {responsive: true});
+
+    // --- Export Sankey als Bild mit WEISSEM Hintergrund ---
+    function exportSankey() {
+      // Temporär Hintergrund auf Weiß setzen
+      var exportUpdate = {
+        paper_bgcolor: '#FFFFFF',
+        plot_bgcolor: '#FFFFFF'
+      };
+      
+      Plotly.relayout('sankey-plot', exportUpdate).then(function() {
+        // Bild herunterladen
+        Plotly.downloadImage('sankey-plot', {
+          format: 'png', 
+          width: 1200, 
+          height: 800, 
+          filename: 'sankey_haushaltsbudget'
+        }).then(function() {
+          // Hintergrund wieder auf transparent setzen (für die Web-Ansicht und Dark Mode)
+          var revertUpdate = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)'
+          };
+          Plotly.relayout('sankey-plot', revertUpdate);
+        });
+      });
+    }
+
+    // --- Export Tabelle als CSV ---
+    function exportTableToCSV(tableID, filename) {
+      var csv = [];
+      var rows = document.querySelectorAll("#" + tableID + " tr");
+      
+      for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll("td, th");
+        for (var j = 0; j < cols.length; j++) {
+          row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+        }
+        csv.push(row.join(";"));
+      }
+
+      // UTF-8 BOM hinzufügen
+      var csvFile = new Blob(["\uFEFF" + csv.join("\n")], {type: "text/csv;charset=utf-8;"});
+      var downloadLink = document.createElement("a");
+      downloadLink.download = filename;
+      downloadLink.href = window.URL.createObjectURL(csvFile);
+      downloadLink.style.display = "none";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+
+    // --- Export Tabelle als Excel ---
+    function exportTableToExcel(tableID, filename = ''){
+      var tableSelect = document.getElementById(tableID);
+      var wb = XLSX.utils.table_to_book(tableSelect, {sheet: "Export"});
+      
+      filename = filename ? filename + '.xlsx' : 'export.xlsx';
+      XLSX.writeFile(wb, filename);
+    }
+  </script>
+</body>
+</html>
