@@ -176,6 +176,11 @@
   <symbol id="i-ki" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v2M14 3v2M10 19v2M14 19v2M3 10h2M3 14h2M19 10h2M19 14h2"/>
   </symbol>
+  <symbol id="i-finanzen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="6" rx="8" ry="3"/>
+    <path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/>
+    <path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
+  </symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
   </symbol>
@@ -212,8 +217,8 @@
     <h1>Meine KI-Projekte an <em>einem Ort.</em></h1>
     <p class="cl-lead">Willkommen im codeLAB365. Hier sammle ich meine mit KI gebauten Werkzeuge, Spiele und Experimente – von der Spieleausleihe bis zum Netzqualitäts-Simulator. Such dir eine Kachel aus und leg los.</p>
     <div class="hero__meta">
-      <span class="cl-badge">24 Projekte</span>
-      <span class="cl-badge">4 Kategorien</span>
+      <span class="cl-badge">25 Projekte</span>
+      <span class="cl-badge">5 Kategorien</span>
       <span class="cl-badge">laufend erweitert</span>
     </div>
     <div class="hero-trace" aria-hidden="true">
@@ -238,10 +243,11 @@
         <button class="cl-chip is-active" data-filter="alle"  aria-pressed="true">Alle</button>
         <button class="cl-chip"           data-filter="spiele" aria-pressed="false">Spiele &amp; Community</button>
         <button class="cl-chip"           data-filter="tools"  aria-pressed="false">Werkzeuge</button>
+        <button class="cl-chip"           data-filter="finanzen" aria-pressed="false">Finanzen &amp; Budget</button>
         <button class="cl-chip"           data-filter="tech"   aria-pressed="false">Technik &amp; Wissen</button>
         <button class="cl-chip"           data-filter="ki"     aria-pressed="false">KI &amp; Demos</button>
       </div>
-      <span class="filters__count" id="count">24 von 24</span>
+      <span class="filters__count" id="count">25 von 25</span>
     </div>
   </div>
 
@@ -341,7 +347,7 @@
 
         <a class="p-card" data-cat="tools" href="https://codelab365.github.io/projects/leistungstarif27" target="_blank" rel="noopener noreferrer">
           <div class="p-card__top">
-            <div class="p-card__top-left"><span class="cl-tag">Werkzeug</span><span class="cl-badge cl-badge--ok">Neu</span></div>
+            <span class="cl-tag">Werkzeug</span>
             <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/leistungstarif27" data-title="Leistungstarif 2027 · Spitzenlast-Rechner" aria-label="Link zu Leistungstarif 2027 · Spitzenlast-Rechner teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
           </div>
           <h3 class="p-card__title">Leistungstarif 2027 · Spitzenlast-Rechner</h3>
@@ -387,6 +393,23 @@
           <div class="p-card__top"><span class="cl-tag">Werkzeug</span><button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/LiTEC-Stundenraster" data-title="LiTEC Stundenplan-Planer" aria-label="Link zu LiTEC Stundenplan-Planer teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button></div>
           <h3 class="p-card__title">LiTEC Stundenplan-Planer</h3>
           <p class="p-card__desc">Stundenplan mit Einheiten-Ziel (22) zusammenstellen und den Fortschritt zum Zielwert jederzeit im Blick behalten.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+      </div>
+    </div>
+
+    <div class="cat-block" data-cat-block="finanzen">
+      <div class="cat-heading"><svg><use href="#i-finanzen"/></svg><h2>Finanzen &amp; Budget</h2><span class="cat-heading__line"></span></div>
+      <div class="cl-grid cl-grid--cards">
+
+        <a class="p-card" data-cat="finanzen" href="https://codelab365.github.io/projects/budget.html" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <div class="p-card__top-left"><span class="cl-tag">Finanzen</span><span class="cl-badge cl-badge--ok">Neu</span></div>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/budget.html" data-title="Haushaltsbudget im Fokus" aria-label="Link zu Haushaltsbudget im Fokus teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">Haushaltsbudget im Fokus</h3>
+          <p class="p-card__desc">Monatliche Einnahmen und Ausgaben erfassen und als Sankey-Diagramm visualisieren – auf einen Blick sichtbar, wohin das Einkommen fließt, inkl. Vergleich mit einer Modellfamilie.</p>
           <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
         </a>
 
