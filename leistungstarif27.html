@@ -889,6 +889,12 @@
   </section>
 
   <section class="info-section">
+    <div class="dash-toolbar" style="margin-bottom:16px;">
+      <div class="dash-toolbar-group">
+        <span class="dash-toolbar-label">Jahr</span>
+        <select id="dash-year-select"></select>
+      </div>
+    </div>
     <h3 class="info-h">Monatsübersicht <span id="dash-year-months-note" style="font-weight:400;text-transform:none;color:var(--text-dim);"></span></h3>
     <div class="table-wrap">
       <table id="dash-year-table">
@@ -904,8 +910,8 @@
   </section>
 
   <section class="info-section">
-    <h3 class="info-h">Was würde das mit dem neuen Netztarif bedeuten?</h3>
-    <p class="info-p">Berechnet mit den echten gemessenen Monatsspitzen und -verbräuchen aus obiger Tabelle, nach derselben Methode wie im Tab „Rechner" (Anschlussleistung, Mindestbemessung, Tarifstufen). Nur die verfügbaren Monate werden summiert – <b>keine Hochrechnung auf ein volles Jahr.</b> Sind mehrere Jahre geladen (z. B. 2025 und 2026), fließen alle geladenen Monate gemeinsam in die Summe ein.</p>
+    <h3 class="info-h">Was würde das mit dem neuen Netztarif bedeuten? <span id="dash-tarif-year-note" style="font-weight:400;text-transform:none;color:var(--text-dim);"></span></h3>
+    <p class="info-p">Berechnet mit den echten gemessenen Monatsspitzen und -verbräuchen aus obiger Tabelle, nach derselben Methode wie im Tab „Rechner" (Anschlussleistung, Mindestbemessung, Tarifstufen). Nur die verfügbaren Monate des oben gewählten Jahres werden summiert – <b>keine Hochrechnung auf ein volles Jahr.</b></p>
     <div class="field-row" style="max-width:320px;margin-bottom:14px;">
       <span class="fname">Vereinbarte Anschlussleistung</span><span class="fval" id="dash-val-anschluss">15 kW</span>
     </div>
@@ -1617,10 +1623,30 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     return { peakKw, peakDate: monthDate(m, peakIdx), peakIdx, totalKwh: total };
   }
 
-  const dashState = { monthKey: null, unit: 'kw', zoomI0: 0, zoomI1: 0, cursorA: null, cursorB: null, dragging: false, dragStartX: null, dragStartIdx: null };
+  const dashState = { monthKey: null, unit: 'kw', zoomI0: 0, zoomI1: 0, cursorA: null, cursorB: null, dragging: false, dragStartX: null, dragStartIdx: null, selectedYear: 'all' };
 
   function sortedMonthKeys(){
     return Object.keys(dashboardData).sort();
+  }
+  function availableYears(){
+    return [...new Set(sortedMonthKeys().map(k=>k.split('-')[0]))].sort();
+  }
+  function sortedMonthKeysForYear(year){
+    const keys = sortedMonthKeys();
+    return year==='all' ? keys : keys.filter(k=>k.startsWith(year+'-'));
+  }
+  function populateYearSelect(){
+    const sel = document.getElementById('dash-year-select');
+    const years = availableYears();
+    if(!years.includes(dashState.selectedYear) && dashState.selectedYear!=='all'){
+      dashState.selectedYear = years[years.length-1] || 'all';
+    }
+    if(dashState.selectedYear==='all' && years.length){
+      dashState.selectedYear = years[years.length-1]; // Standard: aktuellstes Jahr statt "alle"
+    }
+    sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('')
+      + `<option value="all">Alle Jahre</option>`;
+    sel.value = dashState.selectedYear;
   }
 
   function populateMonthSelect(){
@@ -1831,7 +1857,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
 
   function renderYearTable(){
     const tbody = document.getElementById('dash-year-body');
-    const keys = sortedMonthKeys();
+    const keys = sortedMonthKeysForYear(dashState.selectedYear);
     let rows = [];
     let annualMaxKw = -1, annualMaxKey = null, annualMaxDate = null;
     keys.forEach(key=>{
@@ -1874,7 +1900,9 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     const anschluss = +document.getElementById('dash-anschluss').value;
     document.getElementById('dash-val-anschluss').textContent = anschluss + ' kW';
     const mindest = Math.max(0.2*anschluss, 2);
-    const keys = sortedMonthKeys();
+    const keys = sortedMonthKeysForYear(dashState.selectedYear);
+    document.getElementById('dash-tarif-year-note').textContent =
+      `(${dashState.selectedYear==='all' ? 'alle geladenen Jahre' : dashState.selectedYear})`;
 
     function totalsForStage(f){
       const {lp1, lp2, ap} = rates(f);
@@ -1897,6 +1925,10 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     const box = document.getElementById('dash-tarif-summary');
     function card(label, val, sub, cls){
       return `<div class="sum-card ${cls||''}"><div class="slabel">${label}</div><div class="sval">${fmtEUR0(val)}</div><div class="ssub">${sub}</div></div>`;
+    }
+    if(keys.length===0){
+      box.innerHTML = `<div class="sum-card"><div class="slabel">Keine Daten</div><div class="ssub">Für dieses Jahr sind keine Monate geladen.</div></div>`;
+      return;
     }
     box.innerHTML =
       card('Heute (gemessene Monate)', oldTotal, keys.length+' Monat(e), Ist-Daten') +
@@ -1971,6 +2003,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
         if(done===files.length){
           persistDashboardImports();
           populateMonthSelect();
+          populateYearSelect();
           dashState.monthKey = dashState.monthKey; // beibehalten falls noch vorhanden
           resetZoomToFullMonth();
           dashState.cursorA = null; dashState.cursorB = null;
@@ -1990,6 +2023,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     try{ localStorage.removeItem(LS_KEY); } catch(e){}
     dashboardData = JSON.parse(JSON.stringify(EMBEDDED_DASHBOARD_DATA || {}));
     populateMonthSelect();
+    populateYearSelect();
     resetZoomToFullMonth();
     dashState.cursorA = null; dashState.cursorB = null;
     renderDashboardAll();
@@ -2002,6 +2036,11 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     resetZoomToFullMonth();
     dashState.cursorA = null; dashState.cursorB = null;
     renderDashboardAll();
+  });
+  document.getElementById('dash-year-select').addEventListener('change', e=>{
+    dashState.selectedYear = e.target.value;
+    renderYearTable();
+    renderTarifSummary();
   });
   document.querySelectorAll('.unit-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -2024,6 +2063,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
   function initDashboard(){
     loadDashboardImports();
     populateMonthSelect();
+    populateYearSelect();
     resetZoomToFullMonth();
     renderDashboardAll();
   }
