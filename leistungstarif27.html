@@ -1710,30 +1710,39 @@ const EMBEDDED_DASHBOARD_DATA = {"2026-05":{"label":"Mai 2026","start":"2026-05-
     parts.push(cursorMarkup(dashState.cursorB, 'dash-cursor-b'));
 
     // Cursor-Infoboxen
-    function cursorBox(idx, x0, color, label){
-      if(idx===null || idx<i0 || idx>i1) return '';
+    function cursorBox(idx, color, label, avoidBx){
+      if(idx===null || idx<i0 || idx>i1) return null;
       const x = xFor(idx);
       const boxW=170, boxH=52;
       const flip = x > W-padR-boxW-8;
-      const bx = flip ? x-boxW-10 : x+10;
-      const by = padT+6;
-      return `<g transform="translate(${bx},${by})">
+      let bx = flip ? x-boxW-10 : x+10;
+      let by = padT+6;
+      // Überlappung mit der zuerst platzierten Cursor-Box vermeiden: darunter stapeln
+      if(avoidBx!==undefined && Math.abs(bx-avoidBx) < boxW+8){
+        by = padT+6+boxH+8;
+      }
+      const svg = `<g transform="translate(${bx},${by})">
         <rect width="${boxW}" height="${boxH}" rx="6" fill="${color}"/>
         <text x="12" y="16" class="dash-cursor-box-title">${label}</text>
         <text x="12" y="33" class="dash-cursor-box-text">${fmtDateTime(monthDate(m, idx))}</text>
         <text x="12" y="47" class="dash-cursor-box-text">${(m.kw[idx]*factor).toFixed(3)} ${unitLabel}</text>
       </g>`;
+      return { svg, bx, by, boxH };
     }
-    parts.push(cursorBox(dashState.cursorA, 0, 'var(--navy)', 'Cursor A'));
-    if(dashState.cursorB!==null){
-      parts.push(cursorBox(dashState.cursorB, 0, 'var(--red)', 'Cursor B'));
-    }
+    const boxA = cursorBox(dashState.cursorA, 'var(--navy)', 'Cursor A');
+    if(boxA) parts.push(boxA.svg);
+    const boxB = cursorBox(dashState.cursorB, 'var(--red)', 'Cursor B', boxA ? boxA.bx : undefined);
+    if(boxB) parts.push(boxB.svg);
+
     if(dashState.cursorA!==null && dashState.cursorB!==null && dashState.cursorA>=i0 && dashState.cursorA<=i1 && dashState.cursorB>=i0 && dashState.cursorB<=i1){
       const dA = monthDate(m, dashState.cursorA), dB = monthDate(m, dashState.cursorB);
       const dtMin = Math.round(Math.abs(dB-dA)/60000);
       const dV = Math.abs(m.kw[dashState.cursorB]-m.kw[dashState.cursorA])*factor;
       const boxW=210, boxH=40;
-      parts.push(`<g transform="translate(${(W-boxW)/2},${padT+6})">
+      // Unterhalb der am tiefsten platzierten Cursor-Box, damit nichts überlappt
+      const lowestBottom = Math.max(boxA ? boxA.by+boxA.boxH : 0, boxB ? boxB.by+boxB.boxH : 0, padT+6+52);
+      const deltaY = lowestBottom + 10;
+      parts.push(`<g transform="translate(${(W-boxW)/2},${deltaY})">
         <rect width="${boxW}" height="${boxH}" rx="6" fill="var(--teal)"/>
         <text x="12" y="16" class="dash-cursor-box-title" fill="#eafffb">Differenz A → B</text>
         <text x="12" y="32" class="dash-delta-box-text">Δt ${dtMin} min · Δ${unitLabel} ${dV.toFixed(3)}</text>
