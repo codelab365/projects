@@ -1663,7 +1663,8 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
   }
 
   const dashState = { monthKey: null, unit: 'kw', zoomI0: 0, zoomI1: 0, cursorA: null, cursorB: null, dragging: false, dragStartX: null, dragStartIdx: null, selectedYear: 'all',
-    viewMode: 'month', compareEnabled: false, monthBKey: null, periodADate: null, periodBDate: null, seriesA: null, seriesB: null, periodCursor: null };
+    viewMode: 'month', compareEnabled: false, monthBKey: null, periodADate: null, periodBDate: null, seriesA: null, seriesB: null, periodCursor: null,
+    periodZoomMin: 0, periodZoomMax: null, periodDragging: false, periodDragStartX: null, periodDragStartRelMin: null };
 
   function sortedMonthKeys(){
     return Object.keys(dashboardData).sort();
@@ -2053,14 +2054,21 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
 
     const W=DCHART_W,H=DCHART_H,padL=DCHART_PADL,padR=DCHART_PADR,padT=DCHART_PADT,padB=DCHART_PADB;
     const plotW=W-padL-padR, plotH=H-padT-padB;
-    const spanMax = Math.max(a.spanMin, b ? b.spanMin : 0);
+    const fullSpan = Math.max(a.spanMin, b ? b.spanMin : 0);
+    const zMin = dashState.periodZoomMin;
+    const zMax = dashState.periodZoomMax!==null ? dashState.periodZoomMax : fullSpan;
+    const zSpan = Math.max(1, zMax-zMin);
+
+    function inZoom(points){ return points.filter(p=>p.relMin>=zMin && p.relMin<=zMax); }
+    const aPts = inZoom(a.points);
+    const bPts = b ? inZoom(b.points) : [];
 
     let vMax = 0.5;
-    a.points.forEach(p=>{ if(p.kw*factor>vMax) vMax=p.kw*factor; });
-    if(b) b.points.forEach(p=>{ if(p.kw*factor>vMax) vMax=p.kw*factor; });
+    aPts.forEach(p=>{ if(p.kw*factor>vMax) vMax=p.kw*factor; });
+    bPts.forEach(p=>{ if(p.kw*factor>vMax) vMax=p.kw*factor; });
     vMax *= 1.15;
 
-    const xFor = relMin => padL + (relMin/spanMax)*plotW;
+    const xFor = relMin => padL + (relMin-zMin)/zSpan*plotW;
     const yFor = v => padT+plotH-(v/vMax)*plotH;
 
     let parts = [];
@@ -2074,27 +2082,30 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
 
     const ticks = 6;
     for(let t=0;t<=ticks;t++){
-      const relMin = spanMax*t/ticks;
+      const relMin = zMin + zSpan*t/ticks;
       const x = xFor(relMin);
       parts.push(`<line x1="${x}" y1="${padT}" x2="${x}" y2="${H-padB}" stroke="var(--border)" stroke-width="1" opacity="0.5"/>`);
       parts.push(`<text x="${x}" y="${H-padB+18}" text-anchor="middle" class="month-tick">${formatRelMin(relMin, dashState.viewMode)}</text>`);
     }
 
-    function seriesPath(series, lineCls, areaCls){
-      if(!series || series.points.length===0) return '';
+    function seriesPath(points, lineCls, areaCls){
+      if(!points || points.length===0) return '';
       let d = '';
-      series.points.forEach((p,i)=>{
+      points.forEach((p,i)=>{
         const x = xFor(p.relMin), y = yFor(p.kw*factor);
         d += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
       });
-      const first = series.points[0], last = series.points[series.points.length-1];
+      const first = points[0], last = points[points.length-1];
       const area = 'M'+xFor(first.relMin).toFixed(1)+','+yFor(0).toFixed(1)+' L'+d.slice(1)+' L'+xFor(last.relMin).toFixed(1)+','+yFor(0).toFixed(1)+' Z';
       return `<path d="${area}" class="${areaCls}"/><path d="${d}" class="${lineCls}"/>`;
     }
-    parts.push(seriesPath(a, 'dash-line', 'dash-area'));
-    if(b) parts.push(seriesPath(b, 'dash-line-b', 'dash-area-b'));
+    parts.push(seriesPath(aPts, 'dash-line', 'dash-area'));
+    if(b) parts.push(seriesPath(bPts, 'dash-line-b', 'dash-area-b'));
 
-    if(dashState.periodCursor!==null){
+    // Zoom-Auswahlband (während des Ziehens)
+    parts.push(`<rect id="dash-zoom-band" class="zoom-band" x="0" y="${padT}" width="0" height="${plotH}" style="display:none;"/>`);
+
+    if(dashState.periodCursor!==null && dashState.periodCursor>=zMin && dashState.periodCursor<=zMax){
       const x = xFor(dashState.periodCursor);
       parts.push(`<line x1="${x}" y1="${padT}" x2="${x}" y2="${H-padB}" stroke="var(--navy)" stroke-width="1" stroke-dasharray="3,3"/>`);
     }
@@ -2110,15 +2121,56 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
       legend.style.display = 'none';
     }
 
-    svg.onmousedown = null; svg.onmousemove = null; svg.onmouseup = null; svg.onmouseleave = null;
-    svg.onclick = e => {
+    // ---- Maus/Touch: Drag = Zoom, Klick = Cursor setzen (analog zur Monatsansicht) ----
+    function xToRelMin(clientX){
       const rect = svg.getBoundingClientRect();
       const scaleX = W/rect.width;
-      const xInBox = (e.clientX-rect.left)*scaleX;
+      const xInBox = (clientX-rect.left)*scaleX;
       const frac = Math.min(1, Math.max(0, (xInBox-padL)/plotW));
-      dashState.periodCursor = frac*spanMax;
-      drawPeriodChart();
+      return zMin + frac*zSpan;
+    }
+    svg.onclick = null;
+    svg.onmousedown = e => {
+      dashState.periodDragging = true;
+      dashState.periodDragStartX = e.clientX;
+      dashState.periodDragStartRelMin = xToRelMin(e.clientX);
+      const band = document.getElementById('dash-zoom-band');
+      if(band){ band.style.display='block'; }
     };
+    svg.onmousemove = e => {
+      if(!dashState.periodDragging) return;
+      const band = document.getElementById('dash-zoom-band');
+      if(!band) return;
+      const rect = svg.getBoundingClientRect();
+      const scaleX = W/rect.width;
+      const x1 = (dashState.periodDragStartX-rect.left)*scaleX;
+      const x2 = (e.clientX-rect.left)*scaleX;
+      band.setAttribute('x', Math.min(x1,x2));
+      band.setAttribute('width', Math.abs(x2-x1));
+    };
+    function endPeriodDrag(e){
+      if(!dashState.periodDragging) return;
+      dashState.periodDragging = false;
+      const band = document.getElementById('dash-zoom-band');
+      if(band) band.style.display='none';
+      const endRelMin = xToRelMin(e.clientX);
+      const dist = Math.abs(e.clientX - dashState.periodDragStartX);
+      if(dist > 8 && Math.abs(endRelMin-dashState.periodDragStartRelMin) > 0.5){
+        dashState.periodZoomMin = Math.min(dashState.periodDragStartRelMin, endRelMin);
+        dashState.periodZoomMax = Math.max(dashState.periodDragStartRelMin, endRelMin);
+        drawPeriodChart();
+      } else {
+        dashState.periodCursor = endRelMin;
+        drawPeriodChart();
+      }
+    }
+    svg.onmouseup = endPeriodDrag;
+    svg.onmouseleave = e => { if(dashState.periodDragging) endPeriodDrag(e); };
+  }
+
+  function resetPeriodZoom(){
+    dashState.periodZoomMin = 0;
+    dashState.periodZoomMax = null;
   }
 
   function refreshChartArea(){
@@ -2209,6 +2261,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     const type = dashState.viewMode; // 'day' | 'week'
     const dateA = document.getElementById('dash-period-a-input').value;
     if(!dateA) return;
+    resetPeriodZoom();
     dashState.periodADate = dateA;
     const seriesA = type==='day' ? extractDaySeries(dateA) : extractWeekSeries(dateA);
     if(!seriesA){
@@ -2244,8 +2297,8 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     document.getElementById('dash-month-b-group').style.display = (isMonth && compare) ? '' : 'none';
     document.getElementById('dash-period-b-group').style.display = ((isDay||isWeek) && compare) ? '' : 'none';
     document.getElementById('dash-period-b-label').textContent = isDay ? 'Vergleichstag' : 'Datum in Vergleichswoche';
-    document.getElementById('dash-zoom-reset').style.display = (isMonth && !compare) ? '' : 'none';
-    document.getElementById('dash-cursor-reset').style.display = (isMonth && !compare) ? '' : 'none';
+    document.getElementById('dash-zoom-reset').style.display = '';
+    document.getElementById('dash-cursor-reset').style.display = '';
     document.getElementById('dash-chart-help').textContent = (isMonth && !compare)
       ? 'Ziehen (Maus/Finger) markiert einen Bereich zum Zoomen. Einfacher Klick setzt abwechselnd Cursor A und B – Werte erscheinen fix rechts neben dem Diagramm. „Zoom zurücksetzen" zeigt wieder den ganzen Monat.'
       : 'Klick im Diagramm zeigt die Werte beider Zeiträume an derselben relativen Stelle (z. B. „14:00 Uhr" bei beiden Tagen) – fix rechts neben dem Diagramm.';
@@ -2438,12 +2491,15 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
   document.getElementById('dash-month-select').addEventListener('change', e=>{
     dashState.monthKey = e.target.value;
     resetZoomToFullMonth();
-    dashState.cursorA = null; dashState.cursorB = null;
+    resetPeriodZoom();
+    dashState.cursorA = null; dashState.cursorB = null; dashState.periodCursor = null;
     if(dashState.compareEnabled){ populateMonthBSelect(); }
     renderDashboardAll();
   });
   document.getElementById('dash-month-b-select').addEventListener('change', e=>{
     dashState.monthBKey = e.target.value;
+    resetPeriodZoom();
+    dashState.periodCursor = null;
     renderMonthCompareStats();
     drawPeriodChart();
   });
@@ -2453,6 +2509,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
       btn.classList.add('active');
       dashState.viewMode = btn.dataset.view;
       dashState.cursorA = null; dashState.cursorB = null; dashState.periodCursor = null;
+      resetPeriodZoom();
       updateToolbarVisibility();
       if(dashState.viewMode==='day' || dashState.viewMode==='week'){
         const input = document.getElementById('dash-period-a-input');
@@ -2467,6 +2524,8 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
   });
   document.getElementById('dash-compare-toggle').addEventListener('change', e=>{
     dashState.compareEnabled = e.target.checked;
+    resetPeriodZoom();
+    dashState.periodCursor = null;
     updateToolbarVisibility();
     if(dashState.viewMode==='month'){
       if(dashState.compareEnabled){ populateMonthBSelect(); }
@@ -2492,12 +2551,22 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     });
   });
   document.getElementById('dash-zoom-reset').addEventListener('click', ()=>{
-    resetZoomToFullMonth();
-    drawDashChart();
+    if(dashState.viewMode==='month' && !dashState.compareEnabled){
+      resetZoomToFullMonth();
+      drawDashChart();
+    } else {
+      resetPeriodZoom();
+      drawPeriodChart();
+    }
   });
   document.getElementById('dash-cursor-reset').addEventListener('click', ()=>{
-    dashState.cursorA = null; dashState.cursorB = null;
-    drawDashChart();
+    if(dashState.viewMode==='month' && !dashState.compareEnabled){
+      dashState.cursorA = null; dashState.cursorB = null;
+      drawDashChart();
+    } else {
+      dashState.periodCursor = null;
+      drawPeriodChart();
+    }
   });
   document.getElementById('dash-anschluss').addEventListener('input', renderTarifSummary);
 
