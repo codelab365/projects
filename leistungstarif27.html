@@ -144,8 +144,10 @@
   .dash-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;margin-bottom:18px;}
   .dash-toolbar-group{display:flex;align-items:center;gap:8px;}
   .dash-toolbar-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);}
-  #dash-month-select{background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--text-primary);
+  #dash-month-select, #dash-month-b-select{background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--text-primary);
     font-family:var(--sans);font-size:13px;padding:8px 10px;border-radius:6px;min-width:150px;}
+  #dash-period-a-input, #dash-period-b-input{background:var(--bg-panel-raised);border:1px solid var(--border);color:var(--text-primary);
+    font-family:var(--sans);font-size:13px;padding:7px 10px;border-radius:6px;}
   .unit-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;}
   .unit-btn{background:var(--bg-panel-raised);border:none;color:var(--text-muted);font-family:var(--mono);
     font-size:12px;padding:7px 16px;cursor:pointer;}
@@ -164,6 +166,11 @@
   .zoom-band{fill:var(--navy);opacity:.12;pointer-events:none;}
   .dash-line{fill:none;stroke:var(--teal);stroke-width:1.4;}
   .dash-area{fill:var(--teal);opacity:.08;}
+  .dash-line-b{fill:none;stroke:var(--amber);stroke-width:1.4;stroke-dasharray:4,2;}
+  .dash-area-b{fill:var(--amber);opacity:.08;}
+  .dash-legend{display:flex;gap:16px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);margin-top:8px;flex-wrap:wrap;}
+  .dash-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dash-legend i{width:14px;height:3px;display:inline-block;border-radius:2px;}
   .dash-cursor-a{stroke:var(--navy);stroke-width:1;stroke-dasharray:3,3;pointer-events:none;}
   .dash-cursor-b{stroke:var(--red);stroke-width:1;stroke-dasharray:3,3;pointer-events:none;}
 
@@ -850,9 +857,35 @@
   <section class="info-section">
     <div class="dash-toolbar">
       <div class="dash-toolbar-group">
+        <span class="dash-toolbar-label">Ansicht</span>
+        <div class="unit-toggle" id="dash-view-toggle">
+          <button type="button" class="unit-btn active" data-view="month">Monat</button>
+          <button type="button" class="unit-btn" data-view="day">Tag</button>
+          <button type="button" class="unit-btn" data-view="week">Woche</button>
+        </div>
+      </div>
+
+      <div class="dash-toolbar-group" id="dash-month-group">
         <span class="dash-toolbar-label">Monat</span>
         <select id="dash-month-select"></select>
       </div>
+
+      <div class="dash-toolbar-group" id="dash-period-a-group" style="display:none;">
+        <span class="dash-toolbar-label" id="dash-period-a-label">Tag</span>
+        <input type="date" id="dash-period-a-input">
+      </div>
+
+      <div class="dash-toolbar-group" id="dash-month-b-group" style="display:none;">
+        <span class="dash-toolbar-label">Monat B</span>
+        <select id="dash-month-b-select"></select>
+      </div>
+      <div class="dash-toolbar-group" id="dash-period-b-group" style="display:none;">
+        <span class="dash-toolbar-label" id="dash-period-b-label">Vergleich mit</span>
+        <input type="date" id="dash-period-b-input">
+      </div>
+
+      <button type="button" class="preset-btn" id="dash-period-apply" style="display:none;">Anzeigen</button>
+
       <div class="dash-toolbar-group">
         <span class="dash-toolbar-label">Einheit</span>
         <div class="unit-toggle">
@@ -864,6 +897,11 @@
       <button type="button" class="preset-btn" id="dash-cursor-reset">✕ Cursor zurücksetzen</button>
     </div>
 
+    <label class="checkbox-field" id="dash-compare-row" style="display:none;">
+      <input type="checkbox" id="dash-compare-toggle">
+      <span>Zwei Zeiträume vergleichen (überlagert im selben Diagramm)</span>
+    </label>
+
     <div class="dash-stats" id="dash-stats"></div>
 
     <div class="dash-chart-row">
@@ -872,11 +910,11 @@
       </div>
       <div class="dash-cursor-panel">
         <div class="cursor-panel-card cursor-panel-a" id="cursor-panel-a">
-          <div class="cpc-label">Cursor A</div>
+          <div class="cpc-label" id="cursor-panel-a-label">Cursor A</div>
           <div class="cpc-body cpc-empty">Klick im Diagramm setzt Cursor A</div>
         </div>
         <div class="cursor-panel-card cursor-panel-b" id="cursor-panel-b">
-          <div class="cpc-label">Cursor B</div>
+          <div class="cpc-label" id="cursor-panel-b-label">Cursor B</div>
           <div class="cpc-body cpc-empty">Nächster Klick setzt Cursor B</div>
         </div>
         <div class="cursor-panel-card cursor-panel-delta" id="cursor-panel-delta">
@@ -885,7 +923,8 @@
         </div>
       </div>
     </div>
-    <p class="info-note">Ziehen (Maus/Finger) markiert einen Bereich zum Zoomen. Einfacher Klick setzt abwechselnd Cursor A und B – Werte erscheinen fix rechts neben dem Diagramm. „Zoom zurücksetzen" zeigt wieder den ganzen Monat.</p>
+    <div class="dash-legend" id="dash-legend" style="display:none;"></div>
+    <p class="info-note" id="dash-chart-help">Ziehen (Maus/Finger) markiert einen Bereich zum Zoomen. Einfacher Klick setzt abwechselnd Cursor A und B – Werte erscheinen fix rechts neben dem Diagramm. „Zoom zurücksetzen" zeigt wieder den ganzen Monat.</p>
   </section>
 
   <section class="info-section">
@@ -1623,7 +1662,8 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     return { peakKw, peakDate: monthDate(m, peakIdx), peakIdx, totalKwh: total };
   }
 
-  const dashState = { monthKey: null, unit: 'kw', zoomI0: 0, zoomI1: 0, cursorA: null, cursorB: null, dragging: false, dragStartX: null, dragStartIdx: null, selectedYear: 'all' };
+  const dashState = { monthKey: null, unit: 'kw', zoomI0: 0, zoomI1: 0, cursorA: null, cursorB: null, dragging: false, dragStartX: null, dragStartIdx: null, selectedYear: 'all',
+    viewMode: 'month', compareEnabled: false, monthBKey: null, periodADate: null, periodBDate: null, seriesA: null, seriesB: null, periodCursor: null };
 
   function sortedMonthKeys(){
     return Object.keys(dashboardData).sort();
@@ -1703,6 +1743,106 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
 
   const DCHART_W=1200, DCHART_H=420, DCHART_PADL=58, DCHART_PADR=20, DCHART_PADT=20, DCHART_PADB=48;
 
+  // ---- Tag/Woche/Monats-Vergleich: Hilfsfunktionen ----
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function fmtDateOnly(d){ return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}`; }
+  function dateInputValue(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+  function extractDaySeries(dateStr){
+    if(!dateStr) return null;
+    const [y,mo,d] = dateStr.split('-').map(Number);
+    const monthKey = `${y}-${pad2(mo)}`;
+    const m = dashboardData[monthKey];
+    if(!m) return null;
+    const points = [];
+    for(let i=0;i<m.kw.length;i++){
+      const dt = monthDate(m,i);
+      if(dt.getFullYear()===y && dt.getMonth()+1===mo && dt.getDate()===d){
+        points.push({ relMin: dt.getHours()*60+dt.getMinutes(), kw: m.kw[i], dt });
+      }
+    }
+    if(points.length===0) return null;
+    points.sort((a,b)=>a.relMin-b.relMin);
+    return { label: fmtDateOnly(new Date(y,mo-1,d)), points, spanMin: 1440, type: 'day' };
+  }
+
+  function extractWeekSeries(dateStr){
+    if(!dateStr) return null;
+    const [y,mo,d] = dateStr.split('-').map(Number);
+    const ref = new Date(y,mo-1,d);
+    const dow = (ref.getDay()+6)%7; // Montag=0
+    const monday = new Date(ref); monday.setDate(ref.getDate()-dow); monday.setHours(0,0,0,0);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+    const nextMonday = new Date(monday); nextMonday.setDate(monday.getDate()+7);
+    const neededKeys = new Set();
+    for(let i=0;i<7;i++){
+      const dd = new Date(monday); dd.setDate(monday.getDate()+i);
+      neededKeys.add(`${dd.getFullYear()}-${pad2(dd.getMonth()+1)}`);
+    }
+    const points = [];
+    neededKeys.forEach(mk=>{
+      const m = dashboardData[mk];
+      if(!m) return;
+      for(let i=0;i<m.kw.length;i++){
+        const dt = monthDate(m,i);
+        if(dt>=monday && dt<nextMonday){
+          points.push({ relMin: Math.round((dt-monday)/60000), kw: m.kw[i], dt });
+        }
+      }
+    });
+    if(points.length===0) return null;
+    points.sort((a,b)=>a.relMin-b.relMin);
+    return { label: `KW ${isoWeekNumber(monday)} (${fmtDateOnly(monday)}–${fmtDateOnly(sunday)})`, points, spanMin: 10080, type: 'week' };
+  }
+
+  function extractMonthSeriesRelative(monthKey){
+    const m = dashboardData[monthKey];
+    if(!m) return null;
+    const startDate = new Date(m.start);
+    const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth()+1, 0).getDate();
+    const points = m.offsets.map((off,i)=>({ relMin: off, kw: m.kw[i], dt: monthDate(m,i) }));
+    return { label: m.label, points, spanMin: daysInMonth*1440, type: 'month' };
+  }
+
+  function getLastCompleteDay(){
+    const keys = sortedMonthKeys();
+    for(let k=keys.length-1;k>=0;k--){
+      const m = dashboardData[keys[k]];
+      const dayCounts = {};
+      for(let i=0;i<m.kw.length;i++){
+        const dt = monthDate(m,i);
+        const dk = dateInputValue(dt);
+        dayCounts[dk] = (dayCounts[dk]||0)+1;
+      }
+      const days = Object.keys(dayCounts).sort();
+      for(let j=days.length-1;j>=0;j--){
+        if(dayCounts[days[j]]>=96) return days[j];
+      }
+    }
+    return null;
+  }
+
+  function formatRelMin(relMin, viewMode){
+    const totalMin = Math.round(relMin);
+    if(viewMode==='day'){
+      const h = Math.floor(totalMin/60)%24, mnt = totalMin%60;
+      return `${pad2(h)}:${pad2(mnt)}`;
+    }
+    if(viewMode==='week'){
+      const dayIdx = Math.min(6, Math.floor(totalMin/1440));
+      const h = Math.floor((totalMin%1440)/60);
+      const wd = ['Mo','Di','Mi','Do','Fr','Sa','So'][dayIdx];
+      return `${wd} ${pad2(h)}:00`;
+    }
+    return `Tag ${Math.floor(totalMin/1440)+1}`;
+  }
+
+  function periodStatsFromSeries(series){
+    let peakKw=-1, peakPt=series.points[0], total=0;
+    series.points.forEach(p=>{ total += p.kw*0.25; if(p.kw>peakKw){ peakKw=p.kw; peakPt=p; } });
+    return { peakKw, peakDt: peakPt.dt, totalKwh: total };
+  }
+
   function updateCursorPanel(m, factor, unitLabel, i0, i1){
     const elA = document.getElementById('cursor-panel-a');
     const elB = document.getElementById('cursor-panel-b');
@@ -1738,6 +1878,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
 
   function drawDashChart(){
     const svg = document.getElementById('dash-svg');
+    svg.onclick = null;
     const m = dashboardData[dashState.monthKey];
     if(!m){ svg.innerHTML=''; return; }
     const i0 = dashState.zoomI0, i1 = dashState.zoomI1;
@@ -1855,6 +1996,261 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     svg.onmouseleave = e => { if(dashState.dragging) endDrag(e); };
   }
 
+  // ---- Perioden-Diagramm: Tag/Woche (immer relative Zeit) & Monatsvergleich ----
+  function updatePeriodPanel(a, b, factor, unitLabel){
+    const elA = document.getElementById('cursor-panel-a');
+    const elB = document.getElementById('cursor-panel-b');
+    const elD = document.getElementById('cursor-panel-delta');
+    document.getElementById('cursor-panel-a-label').textContent = a.label;
+    document.getElementById('cursor-panel-b-label').textContent = b ? b.label : 'Vergleich';
+
+    function nearestPoint(series, relMin){
+      let best = series.points[0], bestDiff = Infinity;
+      series.points.forEach(p=>{ const diff = Math.abs(p.relMin-relMin); if(diff<bestDiff){ bestDiff=diff; best=p; } });
+      return best;
+    }
+    const cursor = dashState.periodCursor;
+    const bodyA = elA.querySelector('.cpc-body');
+    if(cursor===null){
+      bodyA.className = 'cpc-body cpc-empty';
+      bodyA.textContent = 'Klick im Diagramm zeigt Werte';
+    } else {
+      const p = nearestPoint(a, cursor);
+      bodyA.className = 'cpc-body';
+      bodyA.innerHTML = `<div class="cpc-val">${(p.kw*factor).toFixed(3)} ${unitLabel}</div>${fmtDateTime(p.dt)}`;
+    }
+    const bodyB = elB.querySelector('.cpc-body');
+    if(!b){
+      bodyB.className = 'cpc-body cpc-empty';
+      bodyB.textContent = 'Kein Vergleich aktiv';
+    } else if(cursor===null){
+      bodyB.className = 'cpc-body cpc-empty';
+      bodyB.textContent = 'Klick im Diagramm zeigt Werte';
+    } else {
+      const p = nearestPoint(b, cursor);
+      bodyB.className = 'cpc-body';
+      bodyB.innerHTML = `<div class="cpc-val">${(p.kw*factor).toFixed(3)} ${unitLabel}</div>${fmtDateTime(p.dt)}`;
+    }
+    const bodyD = elD.querySelector('.cpc-body');
+    if(b && cursor!==null){
+      const pa = nearestPoint(a, cursor), pb = nearestPoint(b, cursor);
+      const dV = Math.abs(pa.kw-pb.kw)*factor;
+      bodyD.className = 'cpc-body';
+      bodyD.innerHTML = `<div class="cpc-val">Δ${unitLabel} ${dV.toFixed(3)}</div>bei gleicher relativer Zeit`;
+    } else {
+      bodyD.className = 'cpc-body cpc-empty';
+      bodyD.textContent = '–';
+    }
+  }
+
+  function drawPeriodChart(){
+    const svg = document.getElementById('dash-svg');
+    const a = dashState.seriesA;
+    if(!a){ svg.innerHTML=''; document.getElementById('dash-legend').style.display='none'; return; }
+    const b = dashState.seriesB;
+    const factor = dashState.unit==='kwh' ? 0.25 : 1;
+    const unitLabel = dashState.unit==='kwh' ? 'kWh' : 'kW';
+
+    const W=DCHART_W,H=DCHART_H,padL=DCHART_PADL,padR=DCHART_PADR,padT=DCHART_PADT,padB=DCHART_PADB;
+    const plotW=W-padL-padR, plotH=H-padT-padB;
+    const spanMax = Math.max(a.spanMin, b ? b.spanMin : 0);
+
+    let vMax = 0.5;
+    a.points.forEach(p=>{ if(p.kw*factor>vMax) vMax=p.kw*factor; });
+    if(b) b.points.forEach(p=>{ if(p.kw*factor>vMax) vMax=p.kw*factor; });
+    vMax *= 1.15;
+
+    const xFor = relMin => padL + (relMin/spanMax)*plotW;
+    const yFor = v => padT+plotH-(v/vMax)*plotH;
+
+    let parts = [];
+    for(let g=0; g<=5; g++){
+      const val = vMax/5*g;
+      const y = yFor(val);
+      parts.push(`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
+      parts.push(`<text x="${padL-8}" y="${y+4}" text-anchor="end" class="axis-label">${val.toFixed(1)}</text>`);
+    }
+    parts.push(`<text x="${padL}" y="14" class="axis-label">${unitLabel}</text>`);
+
+    const ticks = 6;
+    for(let t=0;t<=ticks;t++){
+      const relMin = spanMax*t/ticks;
+      const x = xFor(relMin);
+      parts.push(`<line x1="${x}" y1="${padT}" x2="${x}" y2="${H-padB}" stroke="var(--border)" stroke-width="1" opacity="0.5"/>`);
+      parts.push(`<text x="${x}" y="${H-padB+18}" text-anchor="middle" class="month-tick">${formatRelMin(relMin, dashState.viewMode)}</text>`);
+    }
+
+    function seriesPath(series, lineCls, areaCls){
+      if(!series || series.points.length===0) return '';
+      let d = '';
+      series.points.forEach((p,i)=>{
+        const x = xFor(p.relMin), y = yFor(p.kw*factor);
+        d += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+      });
+      const first = series.points[0], last = series.points[series.points.length-1];
+      const area = 'M'+xFor(first.relMin).toFixed(1)+','+yFor(0).toFixed(1)+' L'+d.slice(1)+' L'+xFor(last.relMin).toFixed(1)+','+yFor(0).toFixed(1)+' Z';
+      return `<path d="${area}" class="${areaCls}"/><path d="${d}" class="${lineCls}"/>`;
+    }
+    parts.push(seriesPath(a, 'dash-line', 'dash-area'));
+    if(b) parts.push(seriesPath(b, 'dash-line-b', 'dash-area-b'));
+
+    if(dashState.periodCursor!==null){
+      const x = xFor(dashState.periodCursor);
+      parts.push(`<line x1="${x}" y1="${padT}" x2="${x}" y2="${H-padB}" stroke="var(--navy)" stroke-width="1" stroke-dasharray="3,3"/>`);
+    }
+
+    svg.innerHTML = parts.join('');
+    updatePeriodPanel(a, b, factor, unitLabel);
+
+    const legend = document.getElementById('dash-legend');
+    if(b){
+      legend.style.display = 'flex';
+      legend.innerHTML = `<span><i style="background:var(--teal);"></i>${a.label}</span><span><i style="background:var(--amber);"></i>${b.label}</span>`;
+    } else {
+      legend.style.display = 'none';
+    }
+
+    svg.onmousedown = null; svg.onmousemove = null; svg.onmouseup = null; svg.onmouseleave = null;
+    svg.onclick = e => {
+      const rect = svg.getBoundingClientRect();
+      const scaleX = W/rect.width;
+      const xInBox = (e.clientX-rect.left)*scaleX;
+      const frac = Math.min(1, Math.max(0, (xInBox-padL)/plotW));
+      dashState.periodCursor = frac*spanMax;
+      drawPeriodChart();
+    };
+  }
+
+  function refreshChartArea(){
+    const periodMode = dashState.viewMode==='day' || dashState.viewMode==='week' || (dashState.viewMode==='month' && dashState.compareEnabled);
+    if(periodMode){ drawPeriodChart(); } else { drawDashChart(); }
+  }
+
+  function renderPeriodStats(){
+    const box = document.getElementById('dash-stats');
+    const a = dashState.seriesA;
+    if(!a){ box.innerHTML = `<div class="sum-card"><div class="slabel">Kein Zeitraum ausgewählt</div><div class="ssub">Datum wählen und „Anzeigen" drücken</div></div>`; return; }
+    const sa = periodStatsFromSeries(a);
+    let html = `
+      <div class="sum-card">
+        <div class="slabel">Spitze – ${a.label}</div>
+        <div class="sval accent">${sa.peakKw.toFixed(3)} kW</div>
+        <div class="ssub">${fmtDateTime(sa.peakDt)}</div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">Verbrauch – ${a.label}</div>
+        <div class="sval">${sa.totalKwh.toFixed(2)} kWh</div>
+        <div class="ssub">${a.points.length} Messwerte</div>
+      </div>`;
+    if(dashState.seriesB){
+      const b = dashState.seriesB;
+      const sb = periodStatsFromSeries(b);
+      html += `
+      <div class="sum-card">
+        <div class="slabel">Spitze – ${b.label}</div>
+        <div class="sval accent">${sb.peakKw.toFixed(3)} kW</div>
+        <div class="ssub">${fmtDateTime(sb.peakDt)}</div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">Verbrauch – ${b.label}</div>
+        <div class="sval">${sb.totalKwh.toFixed(2)} kWh</div>
+        <div class="ssub">${b.points.length} Messwerte</div>
+      </div>`;
+    }
+    box.innerHTML = html;
+  }
+
+  function renderMonthCompareStats(){
+    const box = document.getElementById('dash-stats');
+    const a = extractMonthSeriesRelative(dashState.monthKey);
+    const b = dashState.monthBKey ? extractMonthSeriesRelative(dashState.monthBKey) : null;
+    dashState.seriesA = a; dashState.seriesB = b;
+    if(!a){ box.innerHTML=''; return; }
+    const sa = periodStatsFromSeries(a);
+    let html = `
+      <div class="sum-card">
+        <div class="slabel">Spitze – ${a.label}</div>
+        <div class="sval accent">${sa.peakKw.toFixed(3)} kW</div>
+        <div class="ssub">${fmtDateTime(sa.peakDt)}</div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">Verbrauch – ${a.label}</div>
+        <div class="sval">${sa.totalKwh.toFixed(1)} kWh</div>
+        <div class="ssub">${a.points.length} Messwerte</div>
+      </div>`;
+    if(b){
+      const sb = periodStatsFromSeries(b);
+      html += `
+      <div class="sum-card">
+        <div class="slabel">Spitze – ${b.label}</div>
+        <div class="sval accent">${sb.peakKw.toFixed(3)} kW</div>
+        <div class="ssub">${fmtDateTime(sb.peakDt)}</div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">Verbrauch – ${b.label}</div>
+        <div class="sval">${sb.totalKwh.toFixed(1)} kWh</div>
+        <div class="ssub">${b.points.length} Messwerte</div>
+      </div>`;
+    }
+    box.innerHTML = html;
+  }
+
+  function populateMonthBSelect(){
+    const sel = document.getElementById('dash-month-b-select');
+    const keys = sortedMonthKeys();
+    sel.innerHTML = keys.map(k=>`<option value="${k}">${dashboardData[k].label}</option>`).join('');
+    const idx = keys.indexOf(dashState.monthKey);
+    const defaultKey = idx>0 ? keys[idx-1] : keys[0];
+    if(!dashState.monthBKey || !dashboardData[dashState.monthBKey]) dashState.monthBKey = defaultKey;
+    sel.value = dashState.monthBKey;
+  }
+
+  function applyPeriod(){
+    const type = dashState.viewMode; // 'day' | 'week'
+    const dateA = document.getElementById('dash-period-a-input').value;
+    if(!dateA) return;
+    dashState.periodADate = dateA;
+    const seriesA = type==='day' ? extractDaySeries(dateA) : extractWeekSeries(dateA);
+    if(!seriesA){
+      dashState.seriesA = null; dashState.seriesB = null;
+      renderPeriodStats();
+      document.getElementById('dash-svg').innerHTML = '';
+      document.getElementById('dash-import-status').textContent = 'Für dieses Datum sind keine Daten geladen.';
+      return;
+    }
+    dashState.seriesA = seriesA;
+
+    if(dashState.compareEnabled){
+      const dateB = document.getElementById('dash-period-b-input').value;
+      dashState.periodBDate = dateB;
+      dashState.seriesB = dateB ? (type==='day' ? extractDaySeries(dateB) : extractWeekSeries(dateB)) : null;
+    } else {
+      dashState.seriesB = null;
+    }
+    dashState.periodCursor = null;
+    renderPeriodStats();
+    drawPeriodChart();
+  }
+
+  function updateToolbarVisibility(){
+    const isMonth = dashState.viewMode==='month';
+    const isDay = dashState.viewMode==='day';
+    const isWeek = dashState.viewMode==='week';
+    const compare = dashState.compareEnabled;
+    document.getElementById('dash-month-group').style.display = isMonth ? '' : 'none';
+    document.getElementById('dash-period-a-group').style.display = (isDay||isWeek) ? '' : 'none';
+    document.getElementById('dash-period-a-label').textContent = isDay ? 'Tag' : 'Datum in der Woche';
+    document.getElementById('dash-period-apply').style.display = (isDay||isWeek) ? '' : 'none';
+    document.getElementById('dash-month-b-group').style.display = (isMonth && compare) ? '' : 'none';
+    document.getElementById('dash-period-b-group').style.display = ((isDay||isWeek) && compare) ? '' : 'none';
+    document.getElementById('dash-period-b-label').textContent = isDay ? 'Vergleichstag' : 'Datum in Vergleichswoche';
+    document.getElementById('dash-zoom-reset').style.display = (isMonth && !compare) ? '' : 'none';
+    document.getElementById('dash-cursor-reset').style.display = (isMonth && !compare) ? '' : 'none';
+    document.getElementById('dash-chart-help').textContent = (isMonth && !compare)
+      ? 'Ziehen (Maus/Finger) markiert einen Bereich zum Zoomen. Einfacher Klick setzt abwechselnd Cursor A und B – Werte erscheinen fix rechts neben dem Diagramm. „Zoom zurücksetzen" zeigt wieder den ganzen Monat.'
+      : 'Klick im Diagramm zeigt die Werte beider Zeiträume an derselben relativen Stelle (z. B. „14:00 Uhr" bei beiden Tagen) – fix rechts neben dem Diagramm.';
+  }
+
   function renderYearTable(){
     const tbody = document.getElementById('dash-year-body');
     const keys = sortedMonthKeysForYear(dashState.selectedYear);
@@ -1938,9 +2334,17 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
   }
 
   function renderDashboardAll(){
-    if(!dashState.monthKey) return;
-    renderDashStats();
-    drawDashChart();
+    if(dashState.viewMode==='month' && !dashState.compareEnabled){
+      if(!dashState.monthKey) return;
+      renderDashStats();
+      drawDashChart();
+    } else if(dashState.viewMode==='month' && dashState.compareEnabled){
+      renderMonthCompareStats();
+      drawPeriodChart();
+    } else {
+      renderPeriodStats();
+      drawPeriodChart();
+    }
     renderYearTable();
     renderTarifSummary();
   }
@@ -2035,19 +2439,56 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     dashState.monthKey = e.target.value;
     resetZoomToFullMonth();
     dashState.cursorA = null; dashState.cursorB = null;
+    if(dashState.compareEnabled){ populateMonthBSelect(); }
     renderDashboardAll();
   });
+  document.getElementById('dash-month-b-select').addEventListener('change', e=>{
+    dashState.monthBKey = e.target.value;
+    renderMonthCompareStats();
+    drawPeriodChart();
+  });
+  document.querySelectorAll('#dash-view-toggle .unit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#dash-view-toggle .unit-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      dashState.viewMode = btn.dataset.view;
+      dashState.cursorA = null; dashState.cursorB = null; dashState.periodCursor = null;
+      updateToolbarVisibility();
+      if(dashState.viewMode==='day' || dashState.viewMode==='week'){
+        const input = document.getElementById('dash-period-a-input');
+        if(!input.value){ input.value = getLastCompleteDay() || ''; }
+        if(dashState.compareEnabled){ populateMonthBSelect(); } // no-op falls nicht Monat, harmlos
+        applyPeriod();
+      } else {
+        if(dashState.compareEnabled){ populateMonthBSelect(); }
+        renderDashboardAll();
+      }
+    });
+  });
+  document.getElementById('dash-compare-toggle').addEventListener('change', e=>{
+    dashState.compareEnabled = e.target.checked;
+    updateToolbarVisibility();
+    if(dashState.viewMode==='month'){
+      if(dashState.compareEnabled){ populateMonthBSelect(); }
+      renderDashboardAll();
+    } else {
+      if(!dashState.compareEnabled){ dashState.seriesB = null; }
+      renderPeriodStats();
+      drawPeriodChart();
+    }
+  });
+  document.getElementById('dash-period-apply').addEventListener('click', applyPeriod);
   document.getElementById('dash-year-select').addEventListener('change', e=>{
     dashState.selectedYear = e.target.value;
     renderYearTable();
     renderTarifSummary();
   });
-  document.querySelectorAll('.unit-btn').forEach(btn=>{
+  document.querySelectorAll('.unit-btn[data-unit]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.unit-btn[data-unit]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       dashState.unit = btn.dataset.unit;
-      drawDashChart();
+      refreshChartArea();
     });
   });
   document.getElementById('dash-zoom-reset').addEventListener('click', ()=>{
@@ -2065,6 +2506,9 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     populateMonthSelect();
     populateYearSelect();
     resetZoomToFullMonth();
+    updateToolbarVisibility();
+    const dayInput = document.getElementById('dash-period-a-input');
+    dayInput.value = getLastCompleteDay() || '';
     renderDashboardAll();
   }
   initDashboard();
@@ -2084,7 +2528,7 @@ const EMBEDDED_DASHBOARD_DATA = {"2025-01":{"label":"J\u00e4n 2025","start":"202
     tabBtnInfo.classList.toggle('active', name==='info');
     tabBtnDash.classList.toggle('active', name==='dash');
     window.scrollTo({top:0, behavior:'instant'});
-    if(name==='dash'){ drawDashChart(); } // SVG-Breite korrekt neu ermitteln, falls vorher display:none
+    if(name==='dash'){ refreshChartArea(); } // SVG-Breite korrekt neu ermitteln, falls vorher display:none
   }
   tabBtnCalc.addEventListener('click', ()=> showView('calc'));
   tabBtnInfo.addEventListener('click', ()=> showView('info'));
