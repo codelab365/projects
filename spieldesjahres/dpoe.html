@@ -406,7 +406,22 @@ table.cl-table {
 .sdj-empty { padding: 2.5rem 1rem; text-align: center; color: var(--cl-muted); }
 
 /* ---------- Statistik-Bereich ---------- */
-.sdj-stats-section { padding-block: var(--cl-space-4) var(--cl-space-5); }
+.sdj-stats-toggle {
+  margin-top: var(--cl-space-3);
+  background: var(--cl-surface); border: 1px solid var(--cl-line); border-radius: var(--cl-radius);
+}
+.sdj-stats-toggle summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .9rem 1.1rem; font-weight: 600; font-size: .92rem; color: var(--cl-text);
+}
+.sdj-stats-toggle summary::-webkit-details-marker { display: none; }
+.sdj-stats-toggle-label { display: flex; align-items: center; gap: .5rem; }
+.sdj-stats-chevron { color: var(--cl-muted); transition: transform .18s ease; flex: none; }
+.sdj-stats-toggle[open] .sdj-stats-chevron { transform: rotate(180deg); }
+.sdj-stats-toggle summary:hover { color: var(--cl-navy-600); }
+.sdj-stats-body { padding: 0 1.1rem 1.2rem; border-top: 1px solid var(--cl-line); padding-top: 1.1rem; }
+
 .sdj-gender-bar {
   display: flex; width: 100%; height: 10px; border-radius: 99px; overflow: hidden;
   background: var(--cl-surface-2); margin-bottom: .9rem;
@@ -426,7 +441,7 @@ table.cl-table {
 
 /* ---------- Print ---------- */
 @media print {
-  .cl-header, .sdj-hero, .sdj-toolbar, .sdj-selection-bar, .sdj-stats-section, .cl-footer { display: none !important; }
+  .cl-header, .sdj-hero, .sdj-toolbar, .sdj-selection-bar, .sdj-stats-toggle, .cl-footer { display: none !important; }
   body { background: #fff; }
   .sdj-table-wrap { padding: 0; }
   table.cl-table { min-width: 0; font-size: 10.5pt; border: none; }
@@ -468,6 +483,17 @@ table.cl-table {
       <span class="sdj-stat">2 Kategorien</span>
       <span class="sdj-stat">1990–2026</span>
     </div>
+
+    <details class="sdj-stats-toggle">
+      <summary>
+        <span class="sdj-stats-toggle-label">📊 Statistik anzeigen — Geschlechterverteilung, meistprämierte Autor:innen, Verlage</span>
+        <span class="sdj-stats-chevron">▾</span>
+      </summary>
+      <div class="sdj-stats-body">
+        <p class="cl-muted" style="font-size:.85rem;margin-bottom:1.2rem;">Ausgewertet werden die Hauptpreisträger beider Auszeichnungen.</p>
+        <div id="statsWrap"></div>
+      </div>
+    </details>
   </div>
 </section>
 
@@ -494,15 +520,6 @@ table.cl-table {
 
   <div class="sdj-table-wrap" id="tableWrap"></div>
 </div>
-
-<section class="sdj-stats-section">
-  <div class="cl-container">
-    <span class="cl-eyebrow">Statistik</span>
-    <h2 style="margin-top:.4rem;">Preisträger in Zahlen.</h2>
-    <p class="cl-lead" style="margin-bottom:1.5rem;">Ausgewertet werden die Hauptpreisträger beider Auszeichnungen.</p>
-    <div id="statsWrap"></div>
-  </div>
-</section>
 
 <footer class="cl-footer">
   <div class="cl-container">
