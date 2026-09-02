@@ -1,1 +1,154 @@
 
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spiel des Jahres – Preisträger-Datenbank</title>
+<meta name="description" content="Durchsuchbare Datenbank aller Spiel des Jahres, Kennerspiel des Jahres und Kinderspiel des Jahres Preisträger mit BGG-Bewertung, Schwierigkeit, Dauer, Spieleranzahl und Alter.">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<header class="cl-header">
+  <div class="cl-header-inner">
+    <div class="cl-title-block">
+      <div class="cl-poeppel-row" aria-hidden="true">
+        <span class="cl-poeppel" style="background:var(--poeppel-rot)"></span>
+        <span class="cl-poeppel" style="background:var(--poeppel-anthrazit)"></span>
+        <span class="cl-poeppel" style="background:var(--poeppel-blau)"></span>
+      </div>
+      <h1>Spiel des Jahres – Preisträger-Datenbank</h1>
+      <p>Alle Preisträger von Spiel&nbsp;des&nbsp;Jahres, Kennerspiel&nbsp;des&nbsp;Jahres und Kinderspiel&nbsp;des&nbsp;Jahres seit 1979, mit live nachgeladener BGG-Bewertung, Schwierigkeit, Spieldauer, Spieleranzahl und Altersempfehlung.</p>
+    </div>
+    <nav class="cl-nav">
+      <a href="index.html" class="active">SdJ · Kennerspiel · Kinderspiel</a>
+      <a href="spielepreise.html">Deutscher &amp; Österreichischer Spielepreis →</a>
+    </nav>
+  </div>
+</header>
+
+<div class="cl-toolbar">
+  <div class="cl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="Titel, Autor oder Jahr suchen …">
+  </div>
+  <div class="cl-chip-group" id="catFilters"></div>
+  <button class="cl-btn ghost" id="printBtn">🖨️ Drucken / PDF</button>
+  <button class="cl-btn" id="excelBtn">⬇︎ Als Excel exportieren</button>
+</div>
+
+<div class="cl-status" id="statusBar">
+  <span id="statusText">BGG-Daten werden geladen …</span>
+  <span class="cl-progress"><i id="progressFill"></i></span>
+</div>
+
+<div class="cl-table-wrap" id="tableWrap"></div>
+
+<footer class="cl-footer">
+  Quelle Preisträger: Wikipedia „Spiel des Jahres" (Stand 09/2026). BGG-Bewertung, Schwierigkeit, Dauer, Spieleranzahl und Alter werden live von BoardGameGeek geladen und im Browser zwischengespeichert (30&nbsp;Tage). Bei falscher Titel-Zuordnung: ⚙︎-Symbol in der Zeile nutzen, um die BGG-ID manuell zu setzen.
+  <br>codeLAB365
+</footer>
+
+<div class="cl-modal-backdrop" id="fixModal">
+  <div class="cl-modal">
+    <h3>BGG-Zuordnung korrigieren</h3>
+    <p>Öffne die BoardGameGeek-Seite des richtigen Spiels und trage die BGG-ID (oder die volle URL) ein.</p>
+    <input type="text" id="fixInput" placeholder="z. B. 822 oder https://boardgamegeek.com/boardgame/822/carcassonne">
+    <div class="cl-modal-actions">
+      <button class="cl-btn ghost" id="fixCancel">Abbrechen</button>
+      <button class="cl-btn" id="fixSave">Übernehmen</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/data-sdj.js"></script>
+<script src="assets/bgg.js"></script>
+<script>
+(function(){
+  const container = document.getElementById('tableWrap');
+  const columns = [
+    { key: 'title', label: 'Titel' },
+    { key: 'year', label: 'Jahr' },
+    { key: 'category', label: 'Kategorie' },
+    { key: 'rating', label: 'BGG-Bewertung' },
+    { key: 'weight', label: 'Schwierigkeit' },
+    { key: 'duration', label: 'Dauer' },
+    { key: 'players', label: 'Spieler' },
+    { key: 'age', label: 'Alter' }
+  ];
+
+  const table = createSdjTable({
+    container, games: SDJ_GAMES, categories: SDJ_CATEGORIES, columns,
+    excelFilename: 'spiel-des-jahres-preistraeger.xlsx',
+    printTitle: 'Spiel des Jahres · Kennerspiel des Jahres · Kinderspiel des Jahres – Preisträger',
+    onFixRequest: (id) => openFixModal(id)
+  });
+
+  // Filter-Chips
+  const catFilters = document.getElementById('catFilters');
+  SDJ_CATEGORIES.forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'cl-chip';
+    chip.setAttribute('aria-pressed', 'true');
+    chip.innerHTML = `<span class="dot" style="background:${c.color}"></span>${c.label}`;
+    chip.addEventListener('click', () => {
+      const pressed = chip.getAttribute('aria-pressed') === 'true';
+      chip.setAttribute('aria-pressed', String(!pressed));
+      table.toggleCategory(c.key, !pressed);
+    });
+    catFilters.appendChild(chip);
+  });
+
+  document.getElementById('searchInput').addEventListener('input', (e) => table.setQuery(e.target.value));
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+  document.getElementById('excelBtn').addEventListener('click', () => table.exportExcel());
+
+  // Fix-Modal
+  const modal = document.getElementById('fixModal');
+  let fixTargetId = null;
+  function openFixModal(id) {
+    fixTargetId = id;
+    document.getElementById('fixInput').value = '';
+    modal.classList.add('open');
+  }
+  document.getElementById('fixCancel').addEventListener('click', () => modal.classList.remove('open'));
+  document.getElementById('fixSave').addEventListener('click', async () => {
+    const raw = document.getElementById('fixInput').value.trim();
+    const match = raw.match(/boardgame\/(\d+)/);
+    const id = match ? match[1] : raw.replace(/\D/g, '');
+    if (id && fixTargetId) {
+      BGG.setOverride(fixTargetId, id);
+      const game = SDJ_GAMES.find(g => g.id === fixTargetId);
+      if (game) BGG.clearCacheForGame(game);
+      modal.classList.remove('open');
+      await loadData();
+    }
+  });
+
+  async function loadData() {
+    const statusText = document.getElementById('statusText');
+    const progressFill = document.getElementById('progressFill');
+    statusText.textContent = 'BGG-Daten werden geladen …';
+    const enriched = await BGG.enrich(SDJ_GAMES, (done, total, phase, f, ftotal) => {
+      if (phase === 'search') {
+        progressFill.style.width = Math.round((done / total) * 60) + '%';
+        statusText.textContent = `Suche auf BGG: ${done}/${total} Titel zugeordnet …`;
+      } else {
+        const pct = 60 + Math.round((f / ftotal) * 40);
+        progressFill.style.width = pct + '%';
+        statusText.textContent = `Lade Bewertungen: ${f}/${ftotal} …`;
+      }
+    });
+    table.setGames(enriched);
+    const missing = enriched.filter(g => !g.bgg || g.bgg.rating == null).length;
+    statusText.textContent = `${enriched.length} Preisträger geladen` + (missing ? ` · ${missing} ohne eindeutige BGG-Zuordnung (⚙︎ zum Korrigieren)` : ' · alle BGG-Daten zugeordnet');
+    progressFill.style.width = '100%';
+  }
+
+  loadData();
+})();
+</script>
+</body>
+</html>
