@@ -125,7 +125,7 @@
     font-family:var(--mono); transition:.16s;
   }
   .class-btn:hover{border-color:var(--cl-ok); color:var(--text); background:var(--cl-surface-2);}
-  .class-btn.active{background:var(--green-soft); border-color:var(--cl-ok); color:var(--cl-navy-700); font-weight:600;}
+  .class-btn.active{background:var(--cl-ok); border-color:var(--cl-ok); color:#fff; font-weight:700; box-shadow: 0 2px 6px rgba(31,157,107,.35);}
 
   .note-box{
     background:#FBF3E3; border:1px solid #E9C77E; color:#8A5B0A;
@@ -203,6 +203,53 @@
   footer.foot{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); color:var(--text-faint); font-size:12px;}
   a{color:var(--cl-navy-600);}
 
+  .search-row{
+    display:flex; align-items:center; gap:8px; background:var(--cl-surface); border:1.5px solid var(--line);
+    border-radius:var(--cl-radius-pill); padding:8px 16px; margin-bottom:14px; box-shadow: var(--cl-shadow);
+  }
+  .search-row:focus-within{border-color:var(--cl-signal); box-shadow: var(--cl-ring);}
+  .search-icon{color:var(--text-faint); font-size:16px; flex:0 0 auto;}
+  #searchInput{
+    flex:1 1 auto; border:none; outline:none; background:transparent; font:inherit; color:var(--text);
+    font-size:14px; padding:2px 0;
+  }
+  .search-clear{
+    background:var(--cl-surface-2); border:none; color:var(--text-dim); border-radius:50%;
+    width:22px; height:22px; cursor:pointer; font-size:12px; flex:0 0 auto;
+  }
+  .search-clear:hover{background:var(--line); color:var(--text);}
+  mark{background: rgba(11,169,204,.28); color:inherit; border-radius:2px; padding:0 1px;}
+
+  .export-row{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .export-label{font-size:12.5px; color:var(--text-faint); font-family:var(--mono); margin-right:2px;}
+  .export-btn{
+    background:var(--cl-surface); border:1.5px solid var(--line); color:var(--text-dim);
+    padding:7px 13px; border-radius:var(--cl-radius-pill); font-size:13px; font-family:var(--sans);
+    font-weight:500; cursor:pointer; transition:.16s;
+  }
+  .export-btn:hover{border-color:var(--cl-navy-600); color:var(--text); background:var(--cl-surface-2);}
+  .export-btn:active{transform:translateY(1px);}
+  .export-btn.copied{background:var(--green-soft); border-color:var(--cl-ok); color:var(--cl-navy-700);}
+  .export-hint{font-size:12px; color:var(--text-faint); margin-left:4px;}
+
+  .print-only{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    .print-only, .print-only *{visibility:visible;}
+    .print-only{display:block; position:absolute; left:0; top:0; width:100%; padding:0; margin:0;}
+    .grid-bg{display:none;}
+  }
+  .print-doc-title{font-family:var(--cl-font-display); font-size:20px; font-weight:700; color:var(--cl-navy); margin-bottom:2px;}
+  .print-doc-sub{font-size:12px; color:#555; margin-bottom:18px; font-family:var(--mono);}
+  .print-subject{margin-bottom:22px; page-break-inside:avoid;}
+  .print-subject h2{font-family:var(--cl-font-display); font-size:16px; color:var(--cl-navy); border-bottom:2px solid var(--cl-navy); padding-bottom:4px; margin-bottom:8px;}
+  .print-unit{margin-bottom:10px;}
+  .print-unit h3{font-family:var(--mono); font-size:12px; color:var(--cl-signal-600); margin:0 0 4px;}
+  .print-unit ul{margin:0 0 6px; padding-left:18px; font-size:13px;}
+  .print-unit .ls{font-size:12.5px; color:#333; background:#F5F8FC; border-left:3px solid var(--cl-navy); padding:6px 10px;}
+
   @media (max-width:640px){
     .wrap{padding:18px 12px 60px;}
     header.top{flex-direction:column; align-items:flex-start;}
@@ -236,6 +283,12 @@
 
   <div id="noteArea"></div>
 
+  <div class="search-row">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="searchInput" placeholder="Suche in Fach, Kompetenzen und Lehrstoff …" autocomplete="off">
+    <button class="search-clear" id="searchClearBtn" title="Suche löschen" style="display:none;">✕</button>
+  </div>
+
   <div class="toolbar">
     <label class="fav-toggle">
       <input type="checkbox" id="favOnlyToggle">
@@ -247,6 +300,15 @@
     </div>
   </div>
 
+  <div class="export-row" id="exportRow">
+    <span class="export-label">Sichtbare Fächer:</span>
+    <button class="export-btn" id="exportCsvBtn">⬇ CSV</button>
+    <button class="export-btn" id="exportPrintBtn">🖨 Drucken / PDF</button>
+    <button class="export-btn" id="exportEmailBtn">✉ Als E-Mail</button>
+    <button class="export-btn" id="exportCopyBtn">⧉ Kopieren</button>
+    <span class="export-hint" id="exportHint"></span>
+  </div>
+
   <div id="myClassesPanel" class="panel" style="display:none;">
     <div class="panel-title">Meine unterrichteten Klassen — Fächerverteilung NEUA, Stand 16.07.2026</div>
     <div id="myClassesTable"></div>
@@ -256,6 +318,8 @@
   </div>
 
   <div class="subjects" id="subjectsArea"></div>
+
+  <div id="printArea" class="print-only"></div>
 
   <footer class="foot">
     Inhalte extrahiert aus: Lehrplan der Höheren Lehranstalt für Elektrotechnik (Anlage 1.6, BGBl. II Nr. 383/2021) · Lehrplan der Höheren Lehranstalt für Mechatronik (Anlage 1.17, BGBl. II Nr. 262/2015) · Lehrplan der Fachschule für Elektrotechnik mit Betriebspraxis (Anlage 1.8) · Lehrpläne der Sonderformen – Aufbaulehrgänge/Kollegs für Berufstätige Elektrotechnik (Anlage 1.5, BGBl. II Nr. 368/2022).
@@ -333,7 +397,7 @@ function renderTrackPanel(){
       const btn = document.createElement('button');
       btn.className = 'class-btn' + (c.id===sel.classId ? ' active':'');
       btn.textContent = c.label;
-      btn.onclick = ()=>{ sel.classId = c.id; saveSel(); renderSubjects(); };
+      btn.onclick = ()=>{ sel.classId = c.id; saveSel(); renderTrackPanel(); renderSubjects(); };
       classRow.appendChild(btn);
     });
   }
@@ -348,16 +412,31 @@ function renderTrackPanel(){
   }
 }
 
+// ---------- search state ----------
+let searchQuery = '';
+let lastVisibleData = []; // populated by renderSubjects(), used by export functions
+
+function norm(s){ return (s||'').toString().toLowerCase(); }
+
+function highlight(text){
+  const safe = escapeHtml(text);
+  if(!searchQuery) return safe;
+  const q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return safe.replace(new RegExp('('+q+')', 'ig'), '<mark>$1</mark>');
+}
+
 // ---------- render: subjects ----------
 function renderSubjects(){
   const area = document.getElementById('subjectsArea');
   area.innerHTML = '';
+  lastVisibleData = [];
   const form = getForm(sel.formId);
   const track = getTrack(sel.formId, sel.trackId);
 
   if(track.noData || !track.classes || track.classes.length===0){
     area.innerHTML = '<div class="empty-state">Für diese Ausbildungsform ist noch kein Lehrplan hinterlegt. ' + (form.note||'') + '</div>';
     document.getElementById('subjectCount').textContent = '';
+    updateExportRow();
     return;
   }
 
@@ -365,15 +444,36 @@ function renderSubjects(){
   const trackSubjects = DATA.subjects[sel.trackId] || {};
   const subjectIds = Object.keys(trackSubjects);
 
-  let visibleIds = subjectIds;
+  let candidateIds = subjectIds;
   if(favOnly){
-    visibleIds = subjectIds.filter(sid => favorites.has(favKey(sel.trackId, sid)));
+    candidateIds = candidateIds.filter(sid => favorites.has(favKey(sel.trackId, sid)));
   }
+
+  // pre-compute displayed units per subject + apply search filter
+  const q = norm(searchQuery);
+  const displayInfo = {}; // sid -> {units: [{unitKey, aufgabe, lehrstoff}]}
+  let visibleIds = [];
+  candidateIds.forEach(sid=>{
+    const subj = trackSubjects[sid];
+    const semKeys = (klass && klass.semesters && klass.semesters.length) ? klass.semesters : Object.keys(subj.byUnit);
+    const units = [];
+    semKeys.forEach(unitKey=>{
+      const unit = subj.byUnit[unitKey];
+      if(unit) units.push({unitKey, aufgabe: unit.aufgabe||[], lehrstoff: unit.lehrstoff||''});
+    });
+    displayInfo[sid] = units;
+    if(!q){ visibleIds.push(sid); return; }
+    const haystack = norm(subj.label + ' ' + sid + ' ' + units.map(u=>u.aufgabe.join(' ')+' '+u.lehrstoff).join(' '));
+    if(haystack.includes(q)) visibleIds.push(sid);
+  });
 
   document.getElementById('subjectCount').textContent = visibleIds.length + ' / ' + subjectIds.length + ' Fächer';
 
   if(visibleIds.length===0){
-    area.innerHTML = '<div class="empty-state">Keine Fächer als Favorit markiert. Häkchen setzen oder Filter deaktivieren.</div>';
+    let msg = 'Keine Fächer als Favorit markiert. Häkchen setzen oder Filter deaktivieren.';
+    if(q) msg = 'Keine Treffer für „' + escapeHtml(searchQuery) + '" in dieser Klasse/Ansicht.';
+    area.innerHTML = '<div class="empty-state">' + msg + '</div>';
+    updateExportRow();
     return;
   }
 
@@ -381,7 +481,14 @@ function renderSubjects(){
     const subj = trackSubjects[sid];
     const key = favKey(sel.trackId, sid);
     const isFav = favorites.has(key);
-    const isOpen = openSubjects.has(sid);
+    const isOpen = openSubjects.has(sid) || !!q; // auto-expand matches while searching
+    const units = displayInfo[sid];
+
+    lastVisibleData.push({
+      formLabel: form.label, trackLabel: track.label, klassLabel: klass ? klass.label : '',
+      subjectId: sid, subjectLabel: subj.label,
+      units: units.map(u=>({ unitLabel: formatUnitLabel(u.unitKey), aufgabe: u.aufgabe, lehrstoff: u.lehrstoff }))
+    });
 
     const card = document.createElement('div');
     card.className = 'subject-card' + (isFav?' fav':'') + (isOpen?' open':'');
@@ -391,7 +498,7 @@ function renderSubjects(){
     head.innerHTML = `
       <span class="fav-check"><input type="checkbox" ${isFav?'checked':''}></span>
       <span class="subject-info">
-        <span class="subject-name">${subj.label}<span class="subject-badge">${sid}</span></span>
+        <span class="subject-name">${highlight(subj.label)}<span class="subject-badge">${sid}</span></span>
         <div class="subject-meta">${klass ? klass.label : ''}</div>
       </span>
       <span class="caret">▶</span>
@@ -412,33 +519,30 @@ function renderSubjects(){
     const inner = document.createElement('div');
     inner.className = 'subject-body-inner';
 
-    const semKeys = (klass && klass.semesters && klass.semesters.length) ? klass.semesters : Object.keys(subj.byUnit);
     let any = false;
-    semKeys.forEach(unitKey=>{
-      const unit = subj.byUnit[unitKey];
-      if(!unit) return;
+    units.forEach(u=>{
       any = true;
       const block = document.createElement('div');
       block.className = 'unit-block';
       const label = document.createElement('div');
       label.className = 'unit-label';
-      label.textContent = formatUnitLabel(unitKey);
+      label.textContent = formatUnitLabel(u.unitKey);
       block.appendChild(label);
 
-      if(unit.aufgabe && unit.aufgabe.length){
+      if(u.aufgabe && u.aufgabe.length){
         const ul = document.createElement('ul');
         ul.className = 'aufgabe-list';
-        unit.aufgabe.forEach(a=>{
+        u.aufgabe.forEach(a=>{
           const li = document.createElement('li');
-          li.textContent = a;
+          li.innerHTML = highlight(a);
           ul.appendChild(li);
         });
         block.appendChild(ul);
       }
-      if(unit.lehrstoff){
+      if(u.lehrstoff){
         const div = document.createElement('div');
         div.className = 'lehrstoff';
-        div.innerHTML = '<b>Lehrstoff:</b> ' + escapeHtml(unit.lehrstoff);
+        div.innerHTML = '<b>Lehrstoff:</b> ' + highlight(u.lehrstoff);
         block.appendChild(div);
       }
       inner.appendChild(block);
@@ -451,6 +555,8 @@ function renderSubjects(){
     card.appendChild(body);
     area.appendChild(card);
   });
+
+  updateExportRow();
 }
 
 function formatUnitLabel(unitKey){
@@ -460,8 +566,166 @@ function formatUnitLabel(unitKey){
   return unitKey;
 }
 function escapeHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// ---------- Suche ----------
+const searchInput = document.getElementById('searchInput');
+const searchClearBtn = document.getElementById('searchClearBtn');
+let searchDebounce = null;
+searchInput.addEventListener('input', (e)=>{
+  clearTimeout(searchDebounce);
+  const val = e.target.value;
+  searchDebounce = setTimeout(()=>{
+    searchQuery = val.trim();
+    searchClearBtn.style.display = searchQuery ? 'inline-flex' : 'none';
+    renderSubjects();
+  }, 150);
+});
+searchClearBtn.onclick = ()=>{
+  searchInput.value = '';
+  searchQuery = '';
+  searchClearBtn.style.display = 'none';
+  renderSubjects();
+};
+
+// ---------- Export: gemeinsame Aufbereitung ----------
+function exportDocTitle(){
+  if(lastVisibleData.length===0) return {title:'LiTEC Lehrplan-Auszug', sub:''};
+  const first = lastVisibleData[0];
+  return {
+    title: 'LiTEC Lehrplan-Auszug — ' + first.formLabel + ' · ' + first.trackLabel,
+    sub: (first.klassLabel ? first.klassLabel + ' · ' : '') + lastVisibleData.length + ' Fach/Fächer' + (searchQuery ? ' · Suche: "' + searchQuery + '"' : '')
+  };
+}
+
+function buildPlainText(){
+  const meta = exportDocTitle();
+  let out = meta.title + '\n' + meta.sub + '\n' + '='.repeat(Math.max(meta.title.length, 20)) + '\n\n';
+  lastVisibleData.forEach(s=>{
+    out += s.subjectLabel + ' (' + s.subjectId + ')\n';
+    out += '-'.repeat(s.subjectLabel.length + s.subjectId.length + 3) + '\n';
+    s.units.forEach(u=>{
+      out += '\n' + u.unitLabel + ':\n';
+      (u.aufgabe||[]).forEach(a=> out += '  • ' + a + '\n');
+      if(u.lehrstoff) out += '  Lehrstoff: ' + u.lehrstoff + '\n';
+    });
+    out += '\n';
+  });
+  out += '\n— Erstellt mit dem LiTEC Lehrplan-Explorer —\n';
+  return out;
+}
+
+function csvEscape(v){
+  const s = (v==null?'':String(v));
+  if(/[";\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+
+function exportCSV(){
+  if(lastVisibleData.length===0) return;
+  const rows = [['Fach','Fach-Kürzel','Klasse/Semester','Einheit','Typ','Inhalt']];
+  lastVisibleData.forEach(s=>{
+    s.units.forEach(u=>{
+      (u.aufgabe||[]).forEach(a=>{
+        rows.push([s.subjectLabel, s.subjectId, s.klassLabel, u.unitLabel, 'Kompetenz', a]);
+      });
+      if(u.lehrstoff) rows.push([s.subjectLabel, s.subjectId, s.klassLabel, u.unitLabel, 'Lehrstoff', u.lehrstoff]);
+    });
+  });
+  const csv = '\uFEFF' + rows.map(r=>r.map(csvEscape).join(';')).join('\r\n');
+  downloadBlob(csv, 'lehrplan_export.csv', 'text/csv;charset=utf-8');
+}
+
+function exportPrint(){
+  if(lastVisibleData.length===0) return;
+  const meta = exportDocTitle();
+  const printArea = document.getElementById('printArea');
+  let html = '<div class="print-doc-title">' + escapeHtml(meta.title) + '</div>';
+  html += '<div class="print-doc-sub">' + escapeHtml(meta.sub) + ' · erstellt am ' + new Date().toLocaleDateString('de-AT') + '</div>';
+  lastVisibleData.forEach(s=>{
+    html += '<div class="print-subject"><h2>' + escapeHtml(s.subjectLabel) + ' (' + escapeHtml(s.subjectId) + ')</h2>';
+    s.units.forEach(u=>{
+      html += '<div class="print-unit"><h3>' + escapeHtml(u.unitLabel) + '</h3>';
+      if(u.aufgabe && u.aufgabe.length){
+        html += '<ul>' + u.aufgabe.map(a=>'<li>'+escapeHtml(a)+'</li>').join('') + '</ul>';
+      }
+      if(u.lehrstoff){
+        html += '<div class="ls"><b>Lehrstoff:</b> ' + escapeHtml(u.lehrstoff) + '</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  printArea.innerHTML = html;
+  window.print();
+}
+
+function exportEmail(){
+  if(lastVisibleData.length===0) return;
+  const meta = exportDocTitle();
+  const text = buildPlainText();
+  const subject = encodeURIComponent(meta.title);
+  const body = encodeURIComponent(text);
+  const hint = document.getElementById('exportHint');
+  if(body.length > 1600){
+    // mailto bodies are unreliable beyond ~2000 chars in many clients
+    navigator.clipboard && navigator.clipboard.writeText(text).catch(()=>{});
+    hint.textContent = 'Inhalt ist lang — wurde in die Zwischenablage kopiert (mailto-Links kürzen sonst oft). Bitte in ein neues E-Mail einfügen.';
+    window.location.href = 'mailto:?subject=' + subject;
+  } else {
+    hint.textContent = '';
+    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  }
+}
+
+function exportCopy(){
+  if(lastVisibleData.length===0) return;
+  const text = buildPlainText();
+  const btn = document.getElementById('exportCopyBtn');
+  const done = ()=>{
+    btn.textContent = '✓ Kopiert';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent = '⧉ Kopieren'; btn.classList.remove('copied'); }, 1800);
+  };
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); done();
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); done();
+  }
+}
+
+function updateExportRow(){
+  const disabled = lastVisibleData.length===0;
+  ['exportCsvBtn','exportPrintBtn','exportEmailBtn','exportCopyBtn'].forEach(id=>{
+    document.getElementById(id).disabled = disabled;
+    document.getElementById(id).style.opacity = disabled ? .45 : 1;
+    document.getElementById(id).style.cursor = disabled ? 'not-allowed' : 'pointer';
+  });
+  const label = document.getElementById('exportRow').querySelector('.export-label');
+  label.textContent = 'Sichtbare Fächer (' + lastVisibleData.length + '):';
+  if(!disabled) document.getElementById('exportHint').textContent = '';
+}
+
+document.getElementById('exportCsvBtn').onclick = exportCSV;
+document.getElementById('exportPrintBtn').onclick = exportPrint;
+document.getElementById('exportEmailBtn').onclick = exportEmail;
+document.getElementById('exportCopyBtn').onclick = exportCopy;
 
 // ---------- Meine Klassen ----------
 function renderMyClasses(){
