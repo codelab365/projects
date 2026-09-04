@@ -200,6 +200,8 @@
             </div>
         </div>
         <div id="wishBggMatchPreview" class="bb-bgg-match cl-hidden"></div>
+        <label class="bb-checkbox-row" style="margin-top:.5rem;"><input type="checkbox" id="wishKidsFriendlyToggle"><span>Geeignet für Ann-Sophie (11) / Marie (8)</span></label>
+        <p id="wishRuleHint" class="bb-rule-hint"></p>
         <p id="wishError" class="bb-error"></p>
         <div id="wishList" style="margin-top:var(--cl-space-2);"><p class="bb-empty">Noch keine Wünsche eingetragen.</p></div>
         <hr>
@@ -338,6 +340,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const wishBggResultsPanel = document.getElementById('wishBggResultsPanel');
   const wishBggResultsList = document.getElementById('wishBggResultsList');
   const wishBggMatchPreview = document.getElementById('wishBggMatchPreview');
+  const wishKidsFriendlyToggle = document.getElementById('wishKidsFriendlyToggle');
+  const wishRuleHint = document.getElementById('wishRuleHint');
   let wishes = [];
 
   const eur = n => n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -387,31 +391,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // --- RULE HINT ---
-  function evaluateRule() {
-    const rating = parseFloat(ratingInput.value);
-    const weight = parseFloat(weightInput.value);
-    const kidsOk = kidsFriendlyToggle.checked;
+  // Reine Auswertungsfunktion (ohne DOM), von Formular-Handler und Anzeige-Badge genutzt.
+  function checkRule(rating, weight, kidsFriendly) {
     let msgs = [];
     let ok = true;
-    if (!isNaN(rating)) {
+    if (typeof rating === 'number' && !isNaN(rating)) {
       if (rating < 7.8) { msgs.push(`Rating ${rating.toFixed(1)} liegt unter deiner Grenze von 7,8.`); ok = false; }
       else if (rating < 8.0) { msgs.push(`Rating ${rating.toFixed(1)} ok, aber unter dem Idealwert 8,0.`); }
       else { msgs.push(`Rating ${rating.toFixed(1)} ✓`); }
     }
-    if (!kidsOk) {
-      if (!isNaN(weight)) {
+    if (!kidsFriendly) {
+      if (typeof weight === 'number' && !isNaN(weight)) {
         if (weight < 3.4) { msgs.push(`Komplexität ${weight.toFixed(1)} ist weder kindgerecht noch ≥3,4.`); ok = false; }
         else { msgs.push(`Komplexität ${weight.toFixed(1)} ✓`); }
       }
     } else {
       msgs.push('Kindgerecht ✓');
     }
-    if (msgs.length === 0) { ruleHint.textContent = ''; return; }
-    ruleHint.textContent = msgs.join('  ·  ');
-    ruleHint.style.color = ok ? 'var(--cl-ok)' : 'var(--cl-err)';
+    return { ok, text: msgs.join('  ·  ') };
   }
-  [ratingInput, weightInput].forEach(el => el.addEventListener('input', evaluateRule));
-  kidsFriendlyToggle.addEventListener('change', evaluateRule);
+
+  function bindRuleHint(ratingEl, weightEl, kidsToggleEl, hintEl) {
+    function evaluate() {
+      const { ok, text } = checkRule(parseFloat(ratingEl.value), parseFloat(weightEl.value), kidsToggleEl.checked);
+      hintEl.textContent = text;
+      hintEl.style.color = ok ? 'var(--cl-ok)' : 'var(--cl-err)';
+    }
+    [ratingEl, weightEl].forEach(el => el.addEventListener('input', evaluate));
+    kidsToggleEl.addEventListener('change', evaluate);
+    return evaluate;
+  }
+
+  const evaluateRule = bindRuleHint(ratingInput, weightInput, kidsFriendlyToggle, ruleHint);
+
 
   noteToggle.addEventListener('change', () => {
     noteInput.classList.toggle('cl-hidden', !noteToggle.checked);
@@ -419,7 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // --- BGG-SUCHE (wiederverwendbar für Kauf- und Wunschliste-Formular) ---
-  function createBggPicker({ nameInput, searchBtn, resultsPanel, resultsList, matchPreview, errorEl, onMatch }) {
+  function createBggPicker({ nameInput, searchBtn, resultsPanel, resultsList, matchPreview, errorEl, onMatch, onClear }) {
     let current = null;
 
     function renderPreview(match) {
@@ -446,6 +458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       current = null;
       matchPreview.classList.add('cl-hidden');
       matchPreview.innerHTML = '';
+      if (onClear) onClear();
     }
 
     function select(match) {
@@ -510,9 +523,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  function evaluateWishRule() {
+    const match = wishBggPicker.getMatch();
+    const { ok, text } = checkRule(match?.bggRating, match?.bggWeight, wishKidsFriendlyToggle.checked);
+    wishRuleHint.textContent = match ? text : '';
+    wishRuleHint.style.color = ok ? 'var(--cl-ok)' : 'var(--cl-err)';
+  }
+  wishKidsFriendlyToggle.addEventListener('change', evaluateWishRule);
+
   const wishBggPicker = createBggPicker({
     nameInput: wishNameInput, searchBtn: wishBggSearchBtn, resultsPanel: wishBggResultsPanel, resultsList: wishBggResultsList,
-    matchPreview: wishBggMatchPreview, errorEl: wishError
+    matchPreview: wishBggMatchPreview, errorEl: wishError,
+    onMatch: evaluateWishRule, onClear: evaluateWishRule
   });
 
   // --- ADD PURCHASE ---
@@ -581,7 +603,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (priceRaw !== '' && (isNaN(price) || price < 0)) { wishError.textContent = 'Ungültiger Preis.'; return; }
     wishError.textContent = '';
 
-    const data = { name, createdAt: new Date().toISOString() };
+    const data = { name, kidsFriendly: wishKidsFriendlyToggle.checked, createdAt: new Date().toISOString() };
     if (price !== null) data.price = price;
     if (month) data.month = month;
     const bggMatch = wishBggPicker.getMatch();
@@ -594,6 +616,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await addDoc(wishlistRef, data);
       wishNameInput.value = ''; wishPriceInput.value = ''; wishMonthInput.value = '';
+      wishKidsFriendlyToggle.checked = false;
       wishBggPicker.clear();
       wishBggResultsPanel.classList.add('cl-hidden'); wishBggResultsList.innerHTML = '';
       wishNameInput.focus();
@@ -637,10 +660,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cls = w.rating >= 8.0 ? 'cl-badge--ok' : w.rating >= 7.8 ? 'cl-badge--warn' : 'cl-badge--err';
         badges += `<span class="cl-badge ${cls}" style="margin-right:.3rem;">★ ${w.rating.toFixed(1)}</span>`;
       }
-      if (typeof w.weight === 'number') {
+      if (w.kidsFriendly) {
+        badges += `<span class="cl-badge cl-badge--ok" style="margin-right:.3rem;">Kids</span>`;
+      } else if (typeof w.weight === 'number') {
         const cls = w.weight >= 3.4 ? 'cl-badge--ok' : 'cl-badge--err';
         badges += `<span class="cl-badge ${cls}">⚙ ${w.weight.toFixed(1)}</span>`;
       }
+      badges = violationBadgeHtml(w) + badges;
       return `
         <div class="bb-wish-item">
           <div class="bb-purchase-left">
@@ -688,6 +714,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
+  function violationBadgeHtml(item) {
+    const { ok } = checkRule(item.rating, item.weight, item.kidsFriendly);
+    return ok ? '' : `<span class="cl-badge cl-badge--err" style="margin-right:.3rem; font-weight:700;">⚠ Regelverstoß</span>`;
+  }
+
   function render() {
     const current = nowMonthStr();
     const nMonths = Math.max(1, monthsBetween(settings.startMonth, current));
@@ -721,6 +752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (p.bggUrl) {
           badges += `<a class="bb-bgg-link" href="${p.bggUrl}" target="_blank" rel="noopener noreferrer">BGG ↗</a>`;
         }
+        badges = violationBadgeHtml(p) + badges;
         const noteHtml = p.note ? ` <span class="cl-muted" style="font-size:.8rem; font-style:italic;">(${escapeHTML(p.note)})</span>` : '';
         const imgHtml = p.bggImageUrl ? `<img src="${p.bggImageUrl}" referrerpolicy="no-referrer" class="bb-purchase-thumb">` : '';
         const nameHtml = p.bggUrl
