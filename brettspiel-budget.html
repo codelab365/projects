@@ -155,7 +155,10 @@
         <p id="ruleHint" class="bb-rule-hint"></p>
         <div class="cl-flex" style="justify-content:space-between; align-items:center; margin-top:.5rem;">
             <p id="errorMessage" class="bb-error"></p>
-            <button id="addBtn" class="cl-btn cl-btn--signal">Kauf eintragen</button>
+            <div class="cl-flex">
+                <button id="cancelEditBtn" class="cl-btn cl-btn--ghost cl-hidden">Bearbeitung abbrechen</button>
+                <button id="addBtn" class="cl-btn cl-btn--signal">Kauf eintragen</button>
+            </div>
         </div>
     </div>
 
@@ -196,7 +199,10 @@
                 <input type="month" id="wishMonthInput" class="cl-input">
             </div>
             <div>
+            <div class="cl-flex">
+                <button id="wishCancelEditBtn" class="cl-btn cl-btn--ghost cl-btn--sm cl-hidden">Abbrechen</button>
                 <button id="wishAddBtn" class="cl-btn cl-btn--signal" style="width:100%;">Hinzufügen</button>
+            </div>
             </div>
         </div>
         <div id="wishBggMatchPreview" class="bb-bgg-match cl-hidden"></div>
@@ -220,7 +226,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteField, deleteDoc, doc, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
   const firebaseConfig = {
@@ -316,6 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const bggResultsList = document.getElementById('bggResultsList');
   const bggMatchPreview = document.getElementById('bggMatchPreview');
   const addBtn = document.getElementById('addBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
   const errorMessage = document.getElementById('errorMessage');
   const ruleHint = document.getElementById('ruleHint');
   const purchaseList = document.getElementById('purchaseList');
@@ -333,6 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const wishPriceInput = document.getElementById('wishPriceInput');
   const wishMonthInput = document.getElementById('wishMonthInput');
   const wishAddBtn = document.getElementById('wishAddBtn');
+  const wishCancelEditBtn = document.getElementById('wishCancelEditBtn');
   const wishError = document.getElementById('wishError');
   const wishList = document.getElementById('wishList');
   const wishTotal = document.getElementById('wishTotal');
@@ -353,6 +361,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let settings = { startMonth: nowMonthStr(), monthlyBudget: 60 };
   let purchases = [];
+  let editingPurchaseId = null;
+  let editingWishId = null;
 
   // --- SETTINGS ---
   async function loadSettings() {
@@ -400,13 +410,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       else if (rating < 8.0) { msgs.push(`Rating ${rating.toFixed(1)} ok, aber unter dem Idealwert 8,0.`); }
       else { msgs.push(`Rating ${rating.toFixed(1)} ✓`); }
     }
-    if (!kidsFriendly) {
-      if (typeof weight === 'number' && !isNaN(weight)) {
-        if (weight < 3.4) { msgs.push(`Komplexität ${weight.toFixed(1)} ist weder kindgerecht noch ≥3,4.`); ok = false; }
-        else { msgs.push(`Komplexität ${weight.toFixed(1)} ✓`); }
-      }
-    } else {
+    if (kidsFriendly) {
       msgs.push('Kindgerecht ✓');
+    } else if (typeof weight === 'number' && !isNaN(weight)) {
+      if (weight <= 2.5) { msgs.push(`Komplexität ${weight.toFixed(1)} ist leicht genug (≤2,5) ✓`); }
+      else if (weight >= 3.4) { msgs.push(`Komplexität ${weight.toFixed(1)} ✓`); }
+      else { msgs.push(`Komplexität ${weight.toFixed(1)} liegt zwischen leicht (≤2,5) und komplex (≥3,4).`); ok = false; }
     }
     return { ok, text: msgs.join('  ·  ') };
   }
@@ -510,7 +519,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    return { getMatch: () => current, clear };
+    return { getMatch: () => current, clear, setMatch: select };
   }
 
   const purchaseBggPicker = createBggPicker({
@@ -563,7 +572,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (bggMatch?.bggUrl) data.bggUrl = bggMatch.bggUrl;
 
     try {
-      await addDoc(purchasesRef, data);
+      if (editingPurchaseId) {
+        delete data.createdAt; // ursprüngliches Erstelldatum bleibt erhalten
+        ['rating', 'weight', 'note', 'bggId', 'bggImageUrl', 'bggUrl'].forEach(f => { if (!(f in data)) data[f] = deleteField(); });
+        await updateDoc(doc(purchasesRef, editingPurchaseId), data);
+        stopEditPurchase();
+      } else {
+        await addDoc(purchasesRef, data);
+      }
       nameInput.value = ''; priceInput.value = ''; ratingInput.value = ''; weightInput.value = '';
       kidsFriendlyToggle.checked = false; noteToggle.checked = false; noteInput.value = ''; noteInput.classList.add('cl-hidden');
       ruleHint.textContent = '';
@@ -579,8 +595,49 @@ document.addEventListener('DOMContentLoaded', async () => {
   addBtn.addEventListener('click', addPurchase);
   [nameInput, priceInput, ratingInput, weightInput].forEach(el => el.addEventListener('keypress', e => e.key === 'Enter' && addPurchase()));
 
+  function startEditPurchase(p) {
+    editingPurchaseId = p.id;
+    nameInput.value = p.name || '';
+    priceInput.value = typeof p.price === 'number' ? p.price : '';
+    ratingInput.value = typeof p.rating === 'number' ? p.rating : '';
+    weightInput.value = typeof p.weight === 'number' ? p.weight : '';
+    monthInput.value = p.month || nowMonthStr();
+    kidsFriendlyToggle.checked = !!p.kidsFriendly;
+    if (p.note) { noteToggle.checked = true; noteInput.value = p.note; noteInput.classList.remove('cl-hidden'); }
+    else { noteToggle.checked = false; noteInput.value = ''; noteInput.classList.add('cl-hidden'); }
+    if (p.bggId) {
+      purchaseBggPicker.setMatch({
+        bggId: p.bggId, bggName: p.name, bggYear: null,
+        bggImageUrl: p.bggImageUrl || null, bggRating: p.rating ?? null, bggWeight: p.weight ?? null,
+        bggUrl: p.bggUrl || null
+      });
+    } else {
+      purchaseBggPicker.clear();
+    }
+    evaluateRule();
+    addBtn.textContent = 'Änderungen speichern';
+    cancelEditBtn.classList.remove('cl-hidden');
+    nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function stopEditPurchase() {
+    editingPurchaseId = null;
+    addBtn.textContent = 'Kauf eintragen';
+    cancelEditBtn.classList.add('cl-hidden');
+  }
+
+  cancelEditBtn.addEventListener('click', () => {
+    stopEditPurchase();
+    nameInput.value = ''; priceInput.value = ''; ratingInput.value = ''; weightInput.value = '';
+    kidsFriendlyToggle.checked = false; noteToggle.checked = false; noteInput.value = ''; noteInput.classList.add('cl-hidden');
+    ruleHint.textContent = '';
+    purchaseBggPicker.clear();
+    monthInput.value = nowMonthStr();
+  });
+
   async function deletePurchase(id) {
     if (!confirm('Diesen Kauf wirklich löschen?')) return;
+    if (editingPurchaseId === id) stopEditPurchase();
     try { await deleteDoc(doc(purchasesRef, id)); } catch (e) { console.error(e); }
   }
 
@@ -614,7 +671,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof bggMatch?.bggWeight === 'number' && !isNaN(bggMatch.bggWeight)) data.weight = bggMatch.bggWeight;
 
     try {
-      await addDoc(wishlistRef, data);
+      if (editingWishId) {
+        delete data.createdAt;
+        ['price', 'month', 'rating', 'weight', 'bggId', 'bggImageUrl', 'bggUrl'].forEach(f => { if (!(f in data)) data[f] = deleteField(); });
+        await updateDoc(doc(wishlistRef, editingWishId), data);
+        stopEditWish();
+      } else {
+        await addDoc(wishlistRef, data);
+      }
       wishNameInput.value = ''; wishPriceInput.value = ''; wishMonthInput.value = '';
       wishKidsFriendlyToggle.checked = false;
       wishBggPicker.clear();
@@ -628,8 +692,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   wishAddBtn.addEventListener('click', addWish);
   [wishNameInput, wishPriceInput].forEach(el => el.addEventListener('keypress', e => e.key === 'Enter' && addWish()));
 
+  function startEditWish(w) {
+    editingWishId = w.id;
+    wishNameInput.value = w.name || '';
+    wishPriceInput.value = typeof w.price === 'number' ? w.price : '';
+    wishMonthInput.value = w.month || '';
+    wishKidsFriendlyToggle.checked = !!w.kidsFriendly;
+    if (w.bggId) {
+      wishBggPicker.setMatch({
+        bggId: w.bggId, bggName: w.name, bggYear: null,
+        bggImageUrl: w.bggImageUrl || null, bggRating: w.rating ?? null, bggWeight: w.weight ?? null,
+        bggUrl: w.bggUrl || null
+      });
+    } else {
+      wishBggPicker.clear();
+    }
+    evaluateWishRule();
+    wishAddBtn.textContent = 'Änderungen speichern';
+    wishCancelEditBtn.classList.remove('cl-hidden');
+    wishNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function stopEditWish() {
+    editingWishId = null;
+    wishAddBtn.textContent = 'Hinzufügen';
+    wishCancelEditBtn.classList.add('cl-hidden');
+  }
+
+  wishCancelEditBtn.addEventListener('click', () => {
+    stopEditWish();
+    wishNameInput.value = ''; wishPriceInput.value = ''; wishMonthInput.value = '';
+    wishKidsFriendlyToggle.checked = false;
+    wishBggPicker.clear();
+    wishRuleHint.textContent = '';
+  });
+
   async function deleteWish(id) {
     if (!confirm('Diesen Wunsch wirklich löschen?')) return;
+    if (editingWishId === id) stopEditWish();
     try { await deleteDoc(doc(wishlistRef, id)); } catch (e) { console.error(e); }
   }
 
@@ -663,7 +763,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (w.kidsFriendly) {
         badges += `<span class="cl-badge cl-badge--ok" style="margin-right:.3rem;">Kids</span>`;
       } else if (typeof w.weight === 'number') {
-        const cls = w.weight >= 3.4 ? 'cl-badge--ok' : 'cl-badge--err';
+        const cls = (w.weight <= 2.5 || w.weight >= 3.4) ? 'cl-badge--ok' : 'cl-badge--err';
         badges += `<span class="cl-badge ${cls}">⚙ ${w.weight.toFixed(1)}</span>`;
       }
       badges = violationBadgeHtml(w) + badges;
@@ -678,12 +778,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <div class="bb-purchase-right">
             <span style="font-weight:700; color:var(--cl-navy-600);">${priceHtml}</span>
+            <button class="cl-btn cl-btn--ghost cl-btn--sm" data-edit-id="${w.id}">Bearbeiten</button>
             <button class="cl-btn cl-btn--ghost cl-btn--sm" data-id="${w.id}">Löschen</button>
           </div>
         </div>`;
     }).join('');
     wishList.querySelectorAll('button[data-id]').forEach(btn => {
       btn.addEventListener('click', () => deleteWish(btn.dataset.id));
+    });
+    wishList.querySelectorAll('button[data-edit-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const w = wishes.find(x => x.id === btn.dataset.editId);
+        if (w) startEditWish(w);
+      });
     });
     const total = wishes.reduce((s, w) => s + (typeof w.price === 'number' ? w.price : 0), 0);
     wishTotal.textContent = eur(total);
@@ -746,7 +853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (p.kidsFriendly) {
           badges += `<span class="cl-badge cl-badge--ok" style="margin-right:.3rem;">Kids</span>`;
         } else if (typeof p.weight === 'number') {
-          const cls = p.weight >= 3.4 ? 'cl-badge--ok' : 'cl-badge--err';
+          const cls = (p.weight <= 2.5 || p.weight >= 3.4) ? 'cl-badge--ok' : 'cl-badge--err';
           badges += `<span class="cl-badge ${cls}" style="margin-right:.3rem;">⚙ ${p.weight.toFixed(1)}</span>`;
         }
         if (p.bggUrl) {
@@ -770,12 +877,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div class="bb-purchase-right">
               <span style="font-weight:700; color:var(--cl-navy-600);">${eur(p.price)}</span>
+              <button class="cl-btn cl-btn--ghost cl-btn--sm" data-edit-id="${p.id}">Bearbeiten</button>
               <button class="cl-btn cl-btn--ghost cl-btn--sm" data-id="${p.id}">Löschen</button>
             </div>
           </div>`;
       }).join('');
       purchaseList.querySelectorAll('button[data-id]').forEach(btn => {
         btn.addEventListener('click', () => deletePurchase(btn.dataset.id));
+      });
+      purchaseList.querySelectorAll('button[data-edit-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = purchases.find(x => x.id === btn.dataset.editId);
+          if (p) startEditPurchase(p);
+        });
       });
     }
 
