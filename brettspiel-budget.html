@@ -66,7 +66,11 @@
       <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-start">
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Spielname</label>
-          <input type="text" id="nameInput" placeholder="z.B. Arcs" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
+          <div class="flex gap-2">
+            <input type="text" id="nameInput" placeholder="z.B. Arcs" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
+            <button type="button" id="bggSearchBtn" class="shrink-0 bg-violet-100 text-violet-700 text-sm font-semibold px-3 py-2 rounded-md hover:bg-violet-200 whitespace-nowrap">🎲 BGG</button>
+          </div>
+          <div id="bggResultsPanel" class="hidden mt-1 border border-gray-200 rounded-md bg-gray-50 max-h-56 overflow-y-auto"></div>
         </div>
         <div class="md:col-span-1">
           <label class="block text-sm font-medium text-gray-700 mb-1">Preis (€)</label>
@@ -74,16 +78,24 @@
         </div>
         <div class="md:col-span-1">
           <label class="block text-sm font-medium text-gray-700 mb-1">BGG-Rating</label>
-          <input type="number" id="ratingInput" step="0.1" min="0" max="10" placeholder="8.2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
+          <input type="number" id="ratingInput" step="0.1" min="0" max="10" placeholder="von BGG" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
         </div>
         <div class="md:col-span-1">
           <label class="block text-sm font-medium text-gray-700 mb-1">BGG-Komplexität</label>
-          <input type="number" id="weightInput" step="0.1" min="0" max="5" placeholder="3.6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
+          <input type="number" id="weightInput" step="0.1" min="0" max="5" placeholder="von BGG" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
         </div>
         <div class="md:col-span-1">
           <label class="block text-sm font-medium text-gray-700 mb-1">Monat</label>
           <input type="month" id="monthInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-ring">
         </div>
+      </div>
+      <div id="bggMatchPreview" class="hidden mt-3 flex gap-3 items-start p-3 border border-violet-200 bg-violet-50 rounded-md">
+        <img id="bggMatchImg" class="w-14 h-14 object-contain rounded bg-white shrink-0 hidden" referrerpolicy="no-referrer">
+        <div class="min-w-0">
+          <p id="bggMatchTitle" class="font-semibold text-sm"></p>
+          <p id="bggMatchBadges" class="text-xs text-gray-600 mt-1"></p>
+        </div>
+        <button type="button" id="bggMatchClear" class="ml-auto text-xs text-gray-400 hover:text-red-500">✕</button>
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-6">
         <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer select-none">
@@ -148,6 +160,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let db, auth, purchasesRef, settingsDocRef;
 
+  // --- BGG API (gleicher Token wie im Spieleausleihe-Tool) ---
+  const BGG_API_TOKEN = 'cb319383-f7f5-4e5b-bc40-78090627231e';
+  let selectedBggMatch = null;
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function callBggApi(endpoint, params = {}) {
+    const url = new URL(`https://boardgamegeek.com/xmlapi2/${endpoint}`);
+    Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
+    const headers = new Headers();
+    if (BGG_API_TOKEN) headers.append('Authorization', `Bearer ${BGG_API_TOKEN}`);
+    let response = await fetch(url.toString(), { method: 'GET', headers });
+    let retries = 0;
+    while (response.status === 202 && retries < 5) {
+      retries++;
+      await sleep(1500);
+      response = await fetch(url.toString(), { method: 'GET', headers });
+    }
+    if (!response.ok) throw new Error(`BGG HTTP Fehler ${response.status}`);
+    const xmlText = await response.text();
+    const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
+    if (xmlDoc.querySelector("parsererror")) throw new Error("Fehler beim Parsen der BGG-Antwort.");
+    return xmlDoc;
+  }
+
+  function parseBggDetails(xmlDoc) {
+    const item = xmlDoc.querySelector('item');
+    if (!item) return null;
+    const getPrimaryName = () => {
+      const names = item.querySelectorAll('name');
+      for (const n of names) if (n.getAttribute('type') === 'primary') return n.getAttribute('value');
+      return names.length > 0 ? names[0].getAttribute('value') : null;
+    };
+    const yearNode = item.querySelector('yearpublished');
+    const ratingNode = item.querySelector('statistics ratings average');
+    const weightNode = item.querySelector('statistics ratings averageweight');
+    return {
+      bggId: parseInt(item.getAttribute('id')) || null,
+      bggName: getPrimaryName(),
+      bggYear: yearNode ? yearNode.getAttribute('value') : null,
+      bggImageUrl: item.querySelector('image')?.textContent || item.querySelector('thumbnail')?.textContent || null,
+      bggRating: ratingNode ? parseFloat(ratingNode.getAttribute('value')) : null,
+      bggWeight: weightNode ? parseFloat(weightNode.getAttribute('value')) : null
+    };
+  }
+
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
@@ -170,6 +228,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const kidsFriendlyToggle = document.getElementById('kidsFriendlyToggle');
   const noteToggle = document.getElementById('noteToggle');
   const noteInput = document.getElementById('noteInput');
+  const bggSearchBtn = document.getElementById('bggSearchBtn');
+  const bggResultsPanel = document.getElementById('bggResultsPanel');
+  const bggMatchPreview = document.getElementById('bggMatchPreview');
+  const bggMatchImg = document.getElementById('bggMatchImg');
+  const bggMatchTitle = document.getElementById('bggMatchTitle');
+  const bggMatchBadges = document.getElementById('bggMatchBadges');
+  const bggMatchClear = document.getElementById('bggMatchClear');
   const addBtn = document.getElementById('addBtn');
   const errorMessage = document.getElementById('errorMessage');
   const ruleHint = document.getElementById('ruleHint');
@@ -204,7 +269,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.startMonth) settings.startMonth = data.startMonth;
         if (typeof data.monthlyBudget === 'number') settings.monthlyBudget = data.monthlyBudget;
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      settingsMsg.textContent = `Einstellungen konnten nicht geladen werden (${e.code || e.message}).`;
+      settingsMsg.className = 'text-xs text-red-600';
+    }
     startMonthInput.value = settings.startMonth;
     monthlyBudgetInput.value = settings.monthlyBudget;
     render();
@@ -221,7 +290,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       settingsMsg.className = 'text-xs text-green-600';
       render();
     } catch (e) {
-      settingsMsg.textContent = 'Fehler beim Speichern.';
+      console.error(e);
+      settingsMsg.textContent = `Fehler beim Speichern (${e.code || e.message || e}).`;
       settingsMsg.className = 'text-xs text-red-600';
     }
   });
@@ -258,6 +328,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (noteToggle.checked) noteInput.focus(); else noteInput.value = '';
   });
 
+  // --- BGG-SUCHE ---
+  function showBggMatch(match) {
+    selectedBggMatch = match;
+    if (match.bggImageUrl) { bggMatchImg.src = match.bggImageUrl; bggMatchImg.classList.remove('hidden'); }
+    else { bggMatchImg.classList.add('hidden'); }
+    bggMatchTitle.textContent = match.bggName + (match.bggYear ? ` (${match.bggYear})` : '');
+    let badges = [];
+    if (typeof match.bggRating === 'number' && !isNaN(match.bggRating)) badges.push(`⭐ ${match.bggRating.toFixed(1)}`);
+    if (typeof match.bggWeight === 'number' && !isNaN(match.bggWeight)) badges.push(`⚙ ${match.bggWeight.toFixed(1)}`);
+    bggMatchBadges.textContent = badges.join('   ');
+    bggMatchPreview.classList.remove('hidden');
+    if (!nameInput.value.trim()) nameInput.value = match.bggName || '';
+    if (typeof match.bggRating === 'number' && !isNaN(match.bggRating)) ratingInput.value = match.bggRating.toFixed(2);
+    if (typeof match.bggWeight === 'number' && !isNaN(match.bggWeight)) weightInput.value = match.bggWeight.toFixed(2);
+    evaluateRule();
+  }
+
+  bggMatchClear.addEventListener('click', () => {
+    selectedBggMatch = null;
+    bggMatchPreview.classList.add('hidden');
+    bggMatchImg.classList.add('hidden');
+  });
+
+  bggSearchBtn.addEventListener('click', async () => {
+    const query = nameInput.value.trim();
+    if (!query) { errorMessage.textContent = 'Bitte zuerst einen Spielnamen (oder Suchbegriff) eingeben.'; return; }
+    errorMessage.textContent = '';
+    bggResultsPanel.classList.remove('hidden');
+    bggResultsPanel.innerHTML = '<p class="p-3 text-sm text-gray-500">Suche auf BGG…</p>';
+    try {
+      const searchXml = await callBggApi('search', { query, type: 'boardgame' });
+      const items = Array.from(searchXml.querySelectorAll('item')).slice(0, 12);
+      if (items.length === 0) {
+        bggResultsPanel.innerHTML = '<p class="p-3 text-sm text-gray-500">Keine Treffer auf BGG gefunden. Werte können manuell eingetragen werden.</p>';
+        return;
+      }
+      bggResultsPanel.innerHTML = '';
+      items.forEach(item => {
+        const id = item.getAttribute('id');
+        const nameNode = item.querySelector('name');
+        const name = nameNode ? nameNode.getAttribute('value') : '(ohne Titel)';
+        const yearNode = item.querySelector('yearpublished');
+        const year = yearNode ? yearNode.getAttribute('value') : '';
+        const row = document.createElement('div');
+        row.className = 'flex justify-between gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-violet-100 border-b border-gray-100 last:border-b-0';
+        row.innerHTML = `<span>${name.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}</span><span class="text-gray-400 text-xs shrink-0">${year}</span>`;
+        row.dataset.id = id;
+        row.addEventListener('click', async () => {
+          bggResultsPanel.innerHTML = '<p class="p-3 text-sm text-gray-500">Lade Details…</p>';
+          try {
+            const detailXml = await callBggApi('thing', { id, stats: 1 });
+            const match = parseBggDetails(detailXml);
+            if (match) showBggMatch(match);
+            bggResultsPanel.classList.add('hidden');
+            bggResultsPanel.innerHTML = '';
+          } catch (e) {
+            console.error(e);
+            bggResultsPanel.innerHTML = '<p class="p-3 text-sm text-red-500">Details konnten nicht geladen werden.</p>';
+          }
+        });
+        bggResultsPanel.appendChild(row);
+      });
+    } catch (e) {
+      console.error(e);
+      bggResultsPanel.innerHTML = '<p class="p-3 text-sm text-red-500">Suche fehlgeschlagen (evtl. Netzwerk/CORS). Werte können manuell eingetragen werden.</p>';
+    }
+  });
+
   // --- ADD PURCHASE ---
   async function addPurchase() {
     const name = nameInput.value.trim();
@@ -278,17 +416,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!isNaN(rating)) data.rating = rating;
     if (!isNaN(weight)) data.weight = weight;
     if (note) data.note = note;
+    if (selectedBggMatch?.bggId) data.bggId = selectedBggMatch.bggId;
+    if (selectedBggMatch?.bggImageUrl) data.bggImageUrl = selectedBggMatch.bggImageUrl;
 
     try {
       await addDoc(purchasesRef, data);
       nameInput.value = ''; priceInput.value = ''; ratingInput.value = ''; weightInput.value = '';
       kidsFriendlyToggle.checked = false; noteToggle.checked = false; noteInput.value = ''; noteInput.classList.add('hidden');
       ruleHint.textContent = '';
+      selectedBggMatch = null; bggMatchPreview.classList.add('hidden'); bggMatchImg.classList.add('hidden');
+      bggResultsPanel.classList.add('hidden'); bggResultsPanel.innerHTML = '';
       monthInput.value = nowMonthStr();
       nameInput.focus();
     } catch (e) {
       console.error(e);
-      errorMessage.textContent = 'Fehler beim Speichern.';
+      errorMessage.textContent = `Fehler beim Speichern (${e.code || e.message || e}).`;
     }
   }
   addBtn.addEventListener('click', addPurchase);
@@ -311,6 +453,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   onSnapshot(purchasesRef, snap => {
     purchases = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
+  }, err => {
+    console.error(err);
+    purchaseList.innerHTML = `<p class="text-red-500">Fehler beim Laden der Käufe (${err.code || err.message}). Vermutlich fehlende Firestore-Berechtigung für den Pfad brettspiel_budget/andreas/kaeufe.</p>`;
   });
 
   // --- RENDER ---
@@ -365,13 +510,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           badges += `<span class="text-xs font-semibold px-2 py-0.5 rounded-full ${cls} mr-1">⚙ ${p.weight.toFixed(1)}</span>`;
         }
         const noteHtml = p.note ? ` <span class="text-xs italic text-gray-500">(${p.note})</span>` : '';
+        const imgHtml = p.bggImageUrl ? `<img src="${p.bggImageUrl}" referrerpolicy="no-referrer" class="w-10 h-10 object-contain rounded bg-gray-100 shrink-0">` : '';
         li.innerHTML = `
-          <div>
-            <span class="font-semibold">${p.name}</span>
-            <span class="text-xs text-gray-500 ml-2">${monthLabel(p.month)}</span>
-            <div class="mt-1">${badges}${noteHtml}</div>
+          <div class="flex items-center gap-3 min-w-0">
+            ${imgHtml}
+            <div class="min-w-0">
+              <span class="font-semibold">${p.name}</span>
+              <span class="text-xs text-gray-500 ml-2">${monthLabel(p.month)}</span>
+              <div class="mt-1">${badges}${noteHtml}</div>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 shrink-0">
             <span class="font-bold text-violet-700">${eur(p.price)}</span>
             <button class="text-xs bg-gray-200 hover:bg-red-200 text-gray-700 px-2 py-1 rounded-md" data-id="${p.id}">Löschen</button>
           </div>`;
