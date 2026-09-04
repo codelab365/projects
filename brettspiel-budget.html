@@ -181,7 +181,11 @@
         <div class="bb-wish-row">
             <div>
                 <label for="wishNameInput" class="cl-label">Spielname</label>
-                <input type="text" id="wishNameInput" class="cl-input" placeholder="z.B. Ark Nova">
+                <div class="bb-name-search-row">
+                    <input type="text" id="wishNameInput" class="cl-input" placeholder="z.B. Ark Nova">
+                    <button type="button" id="wishBggSearchBtn" class="cl-btn cl-btn--ghost cl-btn--sm">🎲 BGG</button>
+                </div>
+                <div id="wishBggResultsPanel" class="bb-bgg-panel cl-hidden"><div id="wishBggResultsList" class="bb-bgg-results"></div></div>
             </div>
             <div>
                 <label for="wishPriceInput" class="cl-label">Möglicher Preis (€)</label>
@@ -195,6 +199,7 @@
                 <button id="wishAddBtn" class="cl-btn cl-btn--signal" style="width:100%;">Hinzufügen</button>
             </div>
         </div>
+        <div id="wishBggMatchPreview" class="bb-bgg-match cl-hidden"></div>
         <p id="wishError" class="bb-error"></p>
         <div id="wishList" style="margin-top:var(--cl-space-2);"><p class="bb-empty">Noch keine Wünsche eingetragen.</p></div>
         <hr>
@@ -230,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- BGG API (gleicher Token wie im Spieleausleihe-/BoardOrbit-Tool) ---
   const BGG_API_TOKEN = 'cb319383-f7f5-4e5b-bc40-78090627231e';
-  let selectedBggMatch = null;
+  // (selectedBggMatch wird jetzt pro Formular über createBggPicker() verwaltet)
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -329,6 +334,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const wishError = document.getElementById('wishError');
   const wishList = document.getElementById('wishList');
   const wishTotal = document.getElementById('wishTotal');
+  const wishBggSearchBtn = document.getElementById('wishBggSearchBtn');
+  const wishBggResultsPanel = document.getElementById('wishBggResultsPanel');
+  const wishBggResultsList = document.getElementById('wishBggResultsList');
+  const wishBggMatchPreview = document.getElementById('wishBggMatchPreview');
   let wishes = [];
 
   const eur = n => n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -409,82 +418,101 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (noteToggle.checked) noteInput.focus(); else noteInput.value = '';
   });
 
-  // --- BGG-SUCHE ---
-  function renderBggMatchPreview(match) {
-    const ratingHtml = typeof match.bggRating === 'number' && !isNaN(match.bggRating)
-      ? `<span class="bb-bgg-pill bb-bgg-pill--rating">⭐ ${match.bggRating.toFixed(1)}</span>` : '';
-    const weightHtml = typeof match.bggWeight === 'number' && !isNaN(match.bggWeight)
-      ? `<span class="bb-bgg-pill bb-bgg-pill--weight">⚙️ ${match.bggWeight.toFixed(1)}</span>` : '';
-    const linkHtml = match.bggUrl
-      ? `<a class="bb-bgg-link" href="${match.bggUrl}" target="_blank" rel="noopener noreferrer">Auf BGG ansehen ↗</a>` : '';
-    bggMatchPreview.innerHTML = `
-      ${match.bggImageUrl ? `<img src="${match.bggImageUrl}" alt="" referrerpolicy="no-referrer">` : ''}
-      <div class="bb-bgg-match__body">
-        <div class="bb-bgg-match__title">${escapeHTML(match.bggName || 'Unbekannt')}${match.bggYear ? ` <span class="cl-muted" style="font-weight:400;">(${escapeHTML(match.bggYear)})</span>` : ''}</div>
-        <div class="bb-bgg-match__badges">${ratingHtml}${weightHtml}${linkHtml}</div>
-      </div>
-      <button type="button" class="bb-bgg-match__remove" title="BGG-Verknüpfung entfernen" aria-label="BGG-Verknüpfung entfernen">&times;</button>
-    `;
-    bggMatchPreview.classList.remove('cl-hidden');
-    bggMatchPreview.querySelector('.bb-bgg-match__remove').addEventListener('click', clearBggMatch);
-    bggResultsPanel.classList.add('cl-hidden');
-  }
+  // --- BGG-SUCHE (wiederverwendbar für Kauf- und Wunschliste-Formular) ---
+  function createBggPicker({ nameInput, searchBtn, resultsPanel, resultsList, matchPreview, errorEl, onMatch }) {
+    let current = null;
 
-  function clearBggMatch() {
-    selectedBggMatch = null;
-    bggMatchPreview.classList.add('cl-hidden');
-    bggMatchPreview.innerHTML = '';
-  }
+    function renderPreview(match) {
+      const ratingHtml = typeof match.bggRating === 'number' && !isNaN(match.bggRating)
+        ? `<span class="bb-bgg-pill bb-bgg-pill--rating">⭐ ${match.bggRating.toFixed(1)}</span>` : '';
+      const weightHtml = typeof match.bggWeight === 'number' && !isNaN(match.bggWeight)
+        ? `<span class="bb-bgg-pill bb-bgg-pill--weight">⚙️ ${match.bggWeight.toFixed(1)}</span>` : '';
+      const linkHtml = match.bggUrl
+        ? `<a class="bb-bgg-link" href="${match.bggUrl}" target="_blank" rel="noopener noreferrer">Auf BGG ansehen ↗</a>` : '';
+      matchPreview.innerHTML = `
+        ${match.bggImageUrl ? `<img src="${match.bggImageUrl}" alt="" referrerpolicy="no-referrer">` : ''}
+        <div class="bb-bgg-match__body">
+          <div class="bb-bgg-match__title">${escapeHTML(match.bggName || 'Unbekannt')}${match.bggYear ? ` <span class="cl-muted" style="font-weight:400;">(${escapeHTML(match.bggYear)})</span>` : ''}</div>
+          <div class="bb-bgg-match__badges">${ratingHtml}${weightHtml}${linkHtml}</div>
+        </div>
+        <button type="button" class="bb-bgg-match__remove" title="BGG-Verknüpfung entfernen" aria-label="BGG-Verknüpfung entfernen">&times;</button>
+      `;
+      matchPreview.classList.remove('cl-hidden');
+      matchPreview.querySelector('.bb-bgg-match__remove').addEventListener('click', clear);
+      resultsPanel.classList.add('cl-hidden');
+    }
 
-  function showBggMatch(match) {
-    selectedBggMatch = match;
-    renderBggMatchPreview(match);
-    if (!nameInput.value.trim()) nameInput.value = match.bggName || '';
-    if (typeof match.bggRating === 'number' && !isNaN(match.bggRating)) ratingInput.value = match.bggRating.toFixed(2);
-    if (typeof match.bggWeight === 'number' && !isNaN(match.bggWeight)) weightInput.value = match.bggWeight.toFixed(2);
-    evaluateRule();
-  }
+    function clear() {
+      current = null;
+      matchPreview.classList.add('cl-hidden');
+      matchPreview.innerHTML = '';
+    }
 
-  bggSearchBtn.addEventListener('click', async () => {
-    const query = nameInput.value.trim();
-    if (!query) { errorMessage.textContent = 'Bitte zuerst einen Spielnamen (oder Suchbegriff) eingeben.'; return; }
-    errorMessage.textContent = '';
-    bggResultsPanel.classList.remove('cl-hidden');
-    bggResultsList.innerHTML = '<p class="bb-bgg-hint">Suche auf BGG…</p>';
-    try {
-      const searchXml = await callBggApi('search', { query, type: 'boardgame' });
-      const items = Array.from(searchXml.querySelectorAll('item')).slice(0, 12);
-      if (items.length === 0) {
-        bggResultsList.innerHTML = '<p class="bb-bgg-hint">Keine Treffer auf BGG gefunden. Werte können manuell eingetragen werden.</p>';
-        return;
+    function select(match) {
+      current = match;
+      renderPreview(match);
+      if (!nameInput.value.trim()) nameInput.value = match.bggName || '';
+      if (onMatch) onMatch(match);
+    }
+
+    searchBtn.addEventListener('click', async () => {
+      const query = nameInput.value.trim();
+      if (!query) { if (errorEl) errorEl.textContent = 'Bitte zuerst einen Spielnamen (oder Suchbegriff) eingeben.'; return; }
+      if (errorEl) errorEl.textContent = '';
+      resultsPanel.classList.remove('cl-hidden');
+      resultsList.innerHTML = '<p class="bb-bgg-hint">Suche auf BGG…</p>';
+      try {
+        const searchXml = await callBggApi('search', { query, type: 'boardgame' });
+        const items = Array.from(searchXml.querySelectorAll('item')).slice(0, 12);
+        if (items.length === 0) {
+          resultsList.innerHTML = '<p class="bb-bgg-hint">Keine Treffer auf BGG gefunden. Werte können manuell eingetragen werden.</p>';
+          return;
+        }
+        resultsList.innerHTML = items.map(item => {
+          const id = item.getAttribute('id');
+          const nameNode = item.querySelector('name');
+          const name = nameNode ? nameNode.getAttribute('value') : '(ohne Titel)';
+          const yearNode = item.querySelector('yearpublished');
+          const year = yearNode ? yearNode.getAttribute('value') : '';
+          return `<div class="bb-bgg-result-item" data-id="${id}"><span>${escapeHTML(name)}</span><span class="bb-bgg-result-item__year">${escapeHTML(year)}</span></div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        resultsList.innerHTML = '<p class="bb-bgg-hint">Suche fehlgeschlagen (evtl. Netzwerk/CORS). Werte können manuell eingetragen werden.</p>';
       }
-      bggResultsList.innerHTML = items.map(item => {
-        const id = item.getAttribute('id');
-        const nameNode = item.querySelector('name');
-        const name = nameNode ? nameNode.getAttribute('value') : '(ohne Titel)';
-        const yearNode = item.querySelector('yearpublished');
-        const year = yearNode ? yearNode.getAttribute('value') : '';
-        return `<div class="bb-bgg-result-item" data-id="${id}"><span>${escapeHTML(name)}</span><span class="bb-bgg-result-item__year">${escapeHTML(year)}</span></div>`;
-      }).join('');
-    } catch (e) {
-      console.error(e);
-      bggResultsList.innerHTML = '<p class="bb-bgg-hint">Suche fehlgeschlagen (evtl. Netzwerk/CORS). Werte können manuell eingetragen werden.</p>';
+    });
+
+    resultsList.addEventListener('click', async (e) => {
+      const item = e.target.closest('.bb-bgg-result-item');
+      if (!item) return;
+      const id = item.dataset.id;
+      resultsList.innerHTML = '<p class="bb-bgg-hint">Lade Details…</p>';
+      try {
+        const detailXml = await callBggApi('thing', { id, stats: 1 });
+        const match = parseBggDetails(detailXml);
+        if (match) select(match);
+      } catch (e) {
+        console.error(e);
+        resultsList.innerHTML = '<p class="bb-bgg-hint">Details konnten nicht geladen werden.</p>';
+      }
+    });
+
+    return { getMatch: () => current, clear };
+  }
+
+  const purchaseBggPicker = createBggPicker({
+    nameInput, searchBtn: bggSearchBtn, resultsPanel: bggResultsPanel, resultsList: bggResultsList,
+    matchPreview: bggMatchPreview, errorEl: errorMessage,
+    onMatch: (match) => {
+      if (typeof match.bggRating === 'number' && !isNaN(match.bggRating)) ratingInput.value = match.bggRating.toFixed(2);
+      if (typeof match.bggWeight === 'number' && !isNaN(match.bggWeight)) weightInput.value = match.bggWeight.toFixed(2);
+      evaluateRule();
     }
   });
 
-  bggResultsList.addEventListener('click', async (e) => {
-    const item = e.target.closest('.bb-bgg-result-item');
-    if (!item) return;
-    const id = item.dataset.id;
-    bggResultsList.innerHTML = '<p class="bb-bgg-hint">Lade Details…</p>';
-    try {
-      const detailXml = await callBggApi('thing', { id, stats: 1 });
-      const match = parseBggDetails(detailXml);
-      if (match) showBggMatch(match);
-    } catch (e) {
-      console.error(e);
-      bggResultsList.innerHTML = '<p class="bb-bgg-hint">Details konnten nicht geladen werden.</p>';
-    }
+  const wishBggPicker = createBggPicker({
+    nameInput: wishNameInput, searchBtn: wishBggSearchBtn, resultsPanel: wishBggResultsPanel, resultsList: wishBggResultsList,
+    matchPreview: wishBggMatchPreview, errorEl: wishError
   });
 
   // --- ADD PURCHASE ---
@@ -507,16 +535,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!isNaN(rating)) data.rating = rating;
     if (!isNaN(weight)) data.weight = weight;
     if (note) data.note = note;
-    if (selectedBggMatch?.bggId) data.bggId = selectedBggMatch.bggId;
-    if (selectedBggMatch?.bggImageUrl) data.bggImageUrl = selectedBggMatch.bggImageUrl;
-    if (selectedBggMatch?.bggUrl) data.bggUrl = selectedBggMatch.bggUrl;
+    const bggMatch = purchaseBggPicker.getMatch();
+    if (bggMatch?.bggId) data.bggId = bggMatch.bggId;
+    if (bggMatch?.bggImageUrl) data.bggImageUrl = bggMatch.bggImageUrl;
+    if (bggMatch?.bggUrl) data.bggUrl = bggMatch.bggUrl;
 
     try {
       await addDoc(purchasesRef, data);
       nameInput.value = ''; priceInput.value = ''; ratingInput.value = ''; weightInput.value = '';
       kidsFriendlyToggle.checked = false; noteToggle.checked = false; noteInput.value = ''; noteInput.classList.add('cl-hidden');
       ruleHint.textContent = '';
-      clearBggMatch();
+      purchaseBggPicker.clear();
       bggResultsPanel.classList.add('cl-hidden'); bggResultsList.innerHTML = '';
       monthInput.value = nowMonthStr();
       nameInput.focus();
@@ -555,10 +584,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = { name, createdAt: new Date().toISOString() };
     if (price !== null) data.price = price;
     if (month) data.month = month;
+    const bggMatch = wishBggPicker.getMatch();
+    if (bggMatch?.bggId) data.bggId = bggMatch.bggId;
+    if (bggMatch?.bggImageUrl) data.bggImageUrl = bggMatch.bggImageUrl;
+    if (bggMatch?.bggUrl) data.bggUrl = bggMatch.bggUrl;
+    if (typeof bggMatch?.bggRating === 'number' && !isNaN(bggMatch.bggRating)) data.rating = bggMatch.bggRating;
+    if (typeof bggMatch?.bggWeight === 'number' && !isNaN(bggMatch.bggWeight)) data.weight = bggMatch.bggWeight;
 
     try {
       await addDoc(wishlistRef, data);
       wishNameInput.value = ''; wishPriceInput.value = ''; wishMonthInput.value = '';
+      wishBggPicker.clear();
+      wishBggResultsPanel.classList.add('cl-hidden'); wishBggResultsList.innerHTML = '';
       wishNameInput.focus();
     } catch (e) {
       console.error(e);
@@ -591,11 +628,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     wishList.innerHTML = sorted.map(w => {
       const monthHtml = w.month ? `<span class="cl-muted" style="font-size:.8rem; margin-left:.4rem;">Wunsch: ${monthLabel(w.month)}</span>` : '';
       const priceHtml = typeof w.price === 'number' ? eur(w.price) : '<span class="cl-muted">–</span>';
+      const imgHtml = w.bggImageUrl ? `<img src="${w.bggImageUrl}" referrerpolicy="no-referrer" class="bb-purchase-thumb">` : '';
+      const nameHtml = w.bggUrl
+        ? `<a href="${w.bggUrl}" target="_blank" rel="noopener noreferrer">${escapeHTML(w.name)}</a>`
+        : escapeHTML(w.name);
+      let badges = '';
+      if (typeof w.rating === 'number') {
+        const cls = w.rating >= 8.0 ? 'cl-badge--ok' : w.rating >= 7.8 ? 'cl-badge--warn' : 'cl-badge--err';
+        badges += `<span class="cl-badge ${cls}" style="margin-right:.3rem;">★ ${w.rating.toFixed(1)}</span>`;
+      }
+      if (typeof w.weight === 'number') {
+        const cls = w.weight >= 3.4 ? 'cl-badge--ok' : 'cl-badge--err';
+        badges += `<span class="cl-badge ${cls}">⚙ ${w.weight.toFixed(1)}</span>`;
+      }
       return `
         <div class="bb-wish-item">
-          <div>
-            <span class="bb-purchase-name">${escapeHTML(w.name)}</span>
-            ${monthHtml}
+          <div class="bb-purchase-left">
+            ${imgHtml}
+            <div class="min-w-0">
+              <span class="bb-purchase-name">${nameHtml}</span>${monthHtml}
+              ${badges ? `<div style="margin-top:.25rem;">${badges}</div>` : ''}
+            </div>
           </div>
           <div class="bb-purchase-right">
             <span style="font-weight:700; color:var(--cl-navy-600);">${priceHtml}</span>
