@@ -47,8 +47,12 @@
 
     .bb-form-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:var(--cl-space-2); }
     @media (max-width:640px) { .bb-form-row { grid-template-columns:1fr 1fr; } }
+    .bb-wish-row { display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:var(--cl-space-2); align-items:end; }
+    @media (max-width:640px) { .bb-wish-row { grid-template-columns:1fr 1fr; } }
+    .bb-wish-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid var(--cl-line); }
+    .bb-wish-item:last-child { border-bottom:none; }
     .bb-checkbox-row { display:flex; align-items:center; gap:.5rem; font-size:.9rem; color:var(--cl-text); }
-    .bb-rule-hint { font-size:.85rem; min-height:1.2rem; margin-top:.5rem; }
+    .bb-rule-hint { font-size:1.05rem; font-weight:600; min-height:1.4rem; margin-top:.6rem; line-height:1.4; }
     .bb-error { color:var(--cl-err); font-size:.85rem; min-height:1.2rem; }
 
     .bb-purchase-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.65rem 0; border-bottom:1px solid var(--cl-line); }
@@ -170,6 +174,36 @@
         <div id="monthTable" class="bb-table-wrap"><p class="bb-empty">Noch keine Daten.</p></div>
     </div>
 
+    <!-- Wunschliste -->
+    <div class="cl-card cl-card--pad" style="margin-top:var(--cl-space-4);">
+        <h2>Wunschliste</h2>
+        <p class="cl-muted" style="margin-top:-.5rem;">Spiele, die du dir vielleicht kaufen willst – noch kein fixer Kauf.</p>
+        <div class="bb-wish-row">
+            <div>
+                <label for="wishNameInput" class="cl-label">Spielname</label>
+                <input type="text" id="wishNameInput" class="cl-input" placeholder="z.B. Ark Nova">
+            </div>
+            <div>
+                <label for="wishPriceInput" class="cl-label">Möglicher Preis (€)</label>
+                <input type="number" id="wishPriceInput" step="0.01" min="0" class="cl-input" placeholder="optional">
+            </div>
+            <div>
+                <label for="wishMonthInput" class="cl-label">Wunsch-Kaufmonat</label>
+                <input type="month" id="wishMonthInput" class="cl-input">
+            </div>
+            <div>
+                <button id="wishAddBtn" class="cl-btn cl-btn--signal" style="width:100%;">Hinzufügen</button>
+            </div>
+        </div>
+        <p id="wishError" class="bb-error"></p>
+        <div id="wishList" style="margin-top:var(--cl-space-2);"><p class="bb-empty">Noch keine Wünsche eingetragen.</p></div>
+        <hr>
+        <div class="cl-flex" style="justify-content:space-between; align-items:center;">
+            <span class="cl-muted">Summe Wunschliste</span>
+            <span id="wishTotal" style="font-weight:700; font-size:1.2rem; color:var(--cl-navy-600);">–</span>
+        </div>
+    </div>
+
 </main>
 
 <footer class="cl-footer">
@@ -192,7 +226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     measurementId: "G-MMFJKPWZML"
   };
 
-  let db, auth, purchasesRef, settingsDocRef;
+  let db, auth, purchasesRef, settingsDocRef, wishlistRef;
 
   // --- BGG API (gleicher Token wie im Spieleausleihe-/BoardOrbit-Tool) ---
   const BGG_API_TOKEN = 'cb319383-f7f5-4e5b-bc40-78090627231e';
@@ -254,6 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await signInAnonymously(auth);
     purchasesRef = collection(db, 'brettspiel_budget/andreas/kaeufe');
     settingsDocRef = doc(db, 'brettspiel_budget/andreas');
+    wishlistRef = collection(db, 'brettspiel_budget/andreas/wunschliste');
   } catch (e) {
     console.error(e);
     document.body.innerHTML = '<div class="cl-container cl-center" style="padding:3rem 0; color:var(--cl-err);">Fehler bei der Verbindung zur Datenbank.</div>';
@@ -287,6 +322,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statTotalSpent = document.getElementById('statTotalSpent');
   const statCurrentMonth = document.getElementById('statCurrentMonth');
   const statBalance = document.getElementById('statBalance');
+  const wishNameInput = document.getElementById('wishNameInput');
+  const wishPriceInput = document.getElementById('wishPriceInput');
+  const wishMonthInput = document.getElementById('wishMonthInput');
+  const wishAddBtn = document.getElementById('wishAddBtn');
+  const wishError = document.getElementById('wishError');
+  const wishList = document.getElementById('wishList');
+  const wishTotal = document.getElementById('wishTotal');
+  let wishes = [];
 
   const eur = n => n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   const nowMonthStr = () => {
@@ -356,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (msgs.length === 0) { ruleHint.textContent = ''; return; }
     ruleHint.textContent = msgs.join('  ·  ');
-    ruleHint.style.color = ok ? 'var(--cl-ok)' : 'var(--cl-warn)';
+    ruleHint.style.color = ok ? 'var(--cl-ok)' : 'var(--cl-err)';
   }
   [ratingInput, weightInput].forEach(el => el.addEventListener('input', evaluateRule));
   kidsFriendlyToggle.addEventListener('change', evaluateRule);
@@ -497,6 +540,75 @@ document.addEventListener('DOMContentLoaded', async () => {
       await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
     } catch (e) { console.error(e); }
   });
+
+  // --- WUNSCHLISTE ---
+  async function addWish() {
+    const name = wishNameInput.value.trim();
+    const priceRaw = wishPriceInput.value;
+    const price = priceRaw === '' ? null : parseFloat(priceRaw);
+    const month = wishMonthInput.value || null;
+
+    if (!name) { wishError.textContent = 'Bitte einen Spielnamen eingeben.'; return; }
+    if (priceRaw !== '' && (isNaN(price) || price < 0)) { wishError.textContent = 'Ungültiger Preis.'; return; }
+    wishError.textContent = '';
+
+    const data = { name, createdAt: new Date().toISOString() };
+    if (price !== null) data.price = price;
+    if (month) data.month = month;
+
+    try {
+      await addDoc(wishlistRef, data);
+      wishNameInput.value = ''; wishPriceInput.value = ''; wishMonthInput.value = '';
+      wishNameInput.focus();
+    } catch (e) {
+      console.error(e);
+      wishError.textContent = `Fehler beim Speichern (${e.code || e.message || e}).`;
+    }
+  }
+  wishAddBtn.addEventListener('click', addWish);
+  [wishNameInput, wishPriceInput].forEach(el => el.addEventListener('keypress', e => e.key === 'Enter' && addWish()));
+
+  async function deleteWish(id) {
+    if (!confirm('Diesen Wunsch wirklich löschen?')) return;
+    try { await deleteDoc(doc(wishlistRef, id)); } catch (e) { console.error(e); }
+  }
+
+  onSnapshot(wishlistRef, snap => {
+    wishes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderWishlist();
+  }, err => {
+    console.error(err);
+    wishList.innerHTML = `<p class="bb-error">Fehler beim Laden der Wunschliste (${err.code || err.message}).</p>`;
+  });
+
+  function renderWishlist() {
+    if (wishes.length === 0) {
+      wishList.innerHTML = '<p class="bb-empty">Noch keine Wünsche eingetragen.</p>';
+      wishTotal.textContent = eur(0);
+      return;
+    }
+    const sorted = [...wishes].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+    wishList.innerHTML = sorted.map(w => {
+      const monthHtml = w.month ? `<span class="cl-muted" style="font-size:.8rem; margin-left:.4rem;">Wunsch: ${monthLabel(w.month)}</span>` : '';
+      const priceHtml = typeof w.price === 'number' ? eur(w.price) : '<span class="cl-muted">–</span>';
+      return `
+        <div class="bb-wish-item">
+          <div>
+            <span class="bb-purchase-name">${escapeHTML(w.name)}</span>
+            ${monthHtml}
+          </div>
+          <div class="bb-purchase-right">
+            <span style="font-weight:700; color:var(--cl-navy-600);">${priceHtml}</span>
+            <button class="cl-btn cl-btn--ghost cl-btn--sm" data-id="${w.id}">Löschen</button>
+          </div>
+        </div>`;
+    }).join('');
+    wishList.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', () => deleteWish(btn.dataset.id));
+    });
+    const total = wishes.reduce((s, w) => s + (typeof w.price === 'number' ? w.price : 0), 0);
+    wishTotal.textContent = eur(total);
+  }
 
   // --- LISTEN ---
   onSnapshot(purchasesRef, snap => {
