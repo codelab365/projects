@@ -548,7 +548,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- ADD PURCHASE ---
   async function addPurchase() {
-    const name = nameInput.value.trim();
+    const bggMatch = purchaseBggPicker.getMatch();
+    const name = (bggMatch?.bggName || nameInput.value.trim());
     const price = parseFloat(priceInput.value);
     const rating = parseFloat(ratingInput.value);
     const weight = parseFloat(weightInput.value);
@@ -566,7 +567,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!isNaN(rating)) data.rating = rating;
     if (!isNaN(weight)) data.weight = weight;
     if (note) data.note = note;
-    const bggMatch = purchaseBggPicker.getMatch();
     if (bggMatch?.bggId) data.bggId = bggMatch.bggId;
     if (bggMatch?.bggImageUrl) data.bggImageUrl = bggMatch.bggImageUrl;
     if (bggMatch?.bggUrl) data.bggUrl = bggMatch.bggUrl;
@@ -651,7 +651,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- WUNSCHLISTE ---
   async function addWish() {
-    const name = wishNameInput.value.trim();
+    const bggMatch = wishBggPicker.getMatch();
+    const name = (bggMatch?.bggName || wishNameInput.value.trim());
     const priceRaw = wishPriceInput.value;
     const price = priceRaw === '' ? null : parseFloat(priceRaw);
     const month = wishMonthInput.value || null;
@@ -663,7 +664,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = { name, kidsFriendly: wishKidsFriendlyToggle.checked, createdAt: new Date().toISOString() };
     if (price !== null) data.price = price;
     if (month) data.month = month;
-    const bggMatch = wishBggPicker.getMatch();
     if (bggMatch?.bggId) data.bggId = bggMatch.bggId;
     if (bggMatch?.bggImageUrl) data.bggImageUrl = bggMatch.bggImageUrl;
     if (bggMatch?.bggUrl) data.bggUrl = bggMatch.bggUrl;
