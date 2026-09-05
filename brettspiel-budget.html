@@ -252,6 +252,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
   }
 
+  // Bewertet, wie gut ein BGG-Ergebnisname zur Sucheingabe passt (niedriger = besser).
+  // BGG liefert Treffer standardmäßig nicht nach Relevanz sortiert, daher sortieren wir clientseitig nach.
+  function bggRelevanceScore(name, query) {
+    const n = (name || '').trim().toLowerCase();
+    const q = query.trim().toLowerCase();
+    if (n === q) return 0;
+    if (n.startsWith(q)) return 1;
+    if (new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(n)) return 2;
+    if (n.includes(q)) return 3;
+    return 4 + Math.abs(n.length - q.length) * 0.01;
+  }
+
   async function callBggApi(endpoint, params = {}) {
     const url = new URL(`https://boardgamegeek.com/xmlapi2/${endpoint}`);
     Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
@@ -484,8 +496,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       resultsPanel.classList.remove('cl-hidden');
       resultsList.innerHTML = '<p class="bb-bgg-hint">Suche auf BGG…</p>';
       try {
-        const searchXml = await callBggApi('search', { query, type: 'boardgame' });
-        const items = Array.from(searchXml.querySelectorAll('item')).slice(0, 12);
+        // Zwei Suchläufe: exakte Namenstreffer (liefert z.B. bei "Odin" auch das
+        // gleichnamige Kartenspiel, das bei der unscharfen Suche leicht untergeht)
+        // plus die normale unscharfe Suche. Ergebnisse werden zusammengeführt,
+        // dedupliziert und clientseitig nach Relevanz zur Eingabe sortiert, da BGG
+        // selbst keine Relevanz-Sortierung liefert.
+        const [exactXml, broadXml] = await Promise.all([
+          callBggApi('search', { query, type: 'boardgame', exact: 1 }).catch(() => null),
+          callBggApi('search', { query, type: 'boardgame' })
+        ]);
+        const exactItems = exactXml ? Array.from(exactXml.querySelectorAll('item')) : [];
+        const broadItems = Array.from(broadXml.querySelectorAll('item'));
+        const seen = new Set();
+        const merged = [];
+        [...exactItems, ...broadItems].forEach(item => {
+          const id = item.getAttribute('id');
+          if (seen.has(id)) return;
+          seen.add(id);
+          merged.push(item);
+        });
+        merged.sort((a, b) => {
+          const nameA = a.querySelector('name')?.getAttribute('value') || '';
+          const nameB = b.querySelector('name')?.getAttribute('value') || '';
+          return bggRelevanceScore(nameA, query) - bggRelevanceScore(nameB, query);
+        });
+        const items = merged.slice(0, 15);
         if (items.length === 0) {
           resultsList.innerHTML = '<p class="bb-bgg-hint">Keine Treffer auf BGG gefunden. Werte können manuell eingetragen werden.</p>';
           return;
