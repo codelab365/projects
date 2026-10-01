@@ -1,69 +1,504 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mein Kalender</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mein Kalender</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --text: #1c2230;
+    --muted: #697386;
+    --border: #dde1e8;
+    --accent: #2f6fdb;
+    --today: #fff4d6;
+    --other: #fafbfc;
+  }
+  @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #f5f6f8;
-      --surface: #ffffff;
-      --text: #1d2330;
-      --border: #d9dde5;
+      --bg: #12151b;
+      --surface: #1b1f28;
+      --text: #e6e9ef;
+      --muted: #98a1b2;
+      --border: #303644;
+      --accent: #6f9cf0;
+      --today: #3a3215;
+      --other: #171a21;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #14171d;
-        --surface: #1e222b;
-        --text: #e8eaee;
-        --border: #333945;
-      }
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1.5rem 1rem;
-    }
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin: 0 0 1rem;
-      width: 100%;
-      max-width: 1100px;
-    }
-    .kalender {
-      width: 100%;
-      max-width: 1100px;
-      flex: 1;
-      min-height: 480px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .kalender iframe {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-height: 480px;
-      border: 0;
-    }
-  </style>
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 1rem;
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+  .status { font-size: .85rem; color: var(--muted); margin: 0 0 1rem; }
+  .bar {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    align-items: center; justify-content: space-between;
+    margin-bottom: .75rem;
+  }
+  .bar .group { display: flex; gap: .4rem; align-items: center; }
+  .month-label { font-weight: 600; min-width: 9.5rem; text-align: center; }
+  button {
+    font: inherit; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: .4rem .75rem; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    background: var(--border); gap: 1px;
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  .wd {
+    background: var(--surface); padding: .4rem; text-align: center;
+    font-size: .8rem; color: var(--muted); font-weight: 600;
+  }
+  .day {
+    background: var(--surface); border: 0; border-radius: 0;
+    min-height: 6.2rem; padding: .3rem; text-align: left;
+    display: flex; flex-direction: column; gap: 2px; overflow: hidden;
+  }
+  .day.other { background: var(--other); color: var(--muted); }
+  .day.today { background: var(--today); }
+  .day.sel { box-shadow: inset 0 0 0 2px var(--accent); }
+  .day .n { font-size: .85rem; font-weight: 600; }
+  .chip {
+    font-size: .72rem; line-height: 1.25; padding: 1px 4px;
+    border-radius: 3px; color: #fff; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .chip.test { outline: 2px dashed rgba(255,255,255,.8); outline-offset: -2px; }
+  .more { font-size: .7rem; color: var(--muted); }
+
+  .detail, .list {
+    margin-top: 1rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem;
+  }
+  .detail h2, .list h2 { font-size: 1rem; margin: 0 0 .5rem; }
+  .list h2 { margin-top: 1rem; }
+  .list h2:first-child { margin-top: 0; }
+  .ev {
+    display: grid; grid-template-columns: 6.5rem 1fr; gap: .5rem;
+    padding: .45rem 0; border-top: 1px solid var(--border);
+  }
+  .ev:first-of-type { border-top: 0; }
+  .time { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .ttl { font-weight: 600; display: flex; gap: .5rem; align-items: baseline; }
+  .dot { width: .7rem; height: .7rem; border-radius: 50%; flex: none; }
+  .sub { font-size: .85rem; color: var(--muted); }
+  .empty { color: var(--muted); margin: 0; }
+
+  @media (max-width: 640px) {
+    body { padding: .5rem; }
+    .day { min-height: 3.6rem; }
+    .chip { font-size: 0; height: 6px; padding: 0; }
+    .ev { grid-template-columns: 1fr; gap: 0; }
+  }
+</style>
 </head>
 <body>
+<main>
   <h1>Mein Kalender</h1>
-  <div class="kalender">
-    <iframe
-      src="https://calendar.google.com/calendar/embed?src=v3fnj763e0ul0llbi1aq14bbrs9bu6f4%40import.calendar.google.com&ctz=Europe%2FVienna"
-      title="Google Kalender"
-      loading="lazy"></iframe>
+  <p class="status" id="status">Lade Termine …</p>
+
+  <div class="bar">
+    <div class="group">
+      <button id="prev" aria-label="Vorheriger Monat">‹</button>
+      <span class="month-label" id="label"></span>
+      <button id="next" aria-label="Nächster Monat">›</button>
+      <button id="today">Heute</button>
+    </div>
+    <div class="group">
+      <button id="m-month" aria-pressed="true">Monat</button>
+      <button id="m-list" aria-pressed="false">Liste</button>
+    </div>
   </div>
+
+  <div id="view"></div>
+</main>
+
+<script>
+/* ---------- Konfiguration ---------- */
+// WebUntis-iCal-Link. Enthält deinen persönlichen Token: Datei nur dort ablegen,
+// wo du den Stundenplan auch sichtbar haben willst.
+const ICS_URL = "https://litec.webuntis.com/WebUntis/ical_export?school=litec&id=NEUA&elemId=771&token=gf7tWYEetQNvV8aoMUONtgaoMFktnF";
+const SNAPSHOT_DATE = "2026-10-01";
+const MY_NAME = "NEUHOLD Andreas Erich";
+
+/* Gespeicherter Stand (Fallback, falls der Live-Abruf nicht klappt)
+   Format: Datum|Beginn|Ende|Titel|Raum|weitere Personen/Hinweis */
+const SNAPSHOT = `
+20260924|1345|1625|1AFET ES1|0-17|
+20260925|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20260925|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20260928|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20260928|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20260929|1105|1155|XSPR|L-21|
+20260929|1200|1250|1BHME ETE|1-32|
+20260929|1255|1345|1BHME ETE|1-32|
+20260929|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261001|1345|1625|1AFET ES1|0-17|
+20261002|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261002|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261005|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261005|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261006|1105|1155|XSPR|L-21|
+20261006|1200|1250|1BHME ETE|1-32|
+20261006|1255|1345|1BHME ETE|1-32|
+20261006|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261007|0815|1100|3AFET LA1|L-11; L-29|WASMAYR Roland
+20261008|1345|1625|1AFET ES1|0-17|
+20261009|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261009|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261012|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261012|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261013|1105|1155|XSPR|L-21|
+20261013|1200|1250|1BHME ETE|1-32|
+20261013|1255|1345|1BHME ETE|1-32|
+20261013|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261014|0815|1100|3AFET LA1|L-11; L-29|
+20261015|1345|1625|1AFET ES1|0-17|
+20261016|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261016|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261019|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261019|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261020|1105|1155|XSPR|L-21|
+20261020|1200|1250|1BHME ETE|1-32|
+20261020|1255|1345|1BHME ETE|1-32|
+20261020|2005|2050|[Test] 3NCET; 4ABET; 4NBET ES1|0-47|[1. Test zu ES1]
+20261020|2055|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261021|0815|1100|3AFET LA1|L-11; L-13; L-23|SCHILLER Ernst
+20261022|1345|1625|1AFET ES1|0-17|
+20261023|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261023|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261103|1105|1155|XSPR|L-21|
+20261103|1200|1250|1BHME ETE|1-32|
+20261103|1255|1345|1BHME ETE|1-32|
+20261103|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261104|0815|1100|3AFET LA1|L-11; L-13; L-23|SCHILLER Ernst
+20261105|1345|1625|1AFET ES1|0-17|
+20261106|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261106|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261109|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261109|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261110|1105|1155|XSPR|L-21|
+20261110|1200|1250|1BHME ETE|1-32|
+20261110|1255|1345|1BHME ETE|1-32|
+20261110|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261112|1345|1435|[Test] 1AFET ES1|0-17|[1. Test zu ES1]
+20261112|1440|1625|1AFET ES1|0-17|
+20261113|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261113|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261116|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261116|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261117|1105|1155|XSPR|L-21|
+20261117|1200|1250|1BHME ETE|1-32|
+20261117|1255|1345|1BHME ETE|1-32|
+20261119|1345|1625|1AFET ES1|0-17|
+20261120|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261120|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261123|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261123|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261124|1105|1155|XSPR|L-21|
+20261124|1200|1250|1BHME ETE|1-32|
+20261124|1255|1345|1BHME ETE|1-32|
+20261124|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261125|0815|1100|3AFET LA1|L-11; L-29|WASMAYR Roland
+20261126|1345|1625|1AFET ES1|0-17|
+20261127|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261127|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261130|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261130|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261201|1105|1155|XSPR|L-21|
+20261201|1200|1250|[Test] 1BHME ETE|1-32|[Test zu ETE]
+20261201|1255|1345|[Test] 1BHME ETE|1-32|[Test zu ETE]
+20261201|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261202|0815|1100|3AFET LA1|L-11; L-29|WASMAYR Roland
+20261203|1345|1625|1AFET ES1|0-17|
+20261204|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261204|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261209|0815|1100|3AFET LA1|L-11; L-13; L-23|SCHILLER Ernst
+20261210|1345|1625|1AFET ES1|0-17|
+20261211|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261211|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261214|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261214|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261215|1105|1155|XSPR|L-21|
+20261215|1200|1250|1BHME ETE|1-32|
+20261215|1255|1345|1BHME ETE|1-32|
+20261215|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20261216|0815|1100|3AFET LA1|L-11; L-13; L-23|SCHILLER Ernst
+20261217|1345|1625|1AFET ES1|0-17|
+20261218|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261218|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20261221|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20261221|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20261222|1105|1155|XSPR|L-21|
+20261222|1200|1250|1BHME ETE|1-32|
+20261222|1255|1345|1BHME ETE|1-32|
+20261222|1725|2000|3NCET; 4ABET; 4NBET CPE|3-19|
+20261222|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20270107|1345|1625|1AFET ES1|0-17|
+20270108|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270108|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270111|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20270111|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20270112|1105|1155|XSPR|L-21|
+20270112|1200|1250|1BHME ETE|1-32|
+20270112|1255|1345|1BHME ETE|1-32|
+20270112|1725|2000|3NCET; 4ABET; 4NBET CPE|3-19|
+20270112|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20270114|1345|1435|[Test] 1AFET ES1|0-17|[2. Test zu ES1]
+20270114|1440|1625|1AFET ES1|0-17|
+20270115|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270115|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270118|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20270118|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20270119|1105|1155|XSPR|L-21|
+20270119|1200|1250|1BHME ETE|1-32|
+20270119|1255|1345|1BHME ETE|1-32|
+20270119|1725|2000|3NCET; 4ABET; 4NBET CPE|3-19|
+20270119|2005|2050|[Test] 3NCET; 4ABET; 4NBET ES1|0-47|[2. Test zu ES1]
+20270119|2055|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20270120|0815|1100|3AFET LA1|L-11; L-29|WASMAYR Roland
+20270121|1345|1625|1AFET ES1|0-17|
+20270122|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270122|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270125|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20270125|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20270126|1105|1155|XSPR|L-21|
+20270126|1200|1250|1BHME ETE|1-32|
+20270126|1255|1345|1BHME ETE|1-32|
+20270126|1725|2000|3NCET; 4ABET; 4NBET CPE|3-19|
+20270126|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20270127|0815|1100|3AFET LA1|L-11; L-29|WASMAYR Roland
+20270128|1345|1625|1AFET ES1|0-17|
+20270129|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270129|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270201|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20270201|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20270202|1105|1155|XSPR|L-21|
+20270202|1200|1250|1BHME ETE|1-32|
+20270202|1255|1345|1BHME ETE|1-32|
+20270202|1725|2000|3NCET; 4ABET; 4NBET CPE|3-19|
+20270202|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20270203|0815|1100|3AFET LA1|L-11; L-13; L-23|SCHILLER Ernst
+20270204|1345|1625|1AFET ES1|0-17|
+20270205|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270205|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270208|0815|0955|3AHET CPE|L-25B; L-25C|BAUCHINGER Helmut
+20270208|1010|1155|3BHET CPE|3-17; 3-19|BAUCHINGER Helmut
+20270208|1725|2140|5NCET; 6ABET; 6NBET LA1|L-17; W51E|ENZENHOFER Wilfried
+20270209|1105|1155|XSPR|L-21|
+20270209|1200|1250|1BHME ETE|1-32|
+20270209|1255|1345|1BHME ETE|1-32|
+20270209|1725|2000|3NCET; 4ABET; 4NBET CPE|3-19|
+20270209|2005|2140|3NCET; 4ABET; 4NBET ES1|0-47|
+20270210|0815|1100|3AFET LA1|L-11; L-13; L-23|SCHILLER Ernst
+20270211|1345|1625|1AFET ES1|0-17|
+20270212|0815|0955|1AHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+20270212|1010|1155|1BHET CPE|L-25B; L-25C|HABERTHEURER Norbert
+`;
+
+/* ---------- Daten ---------- */
+const pad = n => String(n).padStart(2, "0");
+const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+function mk(d, s, e, title, loc, who) {
+  return {
+    date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`,
+    start: `${s.slice(0, 2)}:${s.slice(2, 4)}`,
+    end: `${e.slice(0, 2)}:${e.slice(2, 4)}`,
+    title, loc: loc || "", who: who || ""
+  };
+}
+
+function fromSnapshot() {
+  return SNAPSHOT.trim().split("\n").map(l => {
+    const [d, s, e, t, loc, who] = l.split("|");
+    return mk(d, s, e, t, loc, who);
+  });
+}
+
+function unesc(s) {
+  return (s || "").replace(/\\n/gi, " ").replace(/\\([;,\\])/g, "$1").trim();
+}
+
+function icsTime(val) {
+  // 20260924T134500 (lokal) oder ...Z (UTC → Wiener Zeit)
+  const m = val.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/);
+  if (!m) return null;
+  if (val.endsWith("Z")) {
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    }).formatToParts(d).map(x => [x.type, x.value]));
+    return { d: `${p.year}${p.month}${p.day}`, t: `${p.hour}${p.minute}` };
+  }
+  return { d: m[1] + m[2] + m[3], t: m[4] + m[5] };
+}
+
+function parseICS(text) {
+  const lines = text.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
+  const out = [];
+  let cur = null;
+  for (const line of lines) {
+    if (line === "BEGIN:VEVENT") { cur = {}; continue; }
+    if (line === "END:VEVENT") {
+      if (cur && cur.start && cur.end) {
+        const who = (cur.desc || "").split(";")
+          .map(x => x.replace(MY_NAME, "").trim()).filter(Boolean).join("; ");
+        out.push(mk(cur.start.d, cur.start.t, cur.end.t, cur.title || "(ohne Titel)", cur.loc, who));
+      }
+      cur = null; continue;
+    }
+    if (!cur) continue;
+    const i = line.indexOf(":");
+    if (i < 0) continue;
+    const name = line.slice(0, i).split(";")[0].toUpperCase();
+    const val = line.slice(i + 1);
+    if (name === "DTSTART") cur.start = icsTime(val);
+    else if (name === "DTEND") cur.end = icsTime(val);
+    else if (name === "SUMMARY") cur.title = unesc(val);
+    else if (name === "LOCATION") cur.loc = unesc(val);
+    else if (name === "DESCRIPTION") cur.desc = unesc(val);
+  }
+  return out;
+}
+
+/* ---------- Darstellung ---------- */
+const COLORS = { ES1: "#2f6fdb", CPE: "#17895e", LA1: "#c2561b", ETE: "#8a4fd3", XSPR: "#6b7788" };
+const colorOf = t => COLORS[t.replace(/^\[Test\]\s*/, "").trim().split(" ").pop()] || "#566a85";
+const isTest = t => t.startsWith("[Test]");
+
+let events = fromSnapshot();
+let byDate = {};
+let mode = "month";
+const now = new Date();
+let view = { y: now.getFullYear(), m: now.getMonth() };
+let selected = keyOf(now);
+
+function index() {
+  byDate = {};
+  events.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  for (const e of events) (byDate[e.date] ||= []).push(e);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function eventHTML(e) {
+  const sub = [e.loc && `Raum ${e.loc}`, e.who].filter(Boolean).join(" · ");
+  return `<div class="ev">
+    <div class="time">${e.start}–${e.end}</div>
+    <div><div class="ttl"><span class="dot" style="background:${colorOf(e.title)}"></span>${esc(e.title)}</div>
+    ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div></div>`;
+}
+
+const longDate = key => {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("de-AT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+};
+
+function render() {
+  const first = new Date(view.y, view.m, 1);
+  document.getElementById("label").textContent =
+    first.toLocaleDateString("de-AT", { month: "long", year: "numeric" });
+  document.getElementById("m-month").setAttribute("aria-pressed", mode === "month");
+  document.getElementById("m-list").setAttribute("aria-pressed", mode === "list");
+  const root = document.getElementById("view");
+  root.innerHTML = mode === "month" ? monthHTML(first) : listHTML();
+  if (mode === "month") {
+    root.querySelectorAll(".day").forEach(b => b.addEventListener("click", () => {
+      selected = b.dataset.key;
+      render();
+    }));
+  }
+}
+
+function monthHTML(first) {
+  const offset = (first.getDay() + 6) % 7;
+  const dim = new Date(view.y, view.m + 1, 0).getDate();
+  const rows = Math.ceil((offset + dim) / 7);
+  const todayKey = keyOf(new Date());
+  let html = `<div class="grid">` +
+    ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(w => `<div class="wd">${w}</div>`).join("");
+  for (let i = 0; i < rows * 7; i++) {
+    const d = new Date(view.y, view.m, 1 - offset + i);
+    const k = keyOf(d);
+    const evs = byDate[k] || [];
+    const cls = ["day", d.getMonth() !== view.m && "other", k === todayKey && "today", k === selected && "sel"]
+      .filter(Boolean).join(" ");
+    const shown = evs.slice(0, 3).map(e =>
+      `<div class="chip${isTest(e.title) ? " test" : ""}" style="background:${colorOf(e.title)}">${e.start} ${esc(e.title)}</div>`).join("");
+    const more = evs.length > 3 ? `<div class="more">+${evs.length - 3} weitere</div>` : "";
+    html += `<button class="${cls}" data-key="${k}" aria-label="${longDate(k)}, ${evs.length} Termine">
+      <span class="n">${d.getDate()}</span>${shown}${more}</button>`;
+  }
+  html += `</div>`;
+  const sel = byDate[selected] || [];
+  html += `<section class="detail"><h2>${longDate(selected)}</h2>` +
+    (sel.length ? sel.map(eventHTML).join("") : `<p class="empty">Keine Termine.</p>`) + `</section>`;
+  return html;
+}
+
+function listHTML() {
+  const prefix = `${view.y}-${pad(view.m + 1)}-`;
+  const days = Object.keys(byDate).filter(k => k.startsWith(prefix)).sort();
+  if (!days.length) return `<section class="list"><p class="empty">In diesem Monat gibt es keine Termine.</p></section>`;
+  return `<section class="list">` +
+    days.map(k => `<h2>${longDate(k)}</h2>` + byDate[k].map(eventHTML).join("")).join("") + `</section>`;
+}
+
+/* ---------- Steuerung ---------- */
+function shift(delta) {
+  const d = new Date(view.y, view.m + delta, 1);
+  view = { y: d.getFullYear(), m: d.getMonth() };
+  render();
+}
+document.getElementById("prev").onclick = () => shift(-1);
+document.getElementById("next").onclick = () => shift(1);
+document.getElementById("today").onclick = () => {
+  const t = new Date();
+  view = { y: t.getFullYear(), m: t.getMonth() };
+  selected = keyOf(t);
+  render();
+};
+document.getElementById("m-month").onclick = () => { mode = "month"; render(); };
+document.getElementById("m-list").onclick = () => { mode = "list"; render(); };
+
+async function loadLive() {
+  const status = document.getElementById("status");
+  try {
+    const r = await fetch(ICS_URL, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const parsed = parseICS(await r.text());
+    if (!parsed.length) throw new Error("leer");
+    events = parsed;
+    status.textContent = `Live von WebUntis geladen (${events.length} Termine).`;
+  } catch (err) {
+    const d = new Date(SNAPSHOT_DATE).toLocaleDateString("de-AT");
+    status.textContent = `Gespeicherter Stand vom ${d}. Der Live-Abruf von WebUntis war nicht möglich.`;
+  }
+  index();
+  render();
+}
+
+index();
+render();
+loadLive();
+</script>
 </body>
 </html>
