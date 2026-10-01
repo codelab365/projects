@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mein Kalender</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --text: #1d2330;
+      --border: #d9dde5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14171d;
+        --surface: #1e222b;
+        --text: #e8eaee;
+        --border: #333945;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 1rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .kalender {
+      width: 100%;
+      max-width: 1100px;
+      flex: 1;
+      min-height: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .kalender iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mein Kalender</h1>
+  <div class="kalender">
+    <iframe
+      src="https://calendar.google.com/calendar/embed?src=v3fnj763e0ul0llbi1aq14bbrs9bu6f4%40import.calendar.google.com&ctz=Europe%2FVienna"
+      title="Google Kalender"
+      loading="lazy"></iframe>
+  </div>
+</body>
+</html>
