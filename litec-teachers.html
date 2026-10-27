@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LiTEC · Teachers – codeLAB365</title>
+<meta name="description" content="Der Teachers-Bereich von codeLAB365: alle Projekte rund um Schule, Unterricht und Planung an der LiTEC an einem Ort.">
+<link rel="icon" type="image/png" href="https://codelab365.github.io/projects/codeLAB365_logo.png">
+<link rel="stylesheet" href="codelab365.css">
+<style>
+  /* ---- Nur für diese Seite: Hero + Kachel-Raster --------------------- */
+  .hero {
+    position: relative;
+    padding-block: clamp(2.75rem, 7vw, 5.5rem) var(--cl-space-5);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 420px;
+    background:
+      radial-gradient(520px 220px at 12% 20%, color-mix(in srgb, var(--cl-signal) 16%, transparent), transparent 70%),
+      radial-gradient(600px 260px at 85% 0%, color-mix(in srgb, var(--cl-navy) 14%, transparent), transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .hero__logo { width: 72px; height: 72px; border-radius: var(--cl-radius); margin-bottom: var(--cl-space-3); box-shadow: var(--cl-shadow); }
+  .hero h1 { max-width: 15ch; }
+  .hero h1 em { font-style: normal; color: var(--cl-navy-600); }
+  @media (prefers-color-scheme: dark){ .hero h1 em { color: var(--cl-signal); } }
+  .hero__meta { display: flex; flex-wrap: wrap; gap: var(--cl-space-2); align-items: center; margin-top: var(--cl-space-3); }
+
+  /* Signatur: ein Schaltkreis-„Signal", das über eine Leiterbahn läuft */
+  .hero-trace { position: relative; height: 2px; margin: var(--cl-space-4) 0 0; background: var(--cl-line); border-radius: 2px; overflow: visible; }
+  .hero-trace__node { position: absolute; top: 50%; width: 8px; height: 8px; border-radius: 50%; background: var(--cl-surface); border: 2px solid var(--cl-navy-600); transform: translate(-50%,-50%); }
+  .hero-trace__node--a { left: 8%; } .hero-trace__node--b { left: 46%; } .hero-trace__node--c { left: 86%; }
+  .hero-trace__pulse { position: absolute; top: 50%; left: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--cl-signal); transform: translate(-50%,-50%); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cl-signal) 25%, transparent), 0 0 14px 2px var(--cl-signal); animation: cl-run 4.5s cubic-bezier(.6,0,.4,1) infinite; }
+  @keyframes cl-run { 0%{left:0} 45%{left:100%} 50%{left:100%; opacity:1} 51%{opacity:0} 52%{left:0} 55%{opacity:1} 100%{left:0; opacity:1} }
+
+  /* Kopfzeile-Logo */
+  .cl-brand__logo { width: 34px; height: 34px; border-radius: 8px; }
+
+  /* Filterleiste */
+  .filters { display: flex; flex-wrap: wrap; gap: var(--cl-space-2); align-items: center; padding-block: var(--cl-space-3); position: sticky; top: 64px; background: color-mix(in srgb, var(--cl-bg) 88%, transparent); backdrop-filter: blur(8px); z-index: 20; }
+  .filters__count { margin-left: auto; font-family: var(--cl-font-mono); font-size: .78rem; color: var(--cl-muted); letter-spacing: .05em; white-space: nowrap; }
+  .filters__chips { display: flex; flex-wrap: wrap; gap: var(--cl-space-2); }
+
+  /* Suchfeld */
+  .search-box {
+    position: relative;
+    flex: 1 1 220px; max-width: 340px;
+    order: -1;
+  }
+  .search-box svg.search-ico {
+    position: absolute; left: .8rem; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--cl-muted); pointer-events: none;
+  }
+  .search-box input {
+    width: 100%; font: inherit; color: var(--cl-text);
+    background: var(--cl-surface); border: 1.5px solid var(--cl-line);
+    border-radius: var(--cl-radius-pill); padding: .6rem 2.4rem .6rem 2.3rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .search-box input::placeholder { color: var(--cl-muted); }
+  .search-box input:focus { border-color: var(--cl-signal); box-shadow: var(--cl-ring); outline: none; }
+  .search-box__clear {
+    position: absolute; right: .4rem; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; display: none; align-items: center; justify-content: center;
+    border: none; background: transparent; color: var(--cl-muted); cursor: pointer; border-radius: 50%;
+  }
+  .search-box__clear svg { width: 14px; height: 14px; }
+  .search-box__clear:hover { background: var(--cl-surface-2); color: var(--cl-text); }
+  .search-box.has-value .search-box__clear { display: inline-flex; }
+
+  @media (max-width: 640px) {
+    .search-box { order: 0; flex-basis: 100%; max-width: none; }
+    .filters__count { margin-left: 0; }
+  }
+
+  /* Kein Treffer */
+  .empty-state {
+    display: none;
+    text-align: center;
+    padding: var(--cl-space-5) var(--cl-space-3);
+    color: var(--cl-muted);
+  }
+  .empty-state.is-visible { display: block; }
+  .empty-state svg { width: 34px; height: 34px; margin: 0 auto var(--cl-space-2); color: var(--cl-line); }
+  .empty-state p { margin: 0 0 var(--cl-space-2); }
+
+  /* Kategorie-Zwischentitel */
+  .cat-heading { display: flex; align-items: center; gap: .6rem; margin: var(--cl-space-5) 0 var(--cl-space-2); }
+  .cat-heading:first-of-type { margin-top: 0; }
+  .cat-heading svg { width: 20px; height: 20px; color: var(--cl-navy-600); }
+  @media (prefers-color-scheme: dark){ .cat-heading svg { color: var(--cl-signal); } }
+  .cat-heading h2 { margin: 0; font-size: 1.1rem; }
+  .cat-heading__line { flex: 1; height: 1px; background: var(--cl-line); }
+
+  /* Projekt-Kachel */
+  .p-card { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: var(--cl-surface); border: 1px solid var(--cl-line); border-radius: var(--cl-radius); padding: var(--cl-space-3); overflow: hidden; transition: transform .16s ease, box-shadow .18s ease, border-color .18s ease; }
+  .p-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--cl-navy-600), var(--cl-signal)); transform: scaleX(0); transform-origin: left; transition: transform .28s ease; }
+  .p-card:hover { transform: translateY(-4px); box-shadow: var(--cl-shadow-lg); border-color: color-mix(in srgb, var(--cl-navy-600) 45%, var(--cl-line)); }
+  .p-card:hover::before { transform: scaleX(1); }
+  .p-card:focus-visible { box-shadow: var(--cl-ring); }
+  .p-card__top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .85rem; }
+  .p-card__top-left { display: flex; align-items: center; gap: .4rem; }
+  .p-card__ico { width: 22px; height: 22px; color: var(--cl-muted); transition: color .18s ease; }
+  .p-card:hover .p-card__ico { color: var(--cl-navy-600); }
+  @media (prefers-color-scheme: dark){ .p-card:hover .p-card__ico { color: var(--cl-signal); } }
+  .p-card__title { font-size: 1.18rem; margin: 0 0 .4rem; }
+  .p-card__desc { color: var(--cl-muted); font-size: .93rem; line-height: 1.55; margin: 0 0 var(--cl-space-3); }
+  .p-card__go { margin-top: auto; display: inline-flex; align-items: center; gap: .35rem; font-family: var(--cl-font-mono); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--cl-navy-600); }
+  @media (prefers-color-scheme: dark){ .p-card__go { color: var(--cl-signal); } }
+  .p-card__go svg { width: 15px; height: 15px; transition: transform .2s ease; }
+  .p-card:hover .p-card__go svg { transform: translateX(4px); }
+  .p-card.is-hidden { display: none; }
+  .cat-block.is-hidden { display: none; }
+
+  /* Kachel mit zusätzlichen Schnellzugriffslinks (kein umschließendes <a>, sondern gestreckter Link) */
+  .p-card__stretch-link { position: absolute; inset: 0; z-index: 1; }
+  .p-card__share, .p-card__quicklinks { position: relative; z-index: 2; }
+  .p-card__quicklinks { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 var(--cl-space-3); }
+  .p-card__quicklink {
+    position: relative;
+    font-family: var(--cl-font-mono); font-size: .72rem; letter-spacing: .03em;
+    padding: .32rem .65rem; border-radius: var(--cl-radius-sm);
+    border: 1px solid var(--cl-line); background: var(--cl-surface-2);
+    color: var(--cl-muted); text-decoration: none; white-space: nowrap;
+    transition: all .15s ease;
+  }
+  .p-card__quicklink:hover { border-color: var(--cl-navy-600); color: var(--cl-text); background: var(--cl-surface); }
+  @media (prefers-color-scheme: dark){ .p-card__quicklink:hover { color: var(--cl-signal); } }
+
+  /* Teilen-Button */
+  .p-card__share {
+    position: relative; z-index: 2;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; padding: 0; margin: 0;
+    border-radius: 50%; border: 1.5px solid var(--cl-line); background: var(--cl-surface);
+    color: var(--cl-muted); cursor: pointer;
+    transition: all .16s ease;
+  }
+  .p-card__share:hover { border-color: var(--cl-navy-600); color: var(--cl-navy-600); background: var(--cl-surface-2); }
+  @media (prefers-color-scheme: dark){ .p-card__share:hover { color: var(--cl-signal); } }
+  .p-card__share-ico { width: 15px; height: 15px; position: absolute; transition: opacity .15s ease, transform .15s ease; }
+  .p-card__share .is-check { opacity: 0; transform: scale(.6); color: var(--cl-ok); }
+  .p-card__share .is-icon  { opacity: 1; transform: scale(1); }
+  .p-card__share.is-copied { border-color: var(--cl-ok); background: color-mix(in srgb, var(--cl-ok) 12%, var(--cl-surface)); }
+  .p-card__share.is-copied .is-icon  { opacity: 0; transform: scale(.6); }
+  .p-card__share.is-copied .is-check { opacity: 1; transform: scale(1); }
+  .p-card__share::after {
+    content: "Link kopiert"; position: absolute; top: -2.1rem; right: 0;
+    font-family: var(--cl-font-body); font-size: .74rem; font-weight: 600;
+    white-space: nowrap; padding: .3rem .6rem; border-radius: var(--cl-radius-sm);
+    background: var(--cl-navy-700); color: #fff;
+    opacity: 0; pointer-events: none; transform: translateY(4px);
+    transition: opacity .15s ease, transform .15s ease;
+  }
+  .p-card__share.is-copied::after { opacity: 1; transform: translateY(0); }
+
+  /* ---- Nur Teachers-Seite ---- */
+  .hero h1 { max-width: 18ch; }
+  .hero-back { display: inline-flex; align-items: center; gap: .4rem; margin-bottom: var(--cl-space-3); font-family: var(--cl-font-mono); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--cl-muted); text-decoration: none; }
+  .hero-back:hover { color: var(--cl-text); }
+  .hero-back svg { width: 15px; height: 15px; transform: rotate(180deg); }
+</style>
+</head>
+<body>
+
+<!-- Icon-Sprite (unsichtbar) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-tools" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14.5 5.5a3.5 3.5 0 0 0-4.9 4.2L4 15.3V20h4.7l5.6-5.6a3.5 3.5 0 0 0 4.2-4.9l-2.3 2.3-2-2 2.3-2.3z"/>
+  </symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12h14M13 6l6 6-6 6"/>
+  </symbol>
+  <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/>
+    <path d="M8.3 10.7 15.7 6.3M8.3 13.3l7.4 4.4"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 13l4.5 4.5L19 7"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/>
+  </symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 6l12 12M18 6L6 18"/>
+  </symbol>
+  <symbol id="i-school" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v6"/>
+  </symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>
+  </symbol>
+  <symbol id="i-class" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 5h16v11H4z"/><path d="M8 20h8M12 16v4"/><path d="M8 12l2.5-3 2 2 3-4"/>
+  </symbol>
+</svg>
+
+<!-- Kopfzeile -->
+<header class="cl-header">
+  <div class="cl-container cl-header__inner">
+    <a class="cl-brand" href="index.html" aria-label="codeLAB365 Startseite">
+      <span class="cl-brand__name">code<b>LAB365</b></span>
+    </a>
+    <div class="cl-header__spacer"></div>
+    <a class="cl-btn cl-btn--ghost cl-btn--sm" href="index.html">Alle Projekte</a>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero cl-container">
+    <a class="hero-back" href="index.html"><svg><use href="#i-arrow"/></svg>Alle Projekte</a>
+    <p class="cl-eyebrow">LiTEC · Lehrer:innen-Bereich</p>
+    <h1>LiTEC <em>Teachers</em></h1>
+    <p class="cl-lead">Alles rund um Schule, Unterricht und Planung an der LiTEC – Werkzeuge, Übersichten und Unterrichtshilfen gesammelt an einem Ort.</p>
+    <div class="hero__meta">
+      <span class="cl-badge">4 Projekte</span>
+      <span class="cl-badge">LiTEC Linz</span>
+      <span class="cl-badge">laufend erweitert</span>
+    </div>
+    <div class="hero-trace" aria-hidden="true">
+      <span class="hero-trace__node hero-trace__node--a"></span>
+      <span class="hero-trace__node hero-trace__node--b"></span>
+      <span class="hero-trace__node hero-trace__node--c"></span>
+      <span class="hero-trace__pulse"></span>
+    </div>
+  </section>
+
+  <!-- Suche & Filter -->
+  <div class="cl-container">
+    <div class="filters" role="group" aria-label="Projekte filtern">
+      <div class="search-box" id="searchBox">
+        <svg class="search-ico"><use href="#i-search"/></svg>
+        <input type="search" id="searchInput" placeholder="Projekt suchen…" aria-label="Projekte durchsuchen" autocomplete="off">
+        <button class="search-box__clear" id="searchClear" type="button" aria-label="Suche löschen">
+          <svg><use href="#i-close"/></svg>
+        </button>
+      </div>
+      <div class="filters__chips">
+        <button class="cl-chip is-active" data-filter="alle" aria-pressed="true">Alle</button>
+        <button class="cl-chip" data-filter="planung" aria-pressed="false">Planung &amp; Organisation</button>
+        <button class="cl-chip" data-filter="unterricht" aria-pressed="false">Unterricht &amp; Klasse</button>
+      </div>
+      <span class="filters__count" id="count">4 von 4</span>
+    </div>
+  </div>
+
+  <!-- Kacheln -->
+  <section class="cl-container cl-section" style="padding-top:0">
+
+    <div class="cat-block" data-cat-block="planung">
+      <div class="cat-heading"><svg><use href="#i-plan"/></svg><h2>Planung &amp; Organisation</h2><span class="cat-heading__line"></span></div>
+      <div class="cl-grid cl-grid--cards">
+
+        <a class="p-card" data-cat="planung" href="https://codelab365.github.io/projects/litec_lehrplan_explorer" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <span class="cl-tag">Planung</span>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/litec_lehrplan_explorer" data-title="LiTEC Lehrplan-Explorer" aria-label="Link zu LiTEC Lehrplan-Explorer teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">LiTEC Lehrplan-Explorer</h3>
+          <p class="p-card__desc">Klickbare Übersicht über Kompetenzen und Lehrstoff je Schulform, Klasse und Semester für Elektrotechnik &amp; Mechatronik – deckt Fachschule, Tages- und Abendschule ab, mit Favoriten-Filter für den schnellen Zugriff.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+        <a class="p-card" data-cat="planung" href="https://codelab365.github.io/projects/LiTEC-Stundenraster" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <span class="cl-tag">Planung</span>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/LiTEC-Stundenraster" data-title="LiTEC Stundenplan-Planer" aria-label="Link zu LiTEC Stundenplan-Planer teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">LiTEC Stundenplan-Planer</h3>
+          <p class="p-card__desc">Stundenplan mit Einheiten-Ziel (22) zusammenstellen und den Fortschritt zum Zielwert jederzeit im Blick behalten.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+        <a class="p-card" data-cat="planung" href="https://codelab365.github.io/projects/kalender.html" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <span class="cl-tag">Planung</span>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/kalender.html" data-title="Untis LiTEC Kalender" aria-label="Link zu Untis LiTEC Kalender teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">Untis LiTEC Kalender</h3>
+          <p class="p-card__desc">Eingebetteter Google-Kalender mit dem persönlichen Stundenplan aus Untis – alle Unterrichtsstunden und Termine an der LiTEC auf einen Blick, automatisch synchronisiert.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+      </div>
+    </div>
+
+    <div class="cat-block" data-cat-block="unterricht">
+      <div class="cat-heading"><svg><use href="#i-class"/></svg><h2>Unterricht &amp; Klasse</h2><span class="cat-heading__line"></span></div>
+      <div class="cl-grid cl-grid--cards">
+
+        <a class="p-card" data-cat="unterricht" href="https://www.evhamerling.at/umfrage" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <span class="cl-tag">Unterricht</span>
+            <button class="p-card__share" type="button" data-url="https://www.evhamerling.at/umfrage" data-title="Umfrage- &amp; Quiz-Tool" aria-label="Link zu Umfrage- &amp; Quiz-Tool teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">Umfrage- &amp; Quiz-Tool</h3>
+          <p class="p-card__desc">Eigenes Umfrage- und Quiz-Tool im Kahoot-Stil: Fragen live an die Klasse stellen und die Antworten direkt auswerten – ganz ohne Fremdanbieter.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <svg><use href="#i-search"/></svg>
+      <p>Keine Projekte gefunden.</p>
+      <button class="cl-btn cl-btn--ghost cl-btn--sm" id="emptyReset" type="button">Suche &amp; Filter zurücksetzen</button>
+    </div>
+
+  </section>
+</main>
+
+<!-- Fußzeile -->
+<footer class="cl-footer">
+  <div class="cl-container cl-flex cl-flex-wrap" style="justify-content:space-between; gap:1rem">
+    <span>© <span id="year"></span> codeLAB365 · LiTEC Teachers</span>
+    <span class="cl-mono" style="font-size:.8rem">Erstellt mit KI · gebaut, um zu lernen.</span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  const chips       = document.querySelectorAll('.cl-chip');
+  const cards       = document.querySelectorAll('.p-card');
+  const catBlocks   = document.querySelectorAll('.cat-block');
+  const count       = document.getElementById('count');
+  const total       = cards.length;
+  const searchBox   = document.getElementById('searchBox');
+  const searchInput = document.getElementById('searchInput');
+  const searchClear = document.getElementById('searchClear');
+  const emptyState  = document.getElementById('emptyState');
+  const emptyReset  = document.getElementById('emptyReset');
+  let currentFilter = 'alle';
+
+  cards.forEach(card => {
+    const title = card.querySelector('.p-card__title')?.textContent || '';
+    const desc  = card.querySelector('.p-card__desc')?.textContent || '';
+    const tag   = card.querySelector('.cl-tag')?.textContent || '';
+    card.dataset.search = (title + ' ' + desc + ' ' + tag).toLowerCase();
+  });
+
+  function applyFilter() {
+    const query = searchInput.value.trim().toLowerCase();
+    searchBox.classList.toggle('has-value', query.length > 0);
+    let shown = 0;
+    cards.forEach(card => {
+      const match = (currentFilter === 'alle' || card.dataset.cat === currentFilter)
+                 && (query === '' || card.dataset.search.includes(query));
+      card.classList.toggle('is-hidden', !match);
+      if (match) shown++;
+    });
+    catBlocks.forEach(block => {
+      const catOk = currentFilter === 'alle' || currentFilter === block.dataset.catBlock;
+      const hasVisible = block.querySelector('.p-card:not(.is-hidden)') !== null;
+      block.classList.toggle('is-hidden', !catOk || !hasVisible);
+    });
+    count.textContent = shown + ' von ' + total;
+    emptyState.classList.toggle('is-visible', shown === 0);
+  }
+
+  function setFilter(value) {
+    chips.forEach(c => {
+      const on = c.dataset.filter === value;
+      c.classList.toggle('is-active', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    currentFilter = value;
+    applyFilter();
+  }
+
+  chips.forEach(chip => chip.addEventListener('click', () => setFilter(chip.dataset.filter)));
+  searchInput.addEventListener('input', applyFilter);
+  searchClear.addEventListener('click', () => { searchInput.value = ''; searchInput.focus(); applyFilter(); });
+  emptyReset.addEventListener('click', () => { searchInput.value = ''; setFilter('alle'); });
+
+  // Teilen-Button: native Teilen-Funktion (mobil), sonst Link kopieren
+  document.querySelectorAll('.p-card__share').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url   = btn.dataset.url;
+      const title = btn.dataset.title || 'codeLAB365';
+      if (navigator.share) {
+        try { await navigator.share({ title, url }); return; }
+        catch (err) { if (err && err.name === 'AbortError') return; }
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (err) {
+        const tmp = document.createElement('textarea');
+        tmp.value = url; tmp.style.position = 'fixed'; tmp.style.opacity = '0';
+        document.body.appendChild(tmp); tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+      }
+      btn.classList.add('is-copied');
+      btn.setAttribute('aria-label', 'Link kopiert');
+      clearTimeout(btn._copyTimeout);
+      btn._copyTimeout = setTimeout(() => {
+        btn.classList.remove('is-copied');
+        btn.setAttribute('aria-label', 'Link zu ' + title + ' teilen');
+      }, 1800);
+    });
+  });
+</script>
+</body>
+</html>
