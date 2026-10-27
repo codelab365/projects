@@ -158,6 +158,25 @@
     transition: opacity .15s ease, transform .15s ease;
   }
   .p-card__share.is-copied::after { opacity: 1; transform: translateY(0); }
+
+  /* Einstieg LiTEC Teachers */
+  .teachers-banner {
+    display: flex; align-items: center; gap: var(--cl-space-3);
+    padding: var(--cl-space-3) var(--cl-space-4);
+    border-radius: var(--cl-radius); text-decoration: none; color: #fff;
+    background: linear-gradient(110deg, var(--cl-navy-700), var(--cl-navy-600) 70%, color-mix(in srgb, var(--cl-signal) 55%, var(--cl-navy-600)));
+    box-shadow: var(--cl-shadow);
+    transition: transform .16s ease, box-shadow .18s ease;
+  }
+  .teachers-banner:hover { transform: translateY(-3px); box-shadow: var(--cl-shadow-lg); }
+  .teachers-banner:focus-visible { box-shadow: var(--cl-ring); }
+  .teachers-banner__ico { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: rgba(255,255,255,.14); }
+  .teachers-banner__ico svg { width: 26px; height: 26px; }
+  .teachers-banner__text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+  .teachers-banner__text strong { font-family: var(--cl-font-display); font-size: 1.2rem; letter-spacing: -0.01em; }
+  .teachers-banner__text span { font-size: .92rem; opacity: .85; }
+  .teachers-banner__go { flex: none; width: 22px; height: 22px; margin-left: auto; transition: transform .2s ease; }
+  .teachers-banner:hover .teachers-banner__go { transform: translateX(5px); }
 </style>
 </head>
 <body>
@@ -184,6 +203,9 @@
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
   </symbol>
+  <symbol id="i-school" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v6"/>
+  </symbol>
   <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/>
     <path d="M8.3 10.7 15.7 6.3M8.3 13.3l7.4 4.4"/>
@@ -206,6 +228,7 @@
          <span class="cl-brand__name">code<b>LAB365</b></span>
     </a>
     <div class="cl-header__spacer"></div>
+    <a class="cl-btn cl-btn--ghost cl-btn--sm" href="litec-teachers.html">LiTEC Teachers</a>
     <a class="cl-btn cl-btn--ghost cl-btn--sm" href="https://codelab365.github.io/projects/AIExpert.html">Über mich</a>
   </div>
 </header>
@@ -217,7 +240,7 @@
     <h1>Meine KI-Projekte an <em>einem Ort.</em></h1>
     <p class="cl-lead">Willkommen im codeLAB365. Hier sammle ich meine mit KI gebauten Werkzeuge, Spiele und Experimente – von der Spieleausleihe bis zum Netzqualitäts-Simulator. Such dir eine Kachel aus und leg los.</p>
     <div class="hero__meta">
-      <span class="cl-badge">30 Projekte</span>
+      <span class="cl-badge">31 Projekte</span>
       <span class="cl-badge">5 Kategorien</span>
       <span class="cl-badge">laufend erweitert</span>
     </div>
@@ -228,6 +251,15 @@
       <span class="hero-trace__pulse"></span>
     </div>
   </section>
+
+  <!-- Einstieg in den LiTEC-Teachers-Bereich -->
+  <div class="cl-container">
+    <a class="teachers-banner" href="litec-teachers.html">
+      <span class="teachers-banner__ico"><svg><use href="#i-school"/></svg></span>
+      <span class="teachers-banner__text"><strong>LiTEC · Teachers</strong><span>Eigener Bereich für alle Projekte rund um Schule &amp; Unterricht</span></span>
+      <svg class="teachers-banner__go"><use href="#i-arrow"/></svg>
+    </a>
+  </div>
 
   <!-- Filter -->
   <div class="cl-container">
@@ -247,7 +279,7 @@
         <button class="cl-chip"           data-filter="tech"   aria-pressed="false">Technik &amp; Wissen</button>
         <button class="cl-chip"           data-filter="ki"     aria-pressed="false">KI &amp; Demos</button>
       </div>
-      <span class="filters__count" id="count">30 von 30</span>
+      <span class="filters__count" id="count">31 von 31</span>
     </div>
   </div>
 
@@ -260,7 +292,7 @@
 
         <a class="p-card" data-cat="spiele" href="https://codelab365.github.io/LinzSpielt/memblinggames" target="_blank" rel="noopener noreferrer">
           <div class="p-card__top">
-            <div class="p-card__top-left"><span class="cl-tag">Community</span><span class="cl-badge cl-badge--ok">Neu</span></div>
+            <span class="cl-tag">Community</span>
             <button class="p-card__share" type="button" data-url="https://codelab365.github.io/LinzSpielt/memblinggames" data-title="Spieleversum · Mitgliedertreffen" aria-label="Link zu Spieleversum · Mitgliedertreffen teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
           </div>
           <h3 class="p-card__title">Spieleversum · Mitgliedertreffen</h3>
@@ -365,6 +397,16 @@
     <div class="cat-block" data-cat-block="tools">
       <div class="cat-heading"><svg><use href="#i-tools"/></svg><h2>Werkzeuge</h2><span class="cat-heading__line"></span></div>
       <div class="cl-grid cl-grid--cards">
+
+        <a class="p-card" data-cat="tools" href="https://codelab365.github.io/projects/kalender.html" target="_blank" rel="noopener noreferrer">
+          <div class="p-card__top">
+            <div class="p-card__top-left"><span class="cl-tag">Werkzeug</span><span class="cl-badge cl-badge--ok">Neu</span></div>
+            <button class="p-card__share" type="button" data-url="https://codelab365.github.io/projects/kalender.html" data-title="Untis LiTEC Kalender" aria-label="Link zu Untis LiTEC Kalender teilen"><svg class="p-card__share-ico is-icon"><use href="#i-share"/></svg><svg class="p-card__share-ico is-check"><use href="#i-check"/></svg></button>
+          </div>
+          <h3 class="p-card__title">Untis LiTEC Kalender</h3>
+          <p class="p-card__desc">Eingebetteter Google-Kalender mit dem persönlichen Stundenplan aus Untis – alle Unterrichtsstunden und Termine an der LiTEC auf einen Blick, automatisch synchronisiert.</p>
+          <span class="p-card__go">öffnen <svg><use href="#i-arrow"/></svg></span>
+        </a>
 
         <a class="p-card" data-cat="tools" href="https://codelab365.github.io/projects/litec_lehrplan_explorer" target="_blank" rel="noopener noreferrer">
           <div class="p-card__top">
